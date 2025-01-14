@@ -13,12 +13,11 @@ int main()
 
 	if (DXContext::Get().Init())
 	{
-
+		DXContext::Get().GetDevice();
+		DXContext::Get().GetCommandQueue();
 
 		DXContext::Get().Shutdown();
 	}
-
-
 
 	DXDebugLayer::Get().Shutdown();
 }
