@@ -13,8 +13,12 @@ int main()
 
 	if (DXContext::Get().Init())
 	{
-		DXContext::Get().GetDevice();
-		DXContext::Get().GetCommandQueue();
+		while (true)
+		{
+			auto* cmdList = DXContext::Get().InitCommandList();
+
+			DXContext::Get().ExecuteCommandList();
+		}
 
 		DXContext::Get().Shutdown();
 	}

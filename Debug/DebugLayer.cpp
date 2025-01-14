@@ -25,11 +25,12 @@ void DXDebugLayer::Shutdown()
 	#ifdef _DEBUG
 	if (m_dxgiDebug)
 	{
-		OutputDebugStringW(L"DXGI Reports living device objects:\n");
+		OutputDebugStringW(L"==============================================\r\nDXGI Reports living device objects:\r\n==============================================\r\n");
 
 		m_dxgiDebug->ReportLiveObjects(
 			DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_DETAIL | DXGI_DEBUG_RLO_IGNORE_INTERNAL)
 		);
+		OutputDebugString(L"==============================================\r\n");
 	}
 
 	m_d3d12Debug.Release();
