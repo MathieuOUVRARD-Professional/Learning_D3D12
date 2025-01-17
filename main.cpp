@@ -25,8 +25,14 @@ int main()
 			DXContext::Get().ExecuteCommandList();
 			
 			// Show me the stuff
+
+			DXWindow::Get().Present();
 		}
 		
+		// Flushing (command queue) (As much as buffer)
+		DXContext::Get().Flush(DXWindow::Get().GetFrameCount());
+
+
 		DXWindow::Get().Shutdown();
 		DXContext::Get().Shutdown();
 	}

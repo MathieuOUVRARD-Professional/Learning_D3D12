@@ -47,7 +47,45 @@ bool DXWindow::Init()
 		nullptr, 
 		wcex.hInstance, 
 		nullptr);
-	return m_window != nullptr;
+
+	if (m_window == nullptr)
+	{
+		return false;
+	}
+
+	// Describe Swap Chain
+	DXGI_SWAP_CHAIN_DESC1 swapChainDescription = {};
+	DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullscreenDescripton = {};
+
+	swapChainDescription.Width				= 1920;
+	swapChainDescription.Height				= 1080;
+	swapChainDescription.Format				= DXGI_FORMAT_R8G8B8A8_UNORM; //Change here for HDR
+	swapChainDescription.Stereo				= false;
+	swapChainDescription.SampleDesc.Count	= 1;
+	swapChainDescription.SampleDesc.Quality = 0;
+	swapChainDescription.BufferUsage		= DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDescription.BufferCount		= GetFrameCount();
+	swapChainDescription.Scaling			= DXGI_SCALING_STRETCH;
+	swapChainDescription.SwapEffect			= DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	swapChainDescription.AlphaMode			= DXGI_ALPHA_MODE_IGNORE;
+	swapChainDescription.Flags				= DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+
+	
+	//swapChainFullscreenDescripton.RefreshRate;
+	//swapChainFullscreenDescripton.ScanlineOrdering;
+	//swapChainFullscreenDescripton.Scaling;
+	swapChainFullscreenDescripton.Windowed = true;
+
+	// Swap Chain
+	auto& factory = DXContext::Get().GetFactory();
+	ComPointer<IDXGISwapChain1> swapChain1;
+	factory->CreateSwapChainForHwnd(DXContext::Get().GetCommandQueue(), m_window, &swapChainDescription, &swapChainFullscreenDescripton, nullptr, &swapChain1);
+	if (!swapChain1.QueryInterface(m_swapChain))
+	{
+		return false;
+	}
+	
+	return true;
 }
 
 void DXWindow::Update()
@@ -60,8 +98,15 @@ void DXWindow::Update()
 	}
 }
 
+void DXWindow::Present()
+{
+	m_swapChain->Present(1, 0);
+}
+
 void DXWindow::Shutdown()
 {
+	m_swapChain.Release();
+
 	if (m_window)
 	{
 		DestroyWindow(m_window);
