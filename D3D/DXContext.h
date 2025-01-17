@@ -37,8 +37,7 @@ private:
 public:
 	DXContext(const DXContext&) = delete;
 	DXContext& operator=(const DXContext&) = delete;
-
-	static DXContext& Get()
+	inline static DXContext& Get()
 	{
 		static DXContext instance;
 		return instance;

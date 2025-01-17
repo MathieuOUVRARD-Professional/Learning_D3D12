@@ -59,11 +59,11 @@ void DXContext::Shutdown()
 	{
 		CloseHandle(m_fenceEvent);
 	}
-	m_commandList->Release();
-	m_commandAllocator->Release();
-	m_commandQueue->Release();
+	m_fence.Release();
+	m_commandList.Release();
+	m_commandAllocator.Release();
+	m_commandQueue.Release();
 	m_device.Release();
-
 }
 
 void DXContext::SignalAndWait()
