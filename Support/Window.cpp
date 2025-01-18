@@ -42,7 +42,7 @@ bool DXWindow::Init()
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE, 
 		monitorInfo.rcWork.left + 100, 
 		monitorInfo.rcWork.top + 100, 
-		1920, 1080,
+		3200, 1200,
 		nullptr,
 		nullptr, 
 		wcex.hInstance, 
@@ -57,8 +57,8 @@ bool DXWindow::Init()
 	DXGI_SWAP_CHAIN_DESC1 swapChainDescription = {};
 	DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullscreenDescripton = {};
 
-	swapChainDescription.Width				= 1920;
-	swapChainDescription.Height				= 1080;
+	swapChainDescription.Width				= 3200;
+	swapChainDescription.Height				= 1200;
 	swapChainDescription.Format				= DXGI_FORMAT_R8G8B8A8_UNORM; //Change here for HDR
 	swapChainDescription.Stereo				= false;
 	swapChainDescription.SampleDesc.Count	= 1;
