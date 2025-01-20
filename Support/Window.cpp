@@ -42,7 +42,7 @@ bool DXWindow::Init()
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE, 
 		monitorInfo.rcWork.left + 100, 
 		monitorInfo.rcWork.top + 100, 
-		3200, 1200,
+		1920, 1080,
 		nullptr,
 		nullptr, 
 		wcex.hInstance, 
@@ -57,14 +57,14 @@ bool DXWindow::Init()
 	DXGI_SWAP_CHAIN_DESC1 swapChainDescription = {};
 	DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullscreenDescripton = {};
 
-	swapChainDescription.Width				= 3200;
-	swapChainDescription.Height				= 1200;
+	swapChainDescription.Width				= 1920;
+	swapChainDescription.Height				= 1080;
 	swapChainDescription.Format				= DXGI_FORMAT_R8G8B8A8_UNORM; //Change here for HDR
 	swapChainDescription.Stereo				= false;
 	swapChainDescription.SampleDesc.Count	= 1;
 	swapChainDescription.SampleDesc.Quality = 0;
 	swapChainDescription.BufferUsage		= DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDescription.BufferCount		= GetFrameCount();
+	swapChainDescription.BufferCount		= (UINT)GetFrameCount();
 	swapChainDescription.Scaling			= DXGI_SCALING_STRETCH;
 	swapChainDescription.SwapEffect			= DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	swapChainDescription.AlphaMode			= DXGI_ALPHA_MODE_IGNORE;
@@ -83,8 +83,8 @@ bool DXWindow::Init()
 	if (!swapChain1.QueryInterface(m_swapChain))
 	{
 		return false;
-	}
-	
+	}	
+
 	return true;
 }
 
@@ -101,6 +101,58 @@ void DXWindow::Update()
 void DXWindow::Present()
 {
 	m_swapChain->Present(1, 0);
+}
+
+void DXWindow::Resize()
+{
+	RECT clientRect;
+	if (GetClientRect(m_window, &clientRect))
+	{
+		m_width = clientRect.right - clientRect.left;
+		m_height = clientRect.bottom - clientRect.top;
+
+		m_swapChain->ResizeBuffers(GetFrameCount(), m_width, m_height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
+		m_shouldResize = false;
+	}
+}
+
+void DXWindow::SetFullscreen(bool enabled)
+{
+	//Update window styling
+	DWORD style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+	DWORD exStyle = WS_EX_OVERLAPPEDWINDOW | WS_EX_APPWINDOW;
+	if (enabled)
+	{
+		style = WS_POPUP | WS_VISIBLE;
+		exStyle = WS_EX_APPWINDOW;
+	}
+
+	SetWindowLongW(m_window, GWL_STYLE, style);
+	SetWindowLongW(m_window, GWL_EXSTYLE, exStyle);
+
+	//Adjust window size
+	if (enabled)
+	{		
+		HMONITOR monitor = MonitorFromWindow(m_window, MONITOR_DEFAULTTONEAREST);
+		MONITORINFO monitorInfo{};
+		monitorInfo.cbSize = sizeof(monitorInfo);
+		if (GetMonitorInfoW(monitor, &monitorInfo))
+		{
+			SetWindowPos(m_window, nullptr,
+				monitorInfo.rcMonitor.left,
+				monitorInfo.rcMonitor.top,
+				monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
+				monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
+				SWP_NOZORDER
+			);
+		}
+	}
+	else
+	{
+		ShowWindow(m_window, SW_MAXIMIZE);
+	}
+
+	m_isFullscreen = enabled;
 }
 
 void DXWindow::Shutdown()
@@ -121,10 +173,24 @@ void DXWindow::Shutdown()
 LRESULT CALLBACK DXWindow::OnWindowMessage(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
-	{
-	case WM_CLOSE:
-		Get().m_shouldClose = true;
-		return 0;
+	{	
+		case WM_SIZE:
+			if (lParam && (HIWORD(lParam)!= Get().m_height || LOWORD(lParam) != Get().m_width))
+			{
+				Get().m_shouldResize = true;
+			}
+			break;
+
+		case WM_KEYDOWN:
+			if (wParam == VK_F11)
+			{
+				Get().SetFullscreen(!Get().IsFullscreen());
+			}
+			break;
+
+		case WM_CLOSE:
+			Get().m_shouldClose = true;
+			return 0;
 	}
 
 	return DefWindowProc(window, message, wParam, lParam);

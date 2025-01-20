@@ -143,15 +143,40 @@
   <ItemGroup>
     <ClCompile Include="D3D\DXContext.cpp" />
     <ClCompile Include="Debug\DebugLayer.cpp" />
+    <ClCompile Include="ImGui\backends\imgui_impl_dx12.cpp" />
+    <ClCompile Include="ImGui\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="ImGui\imgui.cpp" />
+    <ClCompile Include="ImGui\imgui_demo.cpp" />
+    <ClCompile Include="ImGui\imgui_draw.cpp" />
+    <ClCompile Include="ImGui\imgui_tables.cpp" />
+    <ClCompile Include="ImGui\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Support\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D\DXContext.h" />
     <ClInclude Include="Debug\DebugLayer.h" />
+    <ClInclude Include="ImGui\backends\imgui_impl_dx12.h" />
+    <ClInclude Include="ImGui\backends\imgui_impl_win32.h" />
+    <ClInclude Include="ImGui\imconfig.h" />
+    <ClInclude Include="ImGui\imgui.h" />
+    <ClInclude Include="ImGui\imgui_internal.h" />
+    <ClInclude Include="ImGui\imstb_rectpack.h" />
+    <ClInclude Include="ImGui\imstb_textedit.h" />
+    <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="Support\ComPointer.h" />
     <ClInclude Include="Support\Window.h" />
     <ClInclude Include="Support\WinInclude.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ImGui\debuggers\imgui.gdb" />
+    <None Include="ImGui\debuggers\imgui.natstepfilter" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="ImGui\debuggers\imgui.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ImGui\debuggers\README.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
