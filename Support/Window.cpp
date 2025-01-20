@@ -76,7 +76,7 @@ bool DXWindow::Init()
 	//swapChainFullscreenDescripton.Scaling;
 	swapChainFullscreenDescripton.Windowed = true;
 
-	// Swap Chain
+	// Create Swap Chain
 	auto& factory = DXContext::Get().GetFactory();
 	ComPointer<IDXGISwapChain1> swapChain1;
 	factory->CreateSwapChainForHwnd(DXContext::Get().GetCommandQueue(), m_window, &swapChainDescription, &swapChainFullscreenDescripton, nullptr, &swapChain1);
@@ -84,6 +84,12 @@ bool DXWindow::Init()
 	{
 		return false;
 	}	
+
+	//Get Buffers
+	if (!GetBuffers())
+	{
+		return false;
+	}
 
 	return true;
 }
@@ -105,15 +111,20 @@ void DXWindow::Present()
 
 void DXWindow::Resize()
 {
+	ReleaseBuffers();
+
 	RECT clientRect;
 	if (GetClientRect(m_window, &clientRect))
 	{
 		m_width = clientRect.right - clientRect.left;
 		m_height = clientRect.bottom - clientRect.top;
 
+		//TODO: Validate result of resizing
 		m_swapChain->ResizeBuffers(GetFrameCount(), m_width, m_height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 		m_shouldResize = false;
-	}
+	}	
+
+	GetBuffers();
 }
 
 void DXWindow::SetFullscreen(bool enabled)
@@ -157,6 +168,8 @@ void DXWindow::SetFullscreen(bool enabled)
 
 void DXWindow::Shutdown()
 {
+	ReleaseBuffers();
+
 	m_swapChain.Release();
 
 	if (m_window)
@@ -167,6 +180,29 @@ void DXWindow::Shutdown()
 	if (m_windowClass)
 	{
 		UnregisterClassW((LPWSTR)m_windowClass, GetModuleHandle(nullptr));
+	}
+}
+
+bool DXWindow::GetBuffers()
+{
+	// Get buffers
+	for (size_t i = 0; i < FrameCount; ++i)
+	{
+		if (FAILED(m_swapChain->GetBuffer((UINT)i, IID_PPV_ARGS(&m_buffers[i]))))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void DXWindow::ReleaseBuffers()
+{
+	// Release buffers
+	for (size_t i = 0; i < FrameCount; ++i)
+	{
+		m_buffers[i].Release();	
 	}
 }
 
