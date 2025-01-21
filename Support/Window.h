@@ -15,6 +15,9 @@ public:
 	void SetFullscreen(bool enabled);
 	void Shutdown();
 
+	void BeginFrame(ID3D12GraphicsCommandList* cmdList);
+	void EndFrame(ID3D12GraphicsCommandList* cmdList);
+
 	inline bool ShouldResize() const
 	{
 		return m_shouldResize;
@@ -29,6 +32,7 @@ public:
 	{
 		return m_isFullscreen;
 	}
+
 	static constexpr size_t FrameCount = 2;
 	static constexpr size_t GetFrameCount()
 	{
@@ -55,6 +59,8 @@ private:
 	ComPointer<IDXGISwapChain3> m_swapChain;
 
 	ComPointer<ID3D12Resource2> m_buffers[FrameCount];
+
+	size_t m_currentBufferIndex = 0;
 
 	//Singleton 
 public:

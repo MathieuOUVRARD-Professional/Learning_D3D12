@@ -32,15 +32,13 @@ int main()
 			//Begin drawing
 			auto* cmdList = DXContext::Get().InitCommandList();
 
-			// A lot of setup 			
-
+			// Draw to window
+			DXWindow::Get().BeginFrame(cmdList);		
 			// TODO: draw
+			DXWindow::Get().EndFrame(cmdList);
 
-			DXContext::Get().ExecuteCommandList();
-			
-			// Show me the stuff
-			
 			//Finish drawing and present
+			DXContext::Get().ExecuteCommandList();			
 			DXWindow::Get().Present();
 		}
 		

@@ -120,7 +120,7 @@ void DXWindow::Resize()
 		m_height = clientRect.bottom - clientRect.top;
 
 		//TODO: Validate result of resizing
-		m_swapChain->ResizeBuffers(GetFrameCount(), m_width, m_height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
+		m_swapChain->ResizeBuffers((UINT)GetFrameCount(), m_width, m_height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 		m_shouldResize = false;
 	}	
 
@@ -181,6 +181,34 @@ void DXWindow::Shutdown()
 	{
 		UnregisterClassW((LPWSTR)m_windowClass, GetModuleHandle(nullptr));
 	}
+}
+
+void DXWindow::BeginFrame(ID3D12GraphicsCommandList* cmdList)
+{
+	m_currentBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
+
+	D3D12_RESOURCE_BARRIER barrier;
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = m_buffers[m_currentBufferIndex];
+	barrier.Transition.Subresource = 0;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+
+	cmdList->ResourceBarrier(1, &barrier);
+}
+
+void DXWindow::EndFrame(ID3D12GraphicsCommandList* cmdList)
+{
+	D3D12_RESOURCE_BARRIER barrier;
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	barrier.Transition.pResource = m_buffers[m_currentBufferIndex];
+	barrier.Transition.Subresource = 0;
+	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+
+	cmdList->ResourceBarrier(1, &barrier);
 }
 
 bool DXWindow::GetBuffers()
