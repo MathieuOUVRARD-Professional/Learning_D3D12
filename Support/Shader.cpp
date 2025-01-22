@@ -17,21 +17,21 @@ Shader::Shader(std::string_view name)
 	if (shaderIn.is_open())
 	{
 		shaderIn.seekg(0, std::ios::end);
-		m_size = shaderIn.tellg();
+		m_size= shaderIn.tellg();
 		shaderIn.seekg(0, std::ios::beg);
-		m_data = malloc(m_size);
-		if (m_data)
+		m_data.resize(m_size);
+		if (!m_data.empty())
 		{
-			shaderIn.read((char*)m_data, m_size);
+			shaderIn.read(m_data.data(), m_size);
 		}
 	}
 }
 
-Shader::~Shader()
-{
-	if (m_data)
-	{
-		free(m_data);
-	}
-}
+//Shader::~Shader()
+//{
+//	if (m_data)
+//	{
+//		free(m_data);
+//	}
+//}
 
