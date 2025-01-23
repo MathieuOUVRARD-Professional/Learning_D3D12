@@ -392,13 +392,11 @@ int main()
 
 #ifdef IMGUI
 			ImGui::Render();
-#endif // IMGUI
-
-			DXWindow::Get().EndFrame(cmdList);
-#ifdef IMGUI
 			cmdList->SetDescriptorHeaps(1, &g_pd3dSrvDescHeap);
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmdList);
 #endif // IMGUI
+
+			DXWindow::Get().EndFrame(cmdList);
 
 			// Finish drawing and present
 			DXContext::Get().ExecuteCommandList();
@@ -412,9 +410,11 @@ int main()
 		vertexBuffer.Release();
 		uploadBuffer.Release();
 
+#ifdef IMGUI
 		ImGui_ImplDX12_Shutdown();
 		ImGui_ImplWin32_Shutdown();
 		ImGui::DestroyContext();
+#endif // IMGUI
 
 		DXWindow::Get().Shutdown();
 		DXContext::Get().Shutdown();
