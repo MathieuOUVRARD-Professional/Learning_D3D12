@@ -268,8 +268,14 @@ void DXWindow::ReleaseBuffers()
 	}
 }
 
+// Forward declare message handler from imgui_impl_win32.cpp
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 LRESULT CALLBACK DXWindow::OnWindowMessage(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	if (ImGui_ImplWin32_WndProcHandler(window, message, wParam, lParam))
+		return true;
+
 	switch (message)
 	{	
 		case WM_SIZE:

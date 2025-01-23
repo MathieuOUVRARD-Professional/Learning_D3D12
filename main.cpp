@@ -9,6 +9,8 @@
 
 #include <D3D/DXContext.h>
 
+#define IMGUI
+
 void ColorPuke(float* color)
 {
 	static int pukeState = 0;
@@ -73,6 +75,54 @@ void ColorPuke(float* color)
 		color[2] = 1;
 	}
 }
+
+#ifdef IMGUI
+// Simple free list based allocator
+struct ExampleDescriptorHeapAllocator
+{
+	ID3D12DescriptorHeap* Heap = nullptr;
+	D3D12_DESCRIPTOR_HEAP_TYPE  HeapType = D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
+	D3D12_CPU_DESCRIPTOR_HANDLE HeapStartCpu;
+	D3D12_GPU_DESCRIPTOR_HANDLE HeapStartGpu;
+	UINT                        HeapHandleIncrement;
+	ImVector<int>               FreeIndices;
+
+	void Create(ID3D12Device* device, ID3D12DescriptorHeap* heap)
+	{
+		IM_ASSERT(Heap == nullptr && FreeIndices.empty());
+		Heap = heap;
+		D3D12_DESCRIPTOR_HEAP_DESC desc = heap->GetDesc();
+		HeapType = desc.Type;
+		HeapStartCpu = Heap->GetCPUDescriptorHandleForHeapStart();
+		HeapStartGpu = Heap->GetGPUDescriptorHandleForHeapStart();
+		HeapHandleIncrement = device->GetDescriptorHandleIncrementSize(HeapType);
+		FreeIndices.reserve((int)desc.NumDescriptors);
+		for (int n = desc.NumDescriptors; n > 0; n--)
+			FreeIndices.push_back(n);
+	}
+	void Destroy()
+	{
+		Heap = nullptr;
+		FreeIndices.clear();
+	}
+	void Alloc(D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_desc_handle)
+	{
+		IM_ASSERT(FreeIndices.Size > 0);
+		int idx = FreeIndices.back();
+		FreeIndices.pop_back();
+		out_cpu_desc_handle->ptr = HeapStartCpu.ptr + (idx * HeapHandleIncrement);
+		out_gpu_desc_handle->ptr = HeapStartGpu.ptr + (idx * HeapHandleIncrement);
+	}
+	void Free(D3D12_CPU_DESCRIPTOR_HANDLE out_cpu_desc_handle, D3D12_GPU_DESCRIPTOR_HANDLE out_gpu_desc_handle)
+	{
+		int cpu_idx = (int)((out_cpu_desc_handle.ptr - HeapStartCpu.ptr) / HeapHandleIncrement);
+		int gpu_idx = (int)((out_gpu_desc_handle.ptr - HeapStartGpu.ptr) / HeapHandleIncrement);
+		IM_ASSERT(cpu_idx == gpu_idx);
+		FreeIndices.push_back(cpu_idx);
+	}
+};
+static ExampleDescriptorHeapAllocator g_pd3dSrvDescHeapAlloc;
+#endif // IMGUI
 
 int main()
 {
@@ -163,7 +213,7 @@ int main()
 		// Input Layout
 		gfxPsod.InputLayout.NumElements = _countof(vertexLayout);
 		gfxPsod.InputLayout.pInputElementDescs = vertexLayout;
-		gfxPsod.IBStripCutValue  = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
+		gfxPsod.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
 		// Vertex Shader
 		gfxPsod.VS.pShaderBytecode = vertexShader.GetBuffer();
 		gfxPsod.VS.BytecodeLength = vertexShader.GetSize();
@@ -245,10 +295,56 @@ int main()
 		vbv.SizeInBytes = sizeof(Vertex) * _countof(vertices);
 		vbv.StrideInBytes = sizeof(Vertex);
 
+		// === ImGui SetUp === //
+#ifdef IMGUI
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO();
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+		// Setup Dear ImGui style
+		ImGui::StyleColorsDark();
+
+		ImGui_ImplWin32_Init(DXWindow::Get().GetWindow());
+
+		// Setup Platform/Renderer backends
+		ImGui_ImplDX12_InitInfo init_info = {};
+		init_info.Device = DXContext::Get().GetDevice();
+		init_info.CommandQueue = DXContext::Get().GetCommandQueue();
+		init_info.NumFramesInFlight = 1;
+		init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM; // Or your render target format.
+		// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
+		// The example_win32_directx12/main.cpp application include a simple free-list based allocator.
+		D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+		desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		desc.NumDescriptors = 64;
+		desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+		ComPointer<ID3D12DescriptorHeap> g_pd3dSrvDescHeap = nullptr;
+
+		DXContext::Get().GetDevice()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
+		g_pd3dSrvDescHeapAlloc.Create(DXContext::Get().GetDevice(), g_pd3dSrvDescHeap);
+
+
+		init_info.SrvDescriptorHeap = g_pd3dSrvDescHeap;
+		init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
+		init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
+		ImGui_ImplDX12_Init(&init_info);
+#endif // IMGUI
+
 		// === Main loop === //
 		DXWindow::Get().SetFullscreen(true);
 		while (!DXWindow::Get().ShouldClose())
 		{
+#ifdef IMGUI
+			// Start the Dear ImGui frame
+			ImGui_ImplDX12_NewFrame();
+			ImGui_ImplWin32_NewFrame();
+			ImGui::NewFrame();
+			ImGui::ShowDemoWindow(); // Show demo window! :)
+#endif // IMGUI
+			
 			// Process pending window messages
 			DXWindow::Get().Update();
 
@@ -263,9 +359,8 @@ int main()
 			// Begin drawing
 			cmdList = DXContext::Get().InitCommandList();
 
-			// Draw to window
-			DXWindow::Get().BeginFrame(cmdList);
-			
+			DXWindow::Get().BeginFrame(cmdList);			
+
 			// === PSO === //
 			cmdList->SetPipelineState(pso);
 			cmdList->SetGraphicsRootSignature(rootSignature);
@@ -295,19 +390,31 @@ int main()
 			// === Draw === //
 			cmdList->DrawInstanced(_countof(vertices), 1, 0, 0);
 
+#ifdef IMGUI
+			ImGui::Render();
+#endif // IMGUI
+
 			DXWindow::Get().EndFrame(cmdList);
+#ifdef IMGUI
+			cmdList->SetDescriptorHeaps(1, &g_pd3dSrvDescHeap);
+			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmdList);
+#endif // IMGUI
 
 			// Finish drawing and present
-			DXContext::Get().ExecuteCommandList();			
+			DXContext::Get().ExecuteCommandList();
 			DXWindow::Get().Present();
 		}
-		
+
 		// Flushing (command queue). (As much as buffer)
 		DXContext::Get().Flush(DXWindow::Get().GetFrameCount());
 
 		// Close
 		vertexBuffer.Release();
 		uploadBuffer.Release();
+
+		ImGui_ImplDX12_Shutdown();
+		ImGui_ImplWin32_Shutdown();
+		ImGui::DestroyContext();
 
 		DXWindow::Get().Shutdown();
 		DXContext::Get().Shutdown();

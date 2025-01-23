@@ -1,5 +1,9 @@
 #pragma once
 
+#include"ImGui/imgui.h"
+#include"ImGui/backends/imgui_impl_dx12.h"
+#include"ImGui/backends/imgui_impl_win32.h"
+
 #include <Support/WinInclude.h>
 #include <Support/ComPointer.h>
 
@@ -17,6 +21,11 @@ public:
 
 	void BeginFrame(ID3D12GraphicsCommandList* cmdList);
 	void EndFrame(ID3D12GraphicsCommandList* cmdList);
+
+	inline HWND GetWindow() const
+	{
+		return m_window;
+	}
 
 	inline bool ShouldResize() const
 	{
