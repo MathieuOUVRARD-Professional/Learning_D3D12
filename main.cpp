@@ -9,6 +9,71 @@
 
 #include <D3D/DXContext.h>
 
+void ColorPuke(float* color)
+{
+	static int pukeState = 0;
+
+	switch (pukeState)
+	{
+	case 0://RED+
+		color[pukeState] += 0.01f;
+		if (color[pukeState] >= 1.0f)
+		{
+			pukeState++;
+		}
+		break;
+	case 1://BLUE-
+		color[pukeState + 1] -= 0.01f;
+		if (color[pukeState + 1] <= 0.0f)
+		{
+			pukeState++;
+		}
+		break;
+	case 2://GREEN+
+		color[pukeState-1] += 0.01f;
+		if (color[pukeState-1] >= 1.0f)
+		{
+			pukeState++;
+		}
+		break;
+	case 3://RED-
+		color[pukeState - 3] -= 0.01f;
+		if (color[pukeState - 3] <= 0.0)
+		{
+			pukeState++;
+		}
+		break;
+	case 4://BLUE+
+		color[pukeState - 2] += 0.01f;
+		if (color[pukeState - 2] >= 1.0f)
+		{
+			pukeState++;
+		}
+		break;
+	case 5://GREEN-
+		color[pukeState - 4] -= 0.01f;
+		if (color[pukeState - 4] <= 0.0f)
+		{
+			pukeState++;
+		}
+		break;
+	case 6:
+		color[pukeState - 4] += 0.01f;
+		if (color[pukeState - 4] >= 1.0f)
+		{
+			pukeState++;
+		}
+		break;
+	}
+	if(pukeState > 6)
+	{
+		pukeState = 0;
+		color[0] = 0;
+		color[1] = 0;
+		color[2] = 1;
+	}
+}
+
 int main()
 {
 	DXDebugLayer::Get().Init();
@@ -39,9 +104,9 @@ int main()
 		Vertex vertices[] =
 		{
 			//T1
-			{-1.f, -1.f},
-			{0.f, 1.f},
-			{1.f, -1.f}
+			{-0.5f, -0.5f},
+			{0.f, 0.5f},
+			{0.5f, -0.5f}
 		};
 		D3D12_INPUT_ELEMENT_DESC vertexLayout[] =
 		{
@@ -136,14 +201,14 @@ int main()
 		// Blend State
 		gfxPsod.BlendState.AlphaToCoverageEnable = FALSE;
 		gfxPsod.BlendState.IndependentBlendEnable = FALSE;
-		gfxPsod.BlendState.RenderTarget[0].BlendEnable = FALSE;
-		gfxPsod.BlendState.RenderTarget[0].LogicOpEnable = FALSE;
-		gfxPsod.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ZERO;
+		gfxPsod.BlendState.RenderTarget[0].BlendEnable = TRUE;
+		gfxPsod.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
 		gfxPsod.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
 		gfxPsod.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
 		gfxPsod.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ZERO;
 		gfxPsod.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
 		gfxPsod.BlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+		gfxPsod.BlendState.RenderTarget[0].LogicOpEnable = FALSE;
 		gfxPsod.BlendState.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;;
 		gfxPsod.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 		// Depth State
@@ -204,10 +269,28 @@ int main()
 			// === PSO === //
 			cmdList->SetPipelineState(pso);
 			cmdList->SetGraphicsRootSignature(rootSignature);
-
 			// === Input Assembler == /
 			cmdList->IASetVertexBuffers(0, 1, &vbv);
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			// === RS == //
+			D3D12_VIEWPORT vp;
+			vp.TopLeftX = 0;
+			vp.TopLeftY = 0;
+			vp.Width = (FLOAT)DXWindow::Get().GetWidth();
+			vp.Height = (FLOAT)DXWindow::Get().GetHeigth();
+			vp.MinDepth = 1.0f;
+			vp.MaxDepth = 0.0f;
+
+			cmdList->RSSetViewports(1, &vp);
+			RECT scRect;
+			scRect.left = scRect.top = 0;
+			scRect.right = DXWindow::Get().GetWidth();
+			scRect.bottom = DXWindow::Get().GetHeigth();
+			cmdList->RSSetScissorRects(1, &scRect);
+			// == ROOT == //
+			static float color[] = { 0.0f, 1.0f, 0.0f };
+			ColorPuke(color);
+			cmdList->SetGraphicsRoot32BitConstants(0, 3, &color, 0);
 
 			// === Draw === //
 			cmdList->DrawInstanced(_countof(vertices), 1, 0, 0);

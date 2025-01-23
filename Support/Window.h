@@ -33,6 +33,24 @@ public:
 		return m_isFullscreen;
 	}
 
+	inline UINT GetWidth() const
+	{
+		return m_width;
+	}
+
+	inline UINT GetHeigth() const
+	{
+		return m_height;
+	}
+
+	inline void SetBackgroundColor(float color[4])
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			m_backGroundColor[i] = color[i];
+		}
+	}
+
 	static constexpr size_t FrameCount = 2;
 	static constexpr size_t GetFrameCount()
 	{
@@ -55,6 +73,8 @@ private:
 
 	UINT m_width = 1920;
 	UINT m_height = 1080;
+
+	float m_backGroundColor[4] = { 0.067f, 0.086f, 0.110f, 1.f };
 
 	ComPointer<IDXGISwapChain3> m_swapChain;
 

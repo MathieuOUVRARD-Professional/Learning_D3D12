@@ -1,7 +1,9 @@
 #include "RootSignature.hlsl"
 
+float3 color : register(b0);
+
 [RootSignature(ROOTSIG)]
-float4 main(float4 pos : SV_Position) : SV_Target
+float4 main() : SV_Target
 {
-	return float4(pos.x, pos.y, pos.x + pos.y, 1.0f);
+	return float4(color, 1.0f);
 }
