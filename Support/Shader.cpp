@@ -26,12 +26,3 @@ Shader::Shader(std::string_view name)
 		}
 	}
 }
-
-//Shader::~Shader()
-//{
-//	if (m_data)
-//	{
-//		free(m_data);
-//	}
-//}
-
