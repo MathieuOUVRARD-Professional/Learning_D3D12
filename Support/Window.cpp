@@ -286,7 +286,7 @@ LRESULT CALLBACK DXWindow::OnWindowMessage(HWND window, UINT message, WPARAM wPa
 			break;
 
 		case WM_KEYDOWN:
-			if (wParam == VK_F11)
+			if (wParam == VK_F11 || wParam == 0x46)
 			{
 				Get().SetFullscreen(!Get().IsFullscreen());
 			}
