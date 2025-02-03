@@ -4,6 +4,7 @@
 #include <Support/ComPointer.h>
 #include <Support/Window.h>
 #include <Support/Shader.h>
+#include <Support/ImageLoader.h>
 
 #include <Debug/DebugLayer.h>
 
@@ -192,6 +193,10 @@ int main()
 		memcpy(uploadBufferAdress, vertices, sizeof(vertices));
 		uploadBuffer->Unmap(0, &uploadRange);
 
+		// === Texture === //
+		ImageLoader::ImageData textureData;
+		ImageLoader::LoadImageFromDisk("./auge_512_512_BGRA_32BPP.png", textureData);
+
 		// Async Copy CPU Resource --> GPU Resource
 		auto* cmdList = DXContext::Get().InitCommandList();
 		cmdList->CopyBufferRegion(vertexBuffer, 0, uploadBuffer, 0, 1024);
@@ -290,6 +295,7 @@ int main()
 			cmdList->IASetVertexBuffers(0, 1, &vbv);
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			// === RS == //
+			// View Port
 			D3D12_VIEWPORT vp;
 			vp.TopLeftX = 0;
 			vp.TopLeftY = 0;
@@ -297,8 +303,8 @@ int main()
 			vp.Height = (FLOAT)DXWindow::Get().GetHeigth();
 			vp.MinDepth = 1.0f;
 			vp.MaxDepth = 0.0f;
-
 			cmdList->RSSetViewports(1, &vp);
+			// Screeen Rect
 			RECT scRect;
 			scRect.left = scRect.top = 0;
 			scRect.right = DXWindow::Get().GetWidth();

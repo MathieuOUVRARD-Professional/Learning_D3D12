@@ -152,6 +152,7 @@
     <ClCompile Include="ImGui\imgui_tables.cpp" />
     <ClCompile Include="ImGui\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Support\ImageLoader.cpp" />
     <ClCompile Include="Support\Shader.cpp" />
     <ClCompile Include="Support\Window.cpp" />
   </ItemGroup>
@@ -168,6 +169,7 @@
     <ClInclude Include="ImGui\imstb_textedit.h" />
     <ClInclude Include="ImGui\imstb_truetype.h" />
     <ClInclude Include="Support\ComPointer.h" />
+    <ClInclude Include="Support\ImageLoader.h" />
     <ClInclude Include="Support\Shader.h" />
     <ClInclude Include="Support\Window.h" />
     <ClInclude Include="Support\WinInclude.h" />

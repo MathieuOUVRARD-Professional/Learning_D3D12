@@ -57,6 +57,9 @@
     <ClCompile Include="D3D\PipelineState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Support\ImageLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Support\ComPointer.h">
@@ -102,6 +105,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="D3D\PipelineState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Support\ImageLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
