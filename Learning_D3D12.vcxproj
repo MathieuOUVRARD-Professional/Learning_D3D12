@@ -142,6 +142,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="D3D\DXContext.cpp" />
+    <ClCompile Include="D3D\PipelineState.cpp" />
     <ClCompile Include="Debug\DebugLayer.cpp" />
     <ClCompile Include="ImGui\backends\imgui_impl_dx12.cpp" />
     <ClCompile Include="ImGui\backends\imgui_impl_win32.cpp" />
@@ -156,6 +157,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D\DXContext.h" />
+    <ClInclude Include="D3D\PipelineState.h" />
     <ClInclude Include="Debug\DebugLayer.h" />
     <ClInclude Include="ImGui\backends\imgui_impl_dx12.h" />
     <ClInclude Include="ImGui\backends\imgui_impl_win32.h" />
