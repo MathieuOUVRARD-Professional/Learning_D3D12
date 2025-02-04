@@ -165,41 +165,110 @@ int main()
 			{ "Position", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 		};
 
+		// === Texture Data === //
+		ImageLoader::ImageData textureData;
+		ImageLoader::LoadImageFromDisk("./auge_512_512_BGRA_32BPP.png", textureData);
+		uint32_t textureStride = textureData.width * ((textureData.bitPerPixel + 7) / 8);
+		uint32_t textureSize = textureData.height * textureStride;
+
 		// === Upload & vertex buffer === //
-		D3D12_RESOURCE_DESC resourceDescriptor{};
-		resourceDescriptor.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		resourceDescriptor.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		resourceDescriptor.Width = 1024;
-		resourceDescriptor.Height = 1;
-		resourceDescriptor.DepthOrArraySize = 1;
-		resourceDescriptor.MipLevels = 1;
-		resourceDescriptor.Format = DXGI_FORMAT_UNKNOWN;
-		resourceDescriptor.SampleDesc.Count = 1;
-		resourceDescriptor.SampleDesc.Quality = 0;
-		resourceDescriptor.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		resourceDescriptor.Flags = D3D12_RESOURCE_FLAG_NONE;
+		D3D12_RESOURCE_DESC rdv{};
+		rdv.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		rdv.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+		rdv.Width = 1024;
+		rdv.Height = 1;
+		rdv.DepthOrArraySize = 1;
+		rdv.MipLevels = 1;
+		rdv.Format = DXGI_FORMAT_UNKNOWN;
+		rdv.SampleDesc.Count = 1;
+		rdv.SampleDesc.Quality = 0;
+		rdv.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		rdv.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+		D3D12_RESOURCE_DESC rdu{};
+		rdu.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		rdu.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+		rdu.Width = textureSize + 1024;
+		rdu.Height = 1;
+		rdu.DepthOrArraySize = 1;
+		rdu.MipLevels = 1;
+		rdu.Format = DXGI_FORMAT_UNKNOWN;
+		rdu.SampleDesc.Count = 1;
+		rdu.SampleDesc.Quality = 0;
+		rdu.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		rdu.Flags = D3D12_RESOURCE_FLAG_NONE;
 
 		// Creating GPU memory pointer
 		ComPointer<ID3D12Resource> uploadBuffer, vertexBuffer;
-		DXContext::Get().GetDevice()->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &resourceDescriptor, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&uploadBuffer));
-		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &resourceDescriptor, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&vertexBuffer));
+
+		DXContext::Get().GetDevice()->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &rdu, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&uploadBuffer));
+		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdv, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&vertexBuffer));
+
+		D3D12_RESOURCE_DESC rdt{};
+		rdt.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+		rdt.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+		rdt.Width = textureData.width;
+		rdt.Height = textureData.height;
+		rdt.DepthOrArraySize = 1;
+		rdt.MipLevels = 1;
+		rdt.Format = textureData.giPixelFormat;
+		rdt.SampleDesc.Count = 1;
+		rdt.SampleDesc.Quality = 0;
+		rdt.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+		rdt.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+		ComPointer<ID3D12Resource> texture;
+		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdt, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&texture));
+		texture->SetName(L"Texture");
 
 		// Copy void* --> CPU Resource
-		void* uploadBufferAdress;
+		char* uploadBufferAdress;
 		D3D12_RANGE uploadRange;
 		uploadRange.Begin = 0;
-		uploadRange.End = 1023;
-		uploadBuffer->Map(0, &uploadRange, &uploadBufferAdress);
-		memcpy(uploadBufferAdress, vertices, sizeof(vertices));
+		uploadRange.End = 1024 + textureSize;
+		uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
+		memcpy(&uploadBufferAdress[0], textureData.content.data(), textureSize);
+		memcpy(&uploadBufferAdress[textureSize], vertices, sizeof(vertices));
 		uploadBuffer->Unmap(0, &uploadRange);
-
-		// === Texture === //
-		ImageLoader::ImageData textureData;
-		ImageLoader::LoadImageFromDisk("./auge_512_512_BGRA_32BPP.png", textureData);
 
 		// Async Copy CPU Resource --> GPU Resource
 		auto* cmdList = DXContext::Get().InitCommandList();
-		cmdList->CopyBufferRegion(vertexBuffer, 0, uploadBuffer, 0, 1024);
+		cmdList->CopyBufferRegion(vertexBuffer, 0, uploadBuffer, textureSize, 1024);
+		D3D12_BOX textureSizeAsBox;
+		textureSizeAsBox.left = textureSizeAsBox.top = textureSizeAsBox.front = 0;
+		textureSizeAsBox.right = textureData.width;
+		textureSizeAsBox.bottom = textureData.height;
+		textureSizeAsBox.back = 1;
+
+		D3D12_TEXTURE_COPY_LOCATION txtSrc, txtDst;
+		txtSrc.pResource = uploadBuffer;
+		txtSrc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+		txtSrc.PlacedFootprint.Offset = 0;
+		txtSrc.PlacedFootprint.Footprint.Width = textureData.width;
+		txtSrc.PlacedFootprint.Footprint.Height = textureData.height;
+		txtSrc.PlacedFootprint.Footprint.Depth = 1;
+		txtSrc.PlacedFootprint.Footprint.RowPitch = textureStride;
+		txtSrc.PlacedFootprint.Footprint.Format = textureData.giPixelFormat;
+		
+		txtDst.pResource = texture;
+		txtDst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		txtDst.SubresourceIndex = 0;
+
+		D3D12_RESOURCE_BARRIER transitionBarrier = {};
+		transitionBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		transitionBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		transitionBarrier.Transition.pResource = texture;
+		transitionBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		transitionBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_GENERIC_READ;
+		transitionBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+
+		cmdList->ResourceBarrier(1, &transitionBarrier);
+		cmdList->CopyTextureRegion(&txtDst, 0, 0, 0, &txtSrc, &textureSizeAsBox);
+
+		transitionBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+		transitionBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
+
+		cmdList->ResourceBarrier(1, &transitionBarrier);
 
 		DXContext::Get().ExecuteCommandList();
 
