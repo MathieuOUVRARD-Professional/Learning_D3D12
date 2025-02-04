@@ -387,7 +387,7 @@ int main()
 			// === PSO === //
 			cmdList->SetPipelineState(pso.Get());
 			cmdList->SetGraphicsRootSignature(rootSignature);
-			cmdList->SetDescriptorHeaps(1, &srvHeap);
+			cmdList->SetDescriptorHeaps(1, & srvHeap);
 
 			// === Input Assembler == /
 			cmdList->IASetVertexBuffers(0, 1, &vbv);
