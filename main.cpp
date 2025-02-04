@@ -157,9 +157,9 @@ int main()
 		Vertex vertices[] =
 		{
 			//T1
-			{ -0.5f, -0.5f, 0.0f , 1.0f },
-			{  0.0f,  0.5f, 0.5f , 0.0f },
-			{  0.5f, -0.5f, 1.0f , 1.0f }
+			{ -1.0f, -1.0f, 0.0f , 1.0f },
+			{  0.0f,  1.0f, 0.5f , 0.0f },
+			{  1.0f, -1.0f, 1.0f , 1.0f }
 		};
 		D3D12_INPUT_ELEMENT_DESC vertexLayout[] =
 		{
@@ -203,7 +203,7 @@ int main()
 		// Creating GPU memory pointer
 		ComPointer<ID3D12Resource> uploadBuffer, vertexBuffer;
 
-		DXContext::Get().GetDevice()->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &rdu, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&uploadBuffer));
+		DXContext::Get().GetDevice()->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &rdu, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&uploadBuffer));
 		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdv, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&vertexBuffer));
 
 		D3D12_RESOURCE_DESC rdt{};
@@ -280,6 +280,7 @@ int main()
 		txtDst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
 		txtDst.SubresourceIndex = 0;
 
+		// === COPY === //
 		D3D12_RESOURCE_BARRIER transitionBarrier = {};
 		transitionBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		transitionBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -413,9 +414,33 @@ int main()
 			static float color[] = { 0.0f, 1.0f, 0.0f };
 			ColorPuke(color);
 
+
+			static float angle = 0.0f;
+			angle += 0.01f;
+			struct Correction
+			{
+				float aspect_ratio;
+				float zoom;
+				float sinAngle;
+				float cosAngle;
+			};
+			Correction correction
+			{
+				.aspect_ratio = ((float)DXWindow::Get().GetHeigth() / (float)DXWindow::Get().GetWidth()),
+				.zoom = 0.8f,
+				.sinAngle = sinf(angle),
+				.cosAngle = cosf(angle),
+			};
+			if (DXWindow::Get().GetHeigth() > DXWindow::Get().GetWidth())
+			{
+				// Divide zoom by aspect ratio to avoid cropping due to aspect ratio > 1
+				correction.zoom /= correction.aspect_ratio;
+			}
+
 			// === ROOT === //
 			cmdList->SetGraphicsRoot32BitConstants(0, 3, &color, 0);
-			cmdList->SetGraphicsRootDescriptorTable(1, srvHeap->GetGPUDescriptorHandleForHeapStart());
+			cmdList->SetGraphicsRoot32BitConstants(1, 4, &correction, 0);
+			cmdList->SetGraphicsRootDescriptorTable(2, srvHeap->GetGPUDescriptorHandleForHeapStart());
 
 			// === Draw === //
 			cmdList->DrawInstanced(_countof(vertices), 1, 0, 0);

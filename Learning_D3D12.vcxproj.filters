@@ -114,6 +114,7 @@
   <ItemGroup>
     <None Include="ImGui\debuggers\imgui.natstepfilter" />
     <None Include="ImGui\debuggers\imgui.gdb" />
+    <None Include="Shaders\Pipeline.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="ImGui\debuggers\imgui.natvis" />

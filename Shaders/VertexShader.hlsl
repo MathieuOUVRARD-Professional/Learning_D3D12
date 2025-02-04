@@ -1,4 +1,7 @@
 #include "RootSignature.hlsl"
+#include "Pipeline.hlsli"
+
+Correction correction : register(b1);
 
 [RootSignature(ROOTSIG)]
 void main(
@@ -10,6 +13,15 @@ void main(
 	out float4 o_pos : SV_Position
 )
 {
-	o_pos = float4(pos.xy, 0.0f, 1.0f);
+	// Rules of transformation. Model -> View -> Projection
+    float2 px;							// Model
+    px.x = (pos.x * correction.cosAngle) - (pos.y * correction.sinAngle); 
+    px.y = (pos.x * correction.sinAngle) + (pos.y * correction.cosAngle);
+	
+    px *= correction.zoom;				// View
+				
+    px.x *= correction.aspectRatio;		// Projection
+	
+	o_pos = float4(px, 0.0f, 1.0f);
 	o_uv = uv;
 }
