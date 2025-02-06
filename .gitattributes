@@ -1,2 +1,10 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+
+# === GitHub linguist ===
+# Scripts will count towards vendored
+scripts/* linguist-vendored
+# All root files will also be ignored
+conanfile.py linguist-vendored
+mox.bat linguist-vendored
+mox.sh linguist-vendored
+mox.lua linguist-vendored
+

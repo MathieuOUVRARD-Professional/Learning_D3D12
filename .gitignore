@@ -1,5 +1,26 @@
+# Python caches
+**__pycache__**
 
-*.pdb
-*.tlog
+# Dependency output
+/dependencies
+
+# Build Output
+/build
+/temp
+/deploy
+
+#Logs
+/log
+
+# Makefile
+**/Makefile
+
+# Visual Studio
 /.vs
-/buildx64-
+**.sln
+**.vcxproj
+**.vcxproj.user
+**.vcxproj.filters
+
+# Dependencie graph output
+/dependencies_*.html

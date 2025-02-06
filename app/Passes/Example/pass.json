@@ -1,0 +1,18 @@
+{
+    "shaders":{
+        "RS": 
+        {
+            "file":     "RootSignature.hlsl"
+        },
+        "VS":
+        {
+            "file":     "VertexSHader.hlsl",
+            "model":    "vs_6_5"
+        }, 
+        "PS":
+        {
+            "file": "PixelShader.hlsl",
+            "model":    "ps_6_5"
+        } 
+    }
+}

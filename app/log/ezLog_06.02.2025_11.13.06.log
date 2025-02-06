@@ -1,0 +1,5 @@
+[info] [06.02.2025 11:13:06'540] [D3EZ] Hello World !
+[warning] [06.02.2025 11:13:06'540] [D3EZ] Warning critical failure has been detected
+[error] [06.02.2025 11:13:06'541] [D3EZ] [Exception] [0] Exception Failed!
+[error] [06.02.2025 11:13:06'542] [D3EZ] [Exception] [0] Code implemented beyond is unsafe
+[error] [06.02.2025 11:13:06'542] [D3EZ] [Exception] [0] In Funtion main on line 138

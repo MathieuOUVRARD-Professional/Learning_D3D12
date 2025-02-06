@@ -11,6 +11,10 @@
 #include <D3D/DXContext.h>
 #include <D3D/PipelineState.h>
 
+#include <Util/LoggingProvider.h>
+#include <Util/EzException.h>
+#include <Util/HRException.h>
+
 #define IMGUI
 
 void ColorPuke(float* color)
@@ -128,6 +132,15 @@ static ExampleDescriptorHeapAllocator g_pd3dSrvDescHeapAlloc;
 
 int main()
 {
+	D3EZ::LoggingProvider::Init();
+
+	/*spdlog::info("Hello World !");
+	spdlog::warn("Warning critical failure has been detected");
+	D3EZ_CHECK_HR_D(S_OK,"Clean HResult");
+	D3EZ_CHECK_HR_D(E_OUTOFMEMORY,"Unclean HResult");
+	
+	D3EZ_CHECK_D(false, "Code implemented bellow is unsafe");*/
+
 	DXDebugLayer::Get().Init();
 
 	if (DXContext::Get().Init() && DXWindow::Get().Init())
@@ -169,7 +182,7 @@ int main()
 
 		// === Texture Data === //
 		ImageLoader::ImageData textureData;
-		ImageLoader::LoadImageFromDisk("./auge_512_512_BGRA_32BPP.png", textureData);
+		ImageLoader::LoadImageFromDisk("./Textures/auge_512_512_BGRA_32BPP.png", textureData);
 		uint32_t textureStride = textureData.width * ((textureData.bitPerPixel + 7) / 8);
 		uint32_t textureSize = textureData.height * textureStride;
 
