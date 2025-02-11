@@ -1,19 +1,11 @@
-# Python caches
-**__pycache__**
-
-# Dependency output
-/dependencies
-
 # Build Output
 /build
+/CMakeBuild
 /temp
 /deploy
 
 #Logs
 /log
-
-# Makefile
-**/Makefile
 
 # Visual Studio
 /.vs
@@ -21,6 +13,3 @@
 **.vcxproj
 **.vcxproj.user
 **.vcxproj.filters
-
-# Dependencie graph output
-/dependencies_*.html

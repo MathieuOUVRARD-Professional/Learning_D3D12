@@ -15,6 +15,8 @@
 #include <Util/EzException.h>
 #include <Util/HRException.h>
 
+#include <ft2build.h>
+
 #define IMGUI
 
 void ColorPuke(float* color)
@@ -182,7 +184,7 @@ int main()
 
 		// === Texture Data === //
 		ImageLoader::ImageData textureData;
-		ImageLoader::LoadImageFromDisk("./Textures/auge_512_512_BGRA_32BPP.png", textureData);
+		ImageLoader::LoadImageFromDisk("Textures/auge_512_512_BGRA_32BPP.png", textureData);
 		uint32_t textureStride = textureData.width * ((textureData.bitPerPixel + 7) / 8);
 		uint32_t textureSize = textureData.height * textureStride;
 
