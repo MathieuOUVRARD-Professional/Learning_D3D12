@@ -5,7 +5,7 @@
 /deploy
 
 #Logs
-/log
+/app/log
 
 # Visual Studio
 /.vs
