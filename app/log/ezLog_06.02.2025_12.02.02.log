@@ -1,6 +1,0 @@
-[info] [06.02.2025 12:02:02'376] [D3EZ] Hello World !
-[warning] [06.02.2025 12:02:02'376] [D3EZ] Warning critical failure has been detected
-[error] [06.02.2025 12:02:02'376] [D3EZ] [Exception] [0] Exception occurred!
-[error] [06.02.2025 12:02:02'377] [D3EZ] [Exception] [0] WinApi call failed | HRESULT wasn't successful
-[error] [06.02.2025 12:02:02'378] [D3EZ] [Exception] [0] In Funtion main on line 140
-[error] [06.02.2025 12:02:02'380] [D3EZ] [Exception] [0] Caused by: Not enough memory resources are available to complete this operation.  (0x8007000e
