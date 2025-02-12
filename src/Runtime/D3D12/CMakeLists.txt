@@ -37,6 +37,16 @@ source_group("Util\\Header Files" FILES ${UTIL_H_FILES})
 # We need this directory, and users of our library will need it too
 target_include_directories(D3D12 PUBLIC ".")
  
-target_link_libraries(D3D12 PRIVATE "d3d12.lib" "dxgi.lib" "dxguid.lib" "d3dcompiler.lib" fmt::fmt spdlog::spdlog)
+target_link_libraries(D3D12 PRIVATE "d3d12.lib" "dxgi.lib" "dxguid.lib" "d3dcompiler.lib" fmt::fmt spdlog::spdlog glm::glm)
+
+target_compile_definitions(D3D12 PRIVATE
+$<$<CONFIG:DEBUG>:_DEBUG>
+)
+target_compile_definitions(D3D12 PRIVATE
+  $<$<CONFIG:DEVELOPMENT>:_DEVELOPMENT>
+)
+target_compile_definitions(D3D12 PRIVATE
+  $<$<CONFIG:RELEASE>:_RELEASE>
+)
  
 add_definitions(-DUNICODE -D_UNICODE)

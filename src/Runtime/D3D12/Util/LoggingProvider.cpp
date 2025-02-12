@@ -22,9 +22,9 @@ void D3EZ::LoggingProvider::Init()
 	logger->flush_on(spdlog::level::warn);
 
 	// Level
-#if defined(D3DEz_DEBUG)
+#if defined(_DEBUG)
 	logger->set_level(spdlog::level::trace);
-#elif defined(D3DEz_DEVELOPMENT)
+#elif defined(_DEVELOPMENT)
 	logger->set_level(spdlog::level::debug);
 #else
 	logger->set_level(spdlog::level::info);

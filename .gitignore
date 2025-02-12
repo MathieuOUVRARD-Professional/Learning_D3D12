@@ -5,7 +5,7 @@
 /deploy
 
 #Logs
-/app/log
+/aMopp/log
 
 # Visual Studio
 /.vs

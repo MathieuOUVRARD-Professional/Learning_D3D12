@@ -31,11 +31,21 @@ set_target_properties(App PROPERTIES
   VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/app/"
 )
 
+source_group("Shaders" FILES ${SHADERS_FILES})
+source_group("Shaders\\Interfaces" FILES ${SHADERS_INTERFACE_FILES})
+
 target_compile_features(App PRIVATE cxx_std_20)
  
 target_link_libraries(App PRIVATE D3D12 ImGui)
 
-add_definitions(-DUNICODE -D_UNICODE)
+target_compile_definitions(App PRIVATE
+$<$<CONFIG:DEBUG>:_DEBUG>
+)
+target_compile_definitions(App PRIVATE
+  $<$<CONFIG:DEVELOPMENT>:_DEVELOPMENT>
+)
+target_compile_definitions(App PRIVATE
+  $<$<CONFIG:RELEASE>:_RELEASE>
+)
 
-source_group("Shaders" FILES ${SHADERS_FILES})
-source_group("Shaders\\Interfaces" FILES ${SHADERS_INTERFACE_FILES})
+add_definitions(-DUNICODE -D_UNICODE)

@@ -2,6 +2,7 @@
   "dependencies": [
     "fmt",
     "freetype",
-    "spdlog"
+    "spdlog",
+    "glm"
   ]
 }
