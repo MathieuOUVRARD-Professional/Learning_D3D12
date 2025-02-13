@@ -5,6 +5,7 @@
 #include <Support/Window.h>
 #include <Support/Shader.h>
 #include <Support/ImageLoader.h>
+#include <Support/Camera.h>
 
 #include <Debug/DebugLayer.h>
 
@@ -150,6 +151,12 @@ int main()
 
 	if (DXContext::Get().Init() && DXWindow::Get().Init())
 	{
+		// Monitor Info
+		HMONITOR monitor = MonitorFromWindow(DXWindow::Get().GetWindow(), MONITOR_DEFAULTTOPRIMARY);
+		MONITORINFO monitorInfo{};
+		monitorInfo.cbSize = sizeof(monitorInfo);
+		GetMonitorInfoW(monitor, &monitorInfo);
+
 		// Upload heap CPU --> GPU
 		D3D12_HEAP_PROPERTIES uploadHeapProperties{};
 		uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
@@ -167,19 +174,6 @@ int main()
 		defaultHeapProperties.VisibleNodeMask = 0;
 
 		// === Vertex data === //
-		//struct Vertex2D
-		//{
-		//	float x, y;
-		//	float u, v;
-		//};
-		//Vertex2D verticesTriangle[] =
-		//{
-		//	//T1
-		//	{ -1.0f, -1.0f, 0.0f , 1.0f },
-		//	{  0.0f,  1.0f, 0.5f , 0.0f },
-		//	{  1.0f, -1.0f, 1.0f , 1.0f }
-		//};
-
 		struct Vertex
 		{
 			float x, y, z;
@@ -216,7 +210,6 @@ int main()
 		uint32_t textureSize = textureData.height * textureStride;
 
 		// === Upload, vertex & indexes buffers === //
-
 		D3D12_RESOURCE_DESC rdu{};
 		rdu.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 		rdu.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
@@ -256,7 +249,6 @@ int main()
 		rdi.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 		rdi.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-
 		// Creating GPU memory pointer
 		ComPointer<ID3D12Resource> uploadBuffer, vertexBuffer, indexBuffer;
 
@@ -267,8 +259,8 @@ int main()
 		D3D12_RESOURCE_DESC rdd{};
 		rdd.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 		rdd.Alignment = 0;
-		rdd.Height = DXWindow::Get().GetHeigth();
-		rdd.Width = DXWindow::Get().GetWidth();
+		rdd.Width = monitorInfo.rcMonitor.right;
+		rdd.Height = monitorInfo.rcMonitor.bottom;
 		rdd.DepthOrArraySize = 1;
 		rdd.MipLevels = 1;
 		rdd.Format = DXGI_FORMAT_D32_FLOAT;
@@ -429,6 +421,7 @@ int main()
 		ibv.SizeInBytes = sizeof(DWORD) * _countof(indexes);
 		ibv.Format = DXGI_FORMAT_R32_UINT;
 
+		Camera camera(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth(), glm::vec3(0.0f, 0.0f, 2.0f));
 
 		float rotation = 0.0f; 
 
@@ -463,7 +456,6 @@ int main()
 		DXContext::Get().GetDevice()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
 		g_pd3dSrvDescHeapAlloc.Create(DXContext::Get().GetDevice(), g_pd3dSrvDescHeap);
 
-
 		init_info.SrvDescriptorHeap = g_pd3dSrvDescHeap;
 		init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
 		init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
@@ -482,17 +474,6 @@ int main()
 			ImGui::ShowDemoWindow(); // Show demo window! :)
 #endif // IMGUIS
 			
-			glm::mat4 model = glm::mat4(1.0f);
-			glm::mat4 view = glm::mat4(1.0f);
-			glm::mat4 projection = glm::mat4(1.0f);
-			
-			rotation += 0.5f;
-
-			model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 1.0f, 0.0f));
-			view = glm::translate(view, glm::vec3(0.0f, -0.25f, -1.5f));
-			view = view * model;
-			projection = glm::perspective(glm::radians(45.0f), DXWindow::Get().GetWindowRatio(), 0.1f, 100.0f);
-
 			// Process pending window messages
 			DXWindow::Get().Update();
 
@@ -540,52 +521,15 @@ int main()
 			static float color[] = { 0.0f, 1.0f, 0.0f };
 			ColorPuke(color);
 
-
-			static float angle = 0.0f;
-			angle += 0.01f;
-			struct Correction
-			{
-				float aspect_ratio;
-				float zoom;
-				float sinAngle;
-				float cosAngle;
-			};
-			Correction correction
-			{
-				.aspect_ratio = 1/DXWindow::Get().GetWindowRatio(),
-				.zoom = 1.0f,
-				.sinAngle = sinf(angle),
-				.cosAngle = cosf(angle),
-			};
-			if (DXWindow::Get().GetHeigth() > DXWindow::Get().GetWidth())
-			{
-				// Divide zoom by aspect ratio to avoid cropping due to aspect ratio > 1
-				correction.zoom /= correction.aspect_ratio;
-			}
-
-			struct CameraMatrices
-			{
-				glm::mat4 view;
-				glm::mat4 proj;
-				/*glm::mat4 invView;
-				glm::mat4 invProj;*/
-			};
-			CameraMatrices cameraMatrices
-			{
-				.view = view,
-				.proj = projection,
-				/*.invView = glm::inverse(view),
-				.invProj = glm::inverse(projection)*/
-			};
+			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
+			camera.Inputs();
+			camera.Matrix(45.0f, 0.1f, 100.0f, cmdList);
 
 			// === ROOT === //
 			cmdList->SetGraphicsRoot32BitConstants(0, 3, &color, 0);
-			cmdList->SetGraphicsRoot32BitConstants(1, 4, &correction, 0);
-			cmdList->SetGraphicsRoot32BitConstants(2, 32, &cameraMatrices, 0);
-			cmdList->SetGraphicsRootDescriptorTable(3, srvHeap->GetGPUDescriptorHandleForHeapStart());
+			cmdList->SetGraphicsRootDescriptorTable(2, srvHeap->GetGPUDescriptorHandleForHeapStart());
 
 			// === Draw === //
-			//cmdList->DrawInstanced(_countof(verticesTriangle), 1, 0, 0);
 			cmdList->DrawIndexedInstanced(18, 6, 0, 0, 0);
 
 #ifdef IMGUI

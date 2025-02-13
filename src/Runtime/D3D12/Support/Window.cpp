@@ -1,4 +1,5 @@
 #include "Window.h"
+#include <Util/HRException.h>
 
 bool DXWindow::Init()
 {
@@ -141,7 +142,7 @@ void DXWindow::Resize()
 		m_height = clientRect.bottom - clientRect.top;
 
 		//TODO: Validate result of resizing
-		m_swapChain->ResizeBuffers((UINT)GetFrameCount(), m_width, m_height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
+		D3EZ_CHECK_HR_D(m_swapChain->ResizeBuffers((UINT)GetFrameCount(), m_width, m_height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING), "m_swapChain->ResizeBuffers() FAILED");
 		m_shouldResize = false;
 	}	
 
@@ -224,9 +225,9 @@ void DXWindow::BeginFrame(ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHe
 
 	cmdList->ClearRenderTargetView(m_rtvHandles[m_currentBufferIndex], m_backGroundColor, 0, nullptr);
 
-	cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, &dsvHandle);
-
 	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+	cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, &dsvHandle);
 }
 
 void DXWindow::EndFrame(ID3D12GraphicsCommandList* cmdList)

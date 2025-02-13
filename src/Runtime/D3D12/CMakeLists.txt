@@ -50,3 +50,4 @@ target_compile_definitions(D3D12 PRIVATE
 )
  
 add_definitions(-DUNICODE -D_UNICODE)
+add_definitions(-D GLM_ENABLE_EXPERIMENTAL)

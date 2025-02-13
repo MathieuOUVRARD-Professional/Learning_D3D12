@@ -49,3 +49,4 @@ target_compile_definitions(App PRIVATE
 )
 
 add_definitions(-DUNICODE -D_UNICODE)
+add_definitions(-D GLM_ENABLE_EXPERIMENTAL)
