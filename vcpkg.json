@@ -2,7 +2,8 @@
   "dependencies": [
     "fmt",
     "freetype",
+    "glm",
     "spdlog",
-    "glm"
+    "directx-headers"
   ]
 }

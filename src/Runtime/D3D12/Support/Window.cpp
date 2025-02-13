@@ -206,7 +206,7 @@ void DXWindow::Shutdown()
 	}
 }
 
-void DXWindow::BeginFrame(ID3D12GraphicsCommandList* cmdList)
+void DXWindow::BeginFrame(ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHeap* dsvHeap)
 {
 	m_currentBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
 
@@ -218,11 +218,15 @@ void DXWindow::BeginFrame(ID3D12GraphicsCommandList* cmdList)
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap->GetCPUDescriptorHandleForHeapStart();
+
 	cmdList->ResourceBarrier(1, &barrier);
 
 	cmdList->ClearRenderTargetView(m_rtvHandles[m_currentBufferIndex], m_backGroundColor, 0, nullptr);
 
-	cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, nullptr);
+	cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, &dsvHandle);
+
+	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 }
 
 void DXWindow::EndFrame(ID3D12GraphicsCommandList* cmdList)

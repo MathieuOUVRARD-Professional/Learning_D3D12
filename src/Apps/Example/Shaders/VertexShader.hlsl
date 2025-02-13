@@ -2,11 +2,12 @@
 #include "Pipeline.hlsli"
 
 Correction correction : register(b1);
+CameraMatrices cameraMatrices : register(b2);
 
 [RootSignature(ROOTSIG)]
 void main(
 // === IN === //
-	in float2 pos : Position,
+	in float3 pos : Position,
 	in float2 uv : Texcoord,
 // === OUT === //
 	out float2 o_uv : Texcoord,
@@ -14,14 +15,15 @@ void main(
 )
 {
 	// Rules of transformation. Model -> View -> Projection
-    float2 px;							// Model
-    px.x = (pos.x * correction.cosAngle) - (pos.y * correction.sinAngle); 
-    px.y = (pos.x * correction.sinAngle) + (pos.y * correction.cosAngle);
+    float3 px;							// Model
+    
+	//px.x = (pos.x * correction.cosAngle) - (pos.y * correction.sinAngle); 
+    //px.y = (pos.x * correction.sinAngle) + (pos.y * correction.cosAngle);
 	
-    px *= correction.zoom;				// View
+    px = pos * correction.zoom;		// View
 				
-    px.x *= correction.aspectRatio;		// Projection
+    px *= correction.aspectRatio;		// Projection
 	
-	o_pos = float4(px, 0.0f, 1.0f);
+	o_pos = mul(mul(cameraMatrices.projection, cameraMatrices.view), float4(px, 1.0f));
 	o_uv = uv;
 }

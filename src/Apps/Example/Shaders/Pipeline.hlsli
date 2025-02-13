@@ -6,3 +6,9 @@ struct Correction
     float sinAngle;
     float cosAngle;
 };
+
+struct CameraMatrices
+{
+    matrix view;
+    matrix projection;
+};

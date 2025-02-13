@@ -19,7 +19,7 @@ public:
 	void SetFullscreen(bool enabled);
 	void Shutdown();
 
-	void BeginFrame(ID3D12GraphicsCommandList* cmdList);
+	void BeginFrame(ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHeap* dsvHeap);
 	void EndFrame(ID3D12GraphicsCommandList* cmdList);
 
 	inline HWND GetWindow() const
@@ -50,6 +50,11 @@ public:
 	inline UINT GetHeigth() const
 	{
 		return m_height;
+	}
+
+	inline float GetWindowRatio() const
+	{
+		return ((float)GetWidth() / (float)GetHeigth());
 	}
 
 	inline void SetBackgroundColor(float color[4])

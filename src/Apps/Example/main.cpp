@@ -15,7 +15,10 @@
 #include <Util/EzException.h>
 #include <Util/HRException.h>
 
-#include <ft2build.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <dxcapi.h>
 
 #define IMGUI
 
@@ -164,22 +167,46 @@ int main()
 		defaultHeapProperties.VisibleNodeMask = 0;
 
 		// === Vertex data === //
+		//struct Vertex2D
+		//{
+		//	float x, y;
+		//	float u, v;
+		//};
+		//Vertex2D verticesTriangle[] =
+		//{
+		//	//T1
+		//	{ -1.0f, -1.0f, 0.0f , 1.0f },
+		//	{  0.0f,  1.0f, 0.5f , 0.0f },
+		//	{  1.0f, -1.0f, 1.0f , 1.0f }
+		//};
+
 		struct Vertex
 		{
-			float x, y;
+			float x, y, z;
 			float u, v;
 		};
 		Vertex vertices[] =
 		{
-			//T1
-			{ -1.0f, -1.0f, 0.0f , 1.0f },
-			{  0.0f,  1.0f, 0.5f , 0.0f },
-			{  1.0f, -1.0f, 1.0f , 1.0f }
+			//  X	   Y	  Z	  ||  U	   V
+			{ -0.5f,  0.0f,  0.5f , 0.0f, 1.0f },
+			{ -0.5f,  0.0f, -0.5f , 1.0f, 1.0f },
+			{  0.5f,  0.0f, -0.5f , 0.0f, 1.0f },
+			{  0.5f,  0.0f,  0.5f , 1.0f, 1.0f },
+			{  0.0f,  1.0f,  0.0f , 0.5f, 0.0f },
 		};
+		DWORD indexes[] = {
+			0,1,2,
+			0,2,3,
+			0,4,1,
+			1,4,2,
+			2,4,3,
+			3,4,0
+		};
+
 		D3D12_INPUT_ELEMENT_DESC vertexLayout[] =
 		{
-			{ "Position", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-			{ "Texcoord", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 2, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+			{ "Position", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+			{ "Texcoord", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 		};
 
 		// === Texture Data === //
@@ -188,7 +215,21 @@ int main()
 		uint32_t textureStride = textureData.width * ((textureData.bitPerPixel + 7) / 8);
 		uint32_t textureSize = textureData.height * textureStride;
 
-		// === Upload & vertex buffer === //
+		// === Upload, vertex & indexes buffers === //
+
+		D3D12_RESOURCE_DESC rdu{};
+		rdu.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		rdu.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+		rdu.Width = textureSize + 2048;
+		rdu.Height = 1;
+		rdu.DepthOrArraySize = 1;
+		rdu.MipLevels = 1;
+		rdu.Format = DXGI_FORMAT_UNKNOWN;
+		rdu.SampleDesc.Count = 1;
+		rdu.SampleDesc.Quality = 0;
+		rdu.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		rdu.Flags = D3D12_RESOURCE_FLAG_NONE;
+
 		D3D12_RESOURCE_DESC rdv{};
 		rdv.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 		rdv.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
@@ -202,24 +243,50 @@ int main()
 		rdv.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 		rdv.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-		D3D12_RESOURCE_DESC rdu{};
-		rdu.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		rdu.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		rdu.Width = textureSize + 1024;
-		rdu.Height = 1;
-		rdu.DepthOrArraySize = 1;
-		rdu.MipLevels = 1;
-		rdu.Format = DXGI_FORMAT_UNKNOWN;
-		rdu.SampleDesc.Count = 1;
-		rdu.SampleDesc.Quality = 0;
-		rdu.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-		rdu.Flags = D3D12_RESOURCE_FLAG_NONE;
+		D3D12_RESOURCE_DESC rdi{};
+		rdi.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		rdi.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+		rdi.Width = 1024;
+		rdi.Height = 1;
+		rdi.DepthOrArraySize = 1;
+		rdi.MipLevels = 1;
+		rdi.Format = DXGI_FORMAT_UNKNOWN;
+		rdi.SampleDesc.Count = 1;
+		rdi.SampleDesc.Quality = 0;
+		rdi.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		rdi.Flags = D3D12_RESOURCE_FLAG_NONE;
+
 
 		// Creating GPU memory pointer
-		ComPointer<ID3D12Resource> uploadBuffer, vertexBuffer;
+		ComPointer<ID3D12Resource> uploadBuffer, vertexBuffer, indexBuffer;
 
 		DXContext::Get().GetDevice()->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &rdu, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&uploadBuffer));
 		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdv, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&vertexBuffer));
+		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdi, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&indexBuffer));
+
+		D3D12_RESOURCE_DESC rdd{};
+		rdd.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+		rdd.Alignment = 0;
+		rdd.Height = DXWindow::Get().GetHeigth();
+		rdd.Width = DXWindow::Get().GetWidth();
+		rdd.DepthOrArraySize = 1;
+		rdd.MipLevels = 1;
+		rdd.Format = DXGI_FORMAT_D32_FLOAT;
+		rdd.SampleDesc.Count = 1;
+		rdd.SampleDesc.Quality = 0;
+		rdd.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+		rdd.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+		//Describe clear values
+		D3D12_CLEAR_VALUE clearValueDs;
+		ZeroMemory(&clearValueDs, sizeof(D3D12_CLEAR_VALUE));
+		clearValueDs.Format = DXGI_FORMAT_D32_FLOAT;
+		clearValueDs.DepthStencil.Depth = 1.0f;
+		clearValueDs.DepthStencil.Stencil = 0;
+
+		ComPointer<ID3D12Resource> depth;
+		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdd, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValueDs, IID_PPV_ARGS(&depth));
+		depth->SetName(L"Depth");
 
 		D3D12_RESOURCE_DESC rdt{};
 		rdt.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -239,6 +306,17 @@ int main()
 		texture->SetName(L"Texture");
 
 		// === Descriptor Heap for Texture(s) === //
+		//Depth
+		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescDepth{};
+		descriptorHeapDescDepth.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		descriptorHeapDescDepth.NumDescriptors = 1;
+		descriptorHeapDescDepth.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		descriptorHeapDescDepth.NodeMask = 0;
+
+		ComPointer<ID3D12DescriptorHeap> dsvHeap;
+		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescDepth, IID_PPV_ARGS(&dsvHeap));
+
+		//Texture
 		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescText{};
 		descriptorHeapDescText.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		descriptorHeapDescText.NumDescriptors = 8;
@@ -247,6 +325,15 @@ int main()
 
 		ComPointer<ID3D12DescriptorHeap> srvHeap;
 		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescText, IID_PPV_ARGS(&srvHeap));
+		
+		// === DSV === //
+		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+		dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+		dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+		dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+		dsvDesc.Texture2D.MipSlice = 0;
+
+		DXContext::Get().GetDevice()->CreateDepthStencilView(depth, &dsvDesc, dsvHeap->GetCPUDescriptorHandleForHeapStart());
 
 		// === SRV === //
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
@@ -264,15 +351,17 @@ int main()
 		char* uploadBufferAdress;
 		D3D12_RANGE uploadRange;
 		uploadRange.Begin = 0;
-		uploadRange.End = 1024 + textureSize;
+		uploadRange.End = textureSize +2048;
 		uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
 		memcpy(&uploadBufferAdress[0], textureData.content.data(), textureSize);
 		memcpy(&uploadBufferAdress[textureSize], vertices, sizeof(vertices));
+		memcpy(&uploadBufferAdress[textureSize+1024], indexes, sizeof(indexes));
 		uploadBuffer->Unmap(0, &uploadRange);
 
 		// Async Copy CPU Resource --> GPU Resource
 		auto* cmdList = DXContext::Get().InitCommandList();
 		cmdList->CopyBufferRegion(vertexBuffer, 0, uploadBuffer, textureSize, 1024);
+		cmdList->CopyBufferRegion(indexBuffer, 0, uploadBuffer, textureSize + 1024, 1024);
 		D3D12_BOX textureSizeAsBox;
 		textureSizeAsBox.left = textureSizeAsBox.top = textureSizeAsBox.front = 0;
 		textureSizeAsBox.right = textureData.width;
@@ -289,6 +378,7 @@ int main()
 		txtSrc.PlacedFootprint.Footprint.Depth = 1;
 		txtSrc.PlacedFootprint.Footprint.RowPitch = textureStride;
 		txtSrc.PlacedFootprint.Footprint.Format = textureData.giPixelFormat;
+
 		// Destination
 		D3D12_TEXTURE_COPY_LOCATION txtDst;
 		txtDst.pResource = texture;
@@ -327,11 +417,20 @@ int main()
 		DXPipelineState pso;
 		pso.Init(rootSignature, vertexLayout, _countof(vertexLayout), vertexShader, pixelShader);
 
-		// === Vertex buffer view == /
+		// === Vertex buffer view === //
 		D3D12_VERTEX_BUFFER_VIEW vbv{};
 		vbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
 		vbv.SizeInBytes = sizeof(Vertex) * _countof(vertices);
 		vbv.StrideInBytes = sizeof(Vertex);
+
+		// === Index buffer view === //
+		D3D12_INDEX_BUFFER_VIEW ibv{};
+		ibv.BufferLocation = indexBuffer->GetGPUVirtualAddress();
+		ibv.SizeInBytes = sizeof(DWORD) * _countof(indexes);
+		ibv.Format = DXGI_FORMAT_R32_UINT;
+
+
+		float rotation = 0.0f; 
 
 		// === ImGui SetUp === //
 #ifdef IMGUI
@@ -371,7 +470,7 @@ int main()
 		ImGui_ImplDX12_Init(&init_info);
 #endif // IMGUI
 
-		// === Main loop === //
+		// === MAIN LOOP=== //
 		DXWindow::Get().SetFullscreen(true);
 		while (!DXWindow::Get().ShouldClose())
 		{
@@ -381,8 +480,19 @@ int main()
 			ImGui_ImplWin32_NewFrame();
 			ImGui::NewFrame();
 			ImGui::ShowDemoWindow(); // Show demo window! :)
-#endif // IMGUI
+#endif // IMGUIS
 			
+			glm::mat4 model = glm::mat4(1.0f);
+			glm::mat4 view = glm::mat4(1.0f);
+			glm::mat4 projection = glm::mat4(1.0f);
+			
+			rotation += 0.5f;
+
+			model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			view = glm::translate(view, glm::vec3(0.0f, -0.25f, -1.5f));
+			view = view * model;
+			projection = glm::perspective(glm::radians(45.0f), DXWindow::Get().GetWindowRatio(), 0.1f, 100.0f);
+
 			// Process pending window messages
 			DXWindow::Get().Update();
 
@@ -397,16 +507,17 @@ int main()
 			// Begin drawing
 			cmdList = DXContext::Get().InitCommandList();
 
-			DXWindow::Get().BeginFrame(cmdList);			
+			DXWindow::Get().BeginFrame(cmdList, dsvHeap);			
 
 			// === PSO === //
 			cmdList->SetPipelineState(pso.Get());
 			cmdList->SetGraphicsRootSignature(rootSignature);
 			cmdList->SetDescriptorHeaps(1, & srvHeap);
 
-			// === Input Assembler == /
-			cmdList->IASetVertexBuffers(0, 1, &vbv);
+			// === IA == /
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			cmdList->IASetVertexBuffers(0, 1, &vbv);
+			cmdList->IASetIndexBuffer(&ibv);			
 
 			// === RS == //
 			// View Port
@@ -441,8 +552,8 @@ int main()
 			};
 			Correction correction
 			{
-				.aspect_ratio = ((float)DXWindow::Get().GetHeigth() / (float)DXWindow::Get().GetWidth()),
-				.zoom = 0.8f,
+				.aspect_ratio = 1/DXWindow::Get().GetWindowRatio(),
+				.zoom = 1.0f,
 				.sinAngle = sinf(angle),
 				.cosAngle = cosf(angle),
 			};
@@ -452,13 +563,30 @@ int main()
 				correction.zoom /= correction.aspect_ratio;
 			}
 
+			struct CameraMatrices
+			{
+				glm::mat4 view;
+				glm::mat4 proj;
+				/*glm::mat4 invView;
+				glm::mat4 invProj;*/
+			};
+			CameraMatrices cameraMatrices
+			{
+				.view = view,
+				.proj = projection,
+				/*.invView = glm::inverse(view),
+				.invProj = glm::inverse(projection)*/
+			};
+
 			// === ROOT === //
 			cmdList->SetGraphicsRoot32BitConstants(0, 3, &color, 0);
 			cmdList->SetGraphicsRoot32BitConstants(1, 4, &correction, 0);
-			cmdList->SetGraphicsRootDescriptorTable(2, srvHeap->GetGPUDescriptorHandleForHeapStart());
+			cmdList->SetGraphicsRoot32BitConstants(2, 32, &cameraMatrices, 0);
+			cmdList->SetGraphicsRootDescriptorTable(3, srvHeap->GetGPUDescriptorHandleForHeapStart());
 
 			// === Draw === //
-			cmdList->DrawInstanced(_countof(vertices), 1, 0, 0);
+			//cmdList->DrawInstanced(_countof(verticesTriangle), 1, 0, 0);
+			cmdList->DrawIndexedInstanced(18, 6, 0, 0, 0);
 
 #ifdef IMGUI
 			ImGui::Render();

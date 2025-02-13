@@ -25,8 +25,8 @@ void DXPipelineState::Init(ComPointer<ID3D12RootSignature> &rootSignature, D3D12
 	// Rasterizer
 	gfxPsod.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	gfxPsod.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
-	gfxPsod.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-	gfxPsod.RasterizerState.FrontCounterClockwise = FALSE;
+	gfxPsod.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
+	gfxPsod.RasterizerState.FrontCounterClockwise = TRUE;
 	gfxPsod.RasterizerState.DepthBias = 0;
 	gfxPsod.RasterizerState.DepthBiasClamp = 0.f;
 	gfxPsod.RasterizerState.SlopeScaledDepthBias = 0.f;
@@ -42,8 +42,8 @@ void DXPipelineState::Init(ComPointer<ID3D12RootSignature> &rootSignature, D3D12
 	gfxPsod.StreamOutput.RasterizedStream = 0;
 	gfxPsod.NumRenderTargets = 1;
 	gfxPsod.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	gfxPsod.DSVFormat = DXGI_FORMAT_UNKNOWN;
 	// Blend State
+	gfxPsod.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	gfxPsod.BlendState.AlphaToCoverageEnable = FALSE;
 	gfxPsod.BlendState.IndependentBlendEnable = FALSE;
 	gfxPsod.BlendState.RenderTarget[0].BlendEnable = TRUE;
@@ -57,20 +57,20 @@ void DXPipelineState::Init(ComPointer<ID3D12RootSignature> &rootSignature, D3D12
 	gfxPsod.BlendState.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;;
 	gfxPsod.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 	// Depth State
-	gfxPsod.DepthStencilState.DepthEnable = FALSE;
-	gfxPsod.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
-	gfxPsod.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	gfxPsod.DepthStencilState.DepthEnable = TRUE;
+	gfxPsod.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	gfxPsod.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 	gfxPsod.DepthStencilState.StencilEnable = FALSE;
-	gfxPsod.DepthStencilState.StencilReadMask = 0;
+	/*gfxPsod.DepthStencilState.StencilReadMask = 0;
 	gfxPsod.DepthStencilState.StencilWriteMask = 0;
-	gfxPsod.DepthStencilState.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	gfxPsod.DepthStencilState.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 	gfxPsod.DepthStencilState.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
 	gfxPsod.DepthStencilState.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
 	gfxPsod.DepthStencilState.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
-	gfxPsod.DepthStencilState.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	gfxPsod.DepthStencilState.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 	gfxPsod.DepthStencilState.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
 	gfxPsod.DepthStencilState.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-	gfxPsod.DepthStencilState.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	gfxPsod.DepthStencilState.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;*/
 	// Sample Mask/Desc
 	gfxPsod.SampleMask = 0xFFFFFFFF;
 	gfxPsod.SampleDesc.Count = 1;
