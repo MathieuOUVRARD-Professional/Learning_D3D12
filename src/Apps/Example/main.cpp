@@ -174,11 +174,12 @@ int main()
 		defaultHeapProperties.VisibleNodeMask = 0;
 
 		// === Vertex data === //
+		// PYRAMID DATA 
 		struct Vertex
 		{
 			float x, y, z;
 			float u, v;
-		};
+		}; 
 		Vertex vertices[] =
 		{
 			//  X	   Y	  Z	  ||  U	   V
@@ -196,12 +197,50 @@ int main()
 			2,4,3,
 			3,4,0
 		};
-
 		D3D12_INPUT_ELEMENT_DESC vertexLayout[] =
 		{
 			{ "Position", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 			{ "Texcoord", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 		};
+		//============================//
+
+
+		// CUBE DATA
+		struct VertexWithoutUVs
+		{
+			float x, y, z;
+		};
+		VertexWithoutUVs cubeVertices[] =
+		{
+			//  X	   Y	  Z	  
+			{ -0.1f, -0.1f,  0.1f},
+			{ -0.1f, -0.1f, -0.1f},
+			{  0.1f, -0.1f, -0.1f},
+			{  0.1f, -0.1f,  0.1f},
+			{ -0.1f,  0.1f,  0.1f},
+			{ -0.1f,  0.1f, -0.1f},
+			{  0.1f,  0.1f, -0.1f},
+			{  0.1f,  0.1f,  0.1f},
+		};
+		DWORD cubeIndexes[] = {
+			0,1,2,
+			0,2,3,
+			0,4,7,
+			0,7,3,
+			3,7,6,
+			3,6,2,
+			2,6,5,
+			2,5,1,
+			1,5,4,
+			1,4,0,
+			4,5,6,
+			4,6,7
+		};
+		D3D12_INPUT_ELEMENT_DESC cubeVertexLayout[] =
+		{
+			{ "Position", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		};
+		//============================//
 
 		// === Texture Data === //
 		ImageLoader::ImageData textureData;
@@ -259,8 +298,8 @@ int main()
 		D3D12_RESOURCE_DESC rdd{};
 		rdd.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 		rdd.Alignment = 0;
-		rdd.Width = monitorInfo.rcMonitor.right;
-		rdd.Height = monitorInfo.rcMonitor.bottom;
+		rdd.Width = monitorInfo.rcMonitor.right == 0 ? 2560 : monitorInfo.rcMonitor.right;
+		rdd.Height = monitorInfo.rcMonitor.bottom == 0 ? 1440 : monitorInfo.rcMonitor.bottom;
 		rdd.DepthOrArraySize = 1;
 		rdd.MipLevels = 1;
 		rdd.Format = DXGI_FORMAT_D32_FLOAT;
@@ -346,8 +385,12 @@ int main()
 		uploadRange.End = textureSize +2048;
 		uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
 		memcpy(&uploadBufferAdress[0], textureData.content.data(), textureSize);
+		//Pyramid buffers copy
 		memcpy(&uploadBufferAdress[textureSize], vertices, sizeof(vertices));
-		memcpy(&uploadBufferAdress[textureSize+1024], indexes, sizeof(indexes));
+		memcpy(&uploadBufferAdress[textureSize + 1024], indexes, sizeof(indexes));
+		//Cube buffers copy: vertices are placed right after pyramid's ones, same for indexes
+		memcpy(&uploadBufferAdress[textureSize + sizeof(vertices)], cubeVertices, sizeof(cubeVertices));
+		memcpy(&uploadBufferAdress[textureSize + 1024 + sizeof(indexes)], cubeIndexes, sizeof(cubeIndexes));
 		uploadBuffer->Unmap(0, &uploadRange);
 
 		// Async Copy CPU Resource --> GPU Resource
@@ -401,25 +444,44 @@ int main()
 		Shader vertexShader("VertexShader.cso");
 		Shader pixelShader("PixelShader.cso");
 
-		// === Create Root signature === //
-		ComPointer<ID3D12RootSignature> rootSignature;
-		DXContext::Get().GetDevice()->CreateRootSignature(0, rootSignatureShader.GetBuffer(), rootSignatureShader.GetSize(), IID_PPV_ARGS(&rootSignature));
+		Shader lightRootSignatureShader("LightRootSignature.cso");
+		Shader lightVertexShader("LightVertexShader.cso");
+		Shader lightPixelShader("LightPixelShader.cso");
 
-		// === Pipeline state === //
-		DXPipelineState pso;
+		// === Create Root signature === //
+		ComPointer<ID3D12RootSignature> rootSignature, lightRootSignature;
+		DXContext::Get().GetDevice()->CreateRootSignature(0, rootSignatureShader.GetBuffer(), rootSignatureShader.GetSize(), IID_PPV_ARGS(&rootSignature));
+		DXContext::Get().GetDevice()->CreateRootSignature(0, lightRootSignatureShader.GetBuffer(), lightRootSignatureShader.GetSize(), IID_PPV_ARGS(&lightRootSignature));
+
+		// === Pipeline states === //
+		DXPipelineState pso, lightPso;
 		pso.Init(rootSignature, vertexLayout, _countof(vertexLayout), vertexShader, pixelShader);
+		lightPso.Init(lightRootSignature, cubeVertexLayout, _countof(cubeVertexLayout), lightVertexShader, lightPixelShader);
 
 		// === Vertex buffer view === //
+		// Pyramid
 		D3D12_VERTEX_BUFFER_VIEW vbv{};
 		vbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
 		vbv.SizeInBytes = sizeof(Vertex) * _countof(vertices);
 		vbv.StrideInBytes = sizeof(Vertex);
 
+		// Cube
+		D3D12_VERTEX_BUFFER_VIEW cubeVbv{};
+		cubeVbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress() + (sizeof(Vertex) * _countof(vertices));
+		cubeVbv.SizeInBytes = sizeof(VertexWithoutUVs) * _countof(cubeVertices);
+		cubeVbv.StrideInBytes = sizeof(VertexWithoutUVs);
+
 		// === Index buffer view === //
+		//Pyramid
 		D3D12_INDEX_BUFFER_VIEW ibv{};
 		ibv.BufferLocation = indexBuffer->GetGPUVirtualAddress();
 		ibv.SizeInBytes = sizeof(DWORD) * _countof(indexes);
 		ibv.Format = DXGI_FORMAT_R32_UINT;
+		//Cube
+		D3D12_INDEX_BUFFER_VIEW cubeIbv{};
+		cubeIbv.BufferLocation = indexBuffer->GetGPUVirtualAddress() + (sizeof(DWORD) * _countof(indexes));
+		cubeIbv.SizeInBytes = sizeof(DWORD) * _countof(cubeIndexes);
+		cubeIbv.Format = DXGI_FORMAT_R32_UINT;
 
 		Camera camera(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth(), glm::vec3(0.0f, 0.0f, 2.0f));
 

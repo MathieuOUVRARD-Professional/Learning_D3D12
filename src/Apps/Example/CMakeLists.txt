@@ -6,7 +6,7 @@ foreach(SHADER_FILE ${SHADERS_FILES})
  
   set(SHADER_ENTRYPOINT "main")
  
-  if(${SHADER_NAME} MATCHES "RootSignature")
+  if(${SHADER_NAME} MATCHES "RootSignature") 
     set(SHADER_TYPE "RootSignature")
     set(SHADER_MODEL "rootsig_1_1")
     set(SHADER_ENTRYPOINT "ROOTSIG")
@@ -16,6 +16,8 @@ foreach(SHADER_FILE ${SHADERS_FILES})
   elseif(${SHADER_NAME} MATCHES "PixelShader")
     set(SHADER_TYPE "Pixel")
     set(SHADER_MODEL "6.5")
+  else()
+    message(SEND_ERROR "Error shader is unknown ${SHADER_NAME}")
   endif()
  
   set_source_files_properties(${SHADER_FILE} PROPERTIES
