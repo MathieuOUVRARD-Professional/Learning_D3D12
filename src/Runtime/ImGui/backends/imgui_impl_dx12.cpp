@@ -211,6 +211,7 @@ void ImGui_ImplDX12_RenderDrawData(ImDrawData* draw_data, ID3D12GraphicsCommandL
         desc.Flags = D3D12_RESOURCE_FLAG_NONE;
         if (bd->pd3dDevice->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&fr->VertexBuffer)) < 0)
             return;
+        fr->VertexBuffer->SetName(L"ImGui_Vertex_Buffer");
     }
     if (fr->IndexBuffer == nullptr || fr->IndexBufferSize < draw_data->TotalIdxCount)
     {
@@ -234,6 +235,7 @@ void ImGui_ImplDX12_RenderDrawData(ImDrawData* draw_data, ID3D12GraphicsCommandL
         desc.Flags = D3D12_RESOURCE_FLAG_NONE;
         if (bd->pd3dDevice->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&fr->IndexBuffer)) < 0)
             return;
+        fr->IndexBuffer->SetName(L"ImGui_Index_Buffer");
     }
 
     // Upload vertex/index data into a single contiguous GPU buffer
@@ -354,6 +356,7 @@ static void ImGui_ImplDX12_CreateFontsTexture()
         bd->pd3dDevice->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc,
             D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&pTexture));
 
+        pTexture->SetName(L"ImGui_Texture");
         UINT upload_pitch = (width * 4 + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1u) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1u);
         UINT upload_size = height * upload_pitch;
         desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -376,6 +379,7 @@ static void ImGui_ImplDX12_CreateFontsTexture()
         HRESULT hr = bd->pd3dDevice->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc,
             D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&uploadBuffer));
         IM_ASSERT(SUCCEEDED(hr));
+        uploadBuffer->SetName(L"ImGui_Upload_Buffer");
 
         void* mapped = nullptr;
         D3D12_RANGE range = { 0, upload_size };
@@ -549,6 +553,7 @@ bool    ImGui_ImplDX12_CreateDeviceObjects()
             return false;
 
         bd->pd3dDevice->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&bd->pRootSignature));
+        bd->pRootSignature->SetName(L"ImGui_Root Signature");
         blob->Release();
     }
 
@@ -686,6 +691,7 @@ bool    ImGui_ImplDX12_CreateDeviceObjects()
     }
 
     HRESULT result_pipeline_state = bd->pd3dDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&bd->pPipelineState));
+    bd->pPipelineState->SetName(L"ImGui_PSO");
     vertexShaderBlob->Release();
     pixelShaderBlob->Release();
     if (result_pipeline_state != S_OK)

@@ -1,6 +1,6 @@
 #include "PipelineState.h"
 
-void DXPipelineState::Init(ComPointer<ID3D12RootSignature> &rootSignature, D3D12_INPUT_ELEMENT_DESC vertexLayout[], UINT vertexLayoutCount, Shader &vertexShader, Shader &pixelShader)
+void DXPipelineState::Init(LPCWSTR name, ComPointer<ID3D12RootSignature> &rootSignature, D3D12_INPUT_ELEMENT_DESC vertexLayout[], UINT vertexLayoutCount, Shader &vertexShader, Shader &pixelShader)
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC gfxPsod{};
 	// Root Signature
@@ -78,20 +78,12 @@ void DXPipelineState::Init(ComPointer<ID3D12RootSignature> &rootSignature, D3D12
 	gfxPsod.CachedPSO.pCachedBlob = nullptr;
 	gfxPsod.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
-	DXContext::Get().GetDevice()->CreateGraphicsPipelineState(&gfxPsod, IID_PPV_ARGS(&pso));
-}
+	DXContext::Get().GetDevice()->CreateGraphicsPipelineState(&gfxPsod, IID_PPV_ARGS(&m_pso));
 
-ComPointer<ID3D12PipelineState>& DXPipelineState::Get()
-{
-	return pso;
+	m_pso.Get()->SetName(name);
 }
 
 void DXPipelineState::Release()
 {
-	pso->Release();
+	m_pso->Release();
 }
-
-//DXPipelineState::~DXPipelineState()
-//{
-//	Release();
-//}

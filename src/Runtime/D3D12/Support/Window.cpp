@@ -260,6 +260,7 @@ bool DXWindow::GetBuffers()
 		rtv.Texture2D.MipSlice = 0;
 		rtv.Texture2D.PlaneSlice = 0;
 		DXContext::Get().GetDevice()->CreateRenderTargetView(m_buffers[i], &rtv, m_rtvHandles[i]);
+		m_buffers[i].Get()->SetName(L"Main_RTV");
 	}
 
 	return true;

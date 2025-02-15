@@ -11,6 +11,8 @@
 
 #include <D3D/DXContext.h>
 #include <D3D/PipelineState.h>
+#include <D3D/Texture.h>
+#include <D3D/ZBuffer.h>
 
 #include <Util/LoggingProvider.h>
 #include <Util/EzException.h>
@@ -151,12 +153,6 @@ int main()
 
 	if (DXContext::Get().Init() && DXWindow::Get().Init())
 	{
-		// Monitor Info
-		HMONITOR monitor = MonitorFromWindow(DXWindow::Get().GetWindow(), MONITOR_DEFAULTTOPRIMARY);
-		MONITORINFO monitorInfo{};
-		monitorInfo.cbSize = sizeof(monitorInfo);
-		GetMonitorInfoW(monitor, &monitorInfo);
-
 		// Upload heap CPU --> GPU
 		D3D12_HEAP_PROPERTIES uploadHeapProperties{};
 		uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
@@ -204,7 +200,6 @@ int main()
 		};
 		//============================//
 
-
 		// CUBE DATA
 		struct VertexWithoutUVs
 		{
@@ -242,17 +237,16 @@ int main()
 		};
 		//============================//
 
-		// === Texture Data === //
-		ImageLoader::ImageData textureData;
-		ImageLoader::LoadImageFromDisk("Textures/auge_512_512_BGRA_32BPP.png", textureData);
-		uint32_t textureStride = textureData.width * ((textureData.bitPerPixel + 7) / 8);
-		uint32_t textureSize = textureData.height * textureStride;
+		auto* cmdList = DXContext::Get().InitCommandList();
+
+		//=== Textures ===//
+		Texture eyeTexture = Texture("Textures/auge_512_512_BGRA_32BPP.png", L"All_Seeing_Eye");
 
 		// === Upload, vertex & indexes buffers === //
 		D3D12_RESOURCE_DESC rdu{};
 		rdu.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 		rdu.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		rdu.Width = textureSize + 2048;
+		rdu.Width = eyeTexture.GetTextureSize() + 2048;
 		rdu.Height = 1;
 		rdu.DepthOrArraySize = 1;
 		rdu.MipLevels = 1;
@@ -293,149 +287,33 @@ int main()
 
 		DXContext::Get().GetDevice()->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &rdu, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&uploadBuffer));
 		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdv, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&vertexBuffer));
-		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdi, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&indexBuffer));
+		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdi, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&indexBuffer));		
 
-		D3D12_RESOURCE_DESC rdd{};
-		rdd.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		rdd.Alignment = 0;
-		rdd.Width = monitorInfo.rcMonitor.right == 0 ? 2560 : abs(monitorInfo.rcMonitor.right);
-		rdd.Height = monitorInfo.rcMonitor.bottom == 0 ? 1440 : monitorInfo.rcMonitor.bottom;
-		rdd.DepthOrArraySize = 1;
-		rdd.MipLevels = 1;
-		rdd.Format = DXGI_FORMAT_D32_FLOAT;
-		rdd.SampleDesc.Count = 1;
-		rdd.SampleDesc.Quality = 0;
-		rdd.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-		rdd.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+		uploadBuffer.Get()->SetName(L"Upload_Buffer");
+		vertexBuffer.Get()->SetName(L"Vertex_Buffer");
+		indexBuffer.Get()->SetName(L"Index_Buffer");
 
-		//Describe clear values
-		D3D12_CLEAR_VALUE clearValueDs;
-		ZeroMemory(&clearValueDs, sizeof(D3D12_CLEAR_VALUE));
-		clearValueDs.Format = DXGI_FORMAT_D32_FLOAT;
-		clearValueDs.DepthStencil.Depth = 1.0f;
-		clearValueDs.DepthStencil.Stencil = 0;
-
-		ComPointer<ID3D12Resource> depth;
-		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdd, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValueDs, IID_PPV_ARGS(&depth));
-		depth->SetName(L"Depth");
-
-		D3D12_RESOURCE_DESC rdt{};
-		rdt.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		rdt.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		rdt.Width = textureData.width;
-		rdt.Height = textureData.height;
-		rdt.DepthOrArraySize = 1;
-		rdt.MipLevels = 1;
-		rdt.Format = textureData.giPixelFormat;
-		rdt.SampleDesc.Count = 1;
-		rdt.SampleDesc.Quality = 0;
-		rdt.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-		rdt.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-		ComPointer<ID3D12Resource> texture;
-		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdt, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&texture));
-		texture->SetName(L"Texture");
-
-		// === Descriptor Heap for Texture(s) === //
-		//Depth
-		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescDepth{};
-		descriptorHeapDescDepth.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-		descriptorHeapDescDepth.NumDescriptors = 1;
-		descriptorHeapDescDepth.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-		descriptorHeapDescDepth.NodeMask = 0;
-
-		ComPointer<ID3D12DescriptorHeap> dsvHeap;
-		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescDepth, IID_PPV_ARGS(&dsvHeap));
-
-		//Texture
-		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescText{};
-		descriptorHeapDescText.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		descriptorHeapDescText.NumDescriptors = 8;
-		descriptorHeapDescText.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-		descriptorHeapDescText.NodeMask = 0;
-
-		ComPointer<ID3D12DescriptorHeap> srvHeap;
-		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescText, IID_PPV_ARGS(&srvHeap));
-		
-		// === DSV === //
-		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
-		dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
-		dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-		dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-		dsvDesc.Texture2D.MipSlice = 0;
-
-		DXContext::Get().GetDevice()->CreateDepthStencilView(depth, &dsvDesc, dsvHeap->GetCPUDescriptorHandleForHeapStart());
-
-		// === SRV === //
-		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-		srvDesc.Format = textureData.giPixelFormat;
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvDesc.Texture2D.MipLevels = 1;
-		srvDesc.Texture2D.MostDetailedMip = 0;
-		srvDesc.Texture2D.PlaneSlice = 0;
-		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-
-		DXContext::Get().GetDevice()->CreateShaderResourceView(texture, &srvDesc, srvHeap->GetCPUDescriptorHandleForHeapStart());
+		eyeTexture.Init(&defaultHeapProperties, uploadBuffer, cmdList);
+		ZBuffer zBuffer = ZBuffer(&defaultHeapProperties);
 
 		// Copy void* --> CPU Resource
 		char* uploadBufferAdress;
 		D3D12_RANGE uploadRange;
 		uploadRange.Begin = 0;
-		uploadRange.End = textureSize +2048;
+		uploadRange.End = eyeTexture.GetTextureSize() + 2048;
 		uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
-		memcpy(&uploadBufferAdress[0], textureData.content.data(), textureSize);
+		memcpy(&uploadBufferAdress[0], eyeTexture.GetTextureData().content.data(), eyeTexture.GetTextureSize());
 		//Pyramid buffers copy
-		memcpy(&uploadBufferAdress[textureSize], vertices, sizeof(vertices));
-		memcpy(&uploadBufferAdress[textureSize + 1024], indexes, sizeof(indexes));
+		memcpy(&uploadBufferAdress[eyeTexture.GetTextureSize()], vertices, sizeof(vertices));
+		memcpy(&uploadBufferAdress[eyeTexture.GetTextureSize() + 1024], indexes, sizeof(indexes));
 		//Cube buffers copy: vertices are placed right after pyramid's ones, same for indexes
-		memcpy(&uploadBufferAdress[textureSize + sizeof(vertices)], cubeVertices, sizeof(cubeVertices));
-		memcpy(&uploadBufferAdress[textureSize + 1024 + sizeof(indexes)], cubeIndexes, sizeof(cubeIndexes));
+		memcpy(&uploadBufferAdress[eyeTexture.GetTextureSize() + sizeof(vertices)], cubeVertices, sizeof(cubeVertices));
+		memcpy(&uploadBufferAdress[eyeTexture.GetTextureSize() + 1024 + sizeof(indexes)], cubeIndexes, sizeof(cubeIndexes));
 		uploadBuffer->Unmap(0, &uploadRange);
 
 		// Async Copy CPU Resource --> GPU Resource
-		auto* cmdList = DXContext::Get().InitCommandList();
-		cmdList->CopyBufferRegion(vertexBuffer, 0, uploadBuffer, textureSize, 1024);
-		cmdList->CopyBufferRegion(indexBuffer, 0, uploadBuffer, textureSize + 1024, 1024);
-		D3D12_BOX textureSizeAsBox;
-		textureSizeAsBox.left = textureSizeAsBox.top = textureSizeAsBox.front = 0;
-		textureSizeAsBox.right = textureData.width;
-		textureSizeAsBox.bottom = textureData.height;
-		textureSizeAsBox.back = 1;
-
-		// Source
-		D3D12_TEXTURE_COPY_LOCATION txtSrc;
-		txtSrc.pResource = uploadBuffer;
-		txtSrc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-		txtSrc.PlacedFootprint.Offset = 0;
-		txtSrc.PlacedFootprint.Footprint.Width = textureData.width;
-		txtSrc.PlacedFootprint.Footprint.Height = textureData.height;
-		txtSrc.PlacedFootprint.Footprint.Depth = 1;
-		txtSrc.PlacedFootprint.Footprint.RowPitch = textureStride;
-		txtSrc.PlacedFootprint.Footprint.Format = textureData.giPixelFormat;
-
-		// Destination
-		D3D12_TEXTURE_COPY_LOCATION txtDst;
-		txtDst.pResource = texture;
-		txtDst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-		txtDst.SubresourceIndex = 0;
-
-		// === COPY === //
-		D3D12_RESOURCE_BARRIER transitionBarrier = {};
-		transitionBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		transitionBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		transitionBarrier.Transition.pResource = texture;
-		transitionBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-		transitionBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_GENERIC_READ;
-		transitionBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-
-		cmdList->ResourceBarrier(1, &transitionBarrier);
-		cmdList->CopyTextureRegion(&txtDst, 0, 0, 0, &txtSrc, &textureSizeAsBox);
-
-		transitionBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-		transitionBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
-
-		cmdList->ResourceBarrier(1, &transitionBarrier);
+		cmdList->CopyBufferRegion(vertexBuffer, 0, uploadBuffer, eyeTexture.GetTextureSize(), 1024);
+		cmdList->CopyBufferRegion(indexBuffer, 0, uploadBuffer, eyeTexture.GetTextureSize() + 1024, 1024);		
 
 		DXContext::Get().ExecuteCommandList();
 
@@ -452,11 +330,13 @@ int main()
 		ComPointer<ID3D12RootSignature> rootSignature, lightRootSignature;
 		DXContext::Get().GetDevice()->CreateRootSignature(0, rootSignatureShader.GetBuffer(), rootSignatureShader.GetSize(), IID_PPV_ARGS(&rootSignature));
 		DXContext::Get().GetDevice()->CreateRootSignature(0, lightRootSignatureShader.GetBuffer(), lightRootSignatureShader.GetSize(), IID_PPV_ARGS(&lightRootSignature));
+		rootSignature.Get()->SetName(L"Main_RootSignature");
+		lightRootSignature.Get()->SetName(L"Light_RootSignature");
 
 		// === Pipeline states === //
 		DXPipelineState pso, lightPso;
-		pso.Init(rootSignature, vertexLayout, _countof(vertexLayout), vertexShader, pixelShader);
-		lightPso.Init(lightRootSignature, cubeVertexLayout, _countof(cubeVertexLayout), lightVertexShader, lightPixelShader);
+		pso.Init(L"Main_PSO", rootSignature, vertexLayout, _countof(vertexLayout), vertexShader, pixelShader);
+		lightPso.Init(L"Light_PSO", lightRootSignature, cubeVertexLayout, _countof(cubeVertexLayout), lightVertexShader, lightPixelShader);
 
 		// === Vertex buffer view === //
 		// Pyramid
@@ -484,8 +364,6 @@ int main()
 		cubeIbv.Format = DXGI_FORMAT_R32_UINT;
 
 		Camera camera(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth(), glm::vec3(0.0f, 0.0f, 2.0f));
-
-		float rotation = 0.0f; 
 
 		// === ImGui SetUp === //
 #ifdef IMGUI
@@ -517,6 +395,7 @@ int main()
 
 		DXContext::Get().GetDevice()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
 		g_pd3dSrvDescHeapAlloc.Create(DXContext::Get().GetDevice(), g_pd3dSrvDescHeap);
+		g_pd3dSrvDescHeap.Get()->SetName(L"ImGui_DescriptorHeap");
 
 		init_info.SrvDescriptorHeap = g_pd3dSrvDescHeap;
 		init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
@@ -550,12 +429,11 @@ int main()
 			// Begin drawing
 			cmdList = DXContext::Get().InitCommandList();
 
-			DXWindow::Get().BeginFrame(cmdList, dsvHeap);			
+			DXWindow::Get().BeginFrame(cmdList, zBuffer.GetDescriptorHeap());			
 
 			// === PSO === //
 			cmdList->SetPipelineState(pso.Get());
 			cmdList->SetGraphicsRootSignature(rootSignature);
-			cmdList->SetDescriptorHeaps(1, & srvHeap);
 
 			// === IA == /
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -587,10 +465,10 @@ int main()
 			camera.Inputs();
 			camera.Matrix(45.0f, 0.1f, 100.0f, cmdList);
 
+			eyeTexture.AddCommands(cmdList, 2);
+
 			// === ROOT === //
 			cmdList->SetGraphicsRoot32BitConstants(0, 3, &color, 0);
-			cmdList->SetGraphicsRootDescriptorTable(2, srvHeap->GetGPUDescriptorHandleForHeapStart());
-
 			// === Draw === //
 			// Object 1
 			cmdList->DrawIndexedInstanced(_countof(indexes), 1, 0, 0, 0);
@@ -602,7 +480,8 @@ int main()
 			cmdList->IASetIndexBuffer(&cubeIbv);
 			cmdList->SetGraphicsRootSignature(lightRootSignature);
 			camera.Matrix(45.0f, 0.1f, 100.0f, cmdList);
-			cmdList->SetGraphicsRoot32BitConstants(0, 3, &color, 0);
+			float lightColor[] = { 1.0f, 1.0f, 1.0f };
+			cmdList->SetGraphicsRoot32BitConstants(0, 3, &lightColor, 0);
 
 			cmdList->DrawIndexedInstanced(_countof(cubeIndexes), 1, 0, 0, 0);
 
