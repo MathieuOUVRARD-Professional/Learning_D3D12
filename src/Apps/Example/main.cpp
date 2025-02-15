@@ -225,16 +225,16 @@ int main()
 		DWORD cubeIndexes[] = {
 			0,1,2,
 			0,2,3,
-			0,4,7,
-			0,7,3,
-			3,7,6,
-			3,6,2,
-			2,6,5,
-			2,5,1,
-			1,5,4,
-			1,4,0,
-			4,5,6,
-			4,6,7
+			0,7,4,
+			0,3,7,
+			3,6,7,
+			3,2,6,
+			2,5,6,
+			2,1,5,
+			1,4,5,
+			1,0,4,
+			4,6,5,
+			4,7,6
 		};
 		D3D12_INPUT_ELEMENT_DESC cubeVertexLayout[] =
 		{
@@ -298,7 +298,7 @@ int main()
 		D3D12_RESOURCE_DESC rdd{};
 		rdd.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 		rdd.Alignment = 0;
-		rdd.Width = monitorInfo.rcMonitor.right == 0 ? 2560 : monitorInfo.rcMonitor.right;
+		rdd.Width = monitorInfo.rcMonitor.right == 0 ? 2560 : abs(monitorInfo.rcMonitor.right);
 		rdd.Height = monitorInfo.rcMonitor.bottom == 0 ? 1440 : monitorInfo.rcMonitor.bottom;
 		rdd.DepthOrArraySize = 1;
 		rdd.MipLevels = 1;
@@ -592,7 +592,19 @@ int main()
 			cmdList->SetGraphicsRootDescriptorTable(2, srvHeap->GetGPUDescriptorHandleForHeapStart());
 
 			// === Draw === //
-			cmdList->DrawIndexedInstanced(18, 6, 0, 0, 0);
+			// Object 1
+			cmdList->DrawIndexedInstanced(_countof(indexes), 1, 0, 0, 0);
+
+			// Object 2
+			cmdList->SetPipelineState(lightPso.Get());
+			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			cmdList->IASetVertexBuffers(0, 1, &cubeVbv);
+			cmdList->IASetIndexBuffer(&cubeIbv);
+			cmdList->SetGraphicsRootSignature(lightRootSignature);
+			camera.Matrix(45.0f, 0.1f, 100.0f, cmdList);
+			cmdList->SetGraphicsRoot32BitConstants(0, 3, &color, 0);
+
+			cmdList->DrawIndexedInstanced(_countof(cubeIndexes), 1, 0, 0, 0);
 
 #ifdef IMGUI
 			ImGui::Render();
