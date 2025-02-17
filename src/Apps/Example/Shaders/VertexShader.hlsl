@@ -1,7 +1,7 @@
 #include "RootSignature.hlsl"
 #include "Pipeline.hlsli"
 
-CameraMatrices cameraMatrices : register(b1);
+Matrices matrices : register(b1);
 
 [RootSignature(ROOTSIG)]
 void main(
@@ -13,6 +13,6 @@ void main(
 	out float4 o_pos : SV_Position
 )
 {
-	o_pos = mul(mul(cameraMatrices.projection, cameraMatrices.view), float4(pos, 1.0f));
+	o_pos = mul(mul(matrices.viewProj, matrices.model), float4(pos, 1.0f));
 	o_uv = uv;
 }

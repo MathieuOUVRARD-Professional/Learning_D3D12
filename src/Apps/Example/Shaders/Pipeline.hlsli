@@ -1,6 +1,6 @@
 
-struct CameraMatrices
+struct Matrices
 {
-    matrix view;
-    matrix projection;
+    float4x4 viewProj;
+    float4x4 model;
 };

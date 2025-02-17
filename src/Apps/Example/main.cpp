@@ -458,30 +458,37 @@ int main()
 			cmdList->RSSetScissorRects(1, &scRect);
 
 			// === UPDATE === //
+			glm::vec3 pyramidPosition = glm::vec3(.0f, 0.0f, 0.0f);
 			static float color[] = { 0.0f, 1.0f, 0.0f };
 			ColorPuke(color);
 
 			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
 			camera.Inputs();
-			camera.Matrix(45.0f, 0.1f, 100.0f, cmdList);
-
-			eyeTexture.AddCommands(cmdList, 2);
+			camera.Matrix(45.0f, 0.01f, 100.0f);
+			glm::mat4 pyramidModel = glm::mat4(1.0f);
+			pyramidModel = glm::translate(pyramidModel, pyramidPosition);
 
 			// === ROOT === //
 			cmdList->SetGraphicsRoot32BitConstants(0, 3, &color, 0);
+			camera.UpdateMatrix(cmdList, 1, pyramidPosition);
+			eyeTexture.AddCommands(cmdList, 2);
 			// === Draw === //
 			// Object 1
 			cmdList->DrawIndexedInstanced(_countof(indexes), 1, 0, 0, 0);
 
 			// Object 2
+			float lightColor[] = { 1.0f, 1.0f, 1.0f };
+			glm::vec3 lightPosition = glm::vec3(1.0f, 1.5f, .5f);
+			glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+
 			cmdList->SetPipelineState(lightPso.Get());
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			cmdList->IASetVertexBuffers(0, 1, &cubeVbv);
 			cmdList->IASetIndexBuffer(&cubeIbv);
 			cmdList->SetGraphicsRootSignature(lightRootSignature);
-			camera.Matrix(45.0f, 0.1f, 100.0f, cmdList);
-			float lightColor[] = { 1.0f, 1.0f, 1.0f };
+
 			cmdList->SetGraphicsRoot32BitConstants(0, 3, &lightColor, 0);
+			camera.UpdateMatrix(cmdList, 1, lightPosition);
 
 			cmdList->DrawIndexedInstanced(_countof(cubeIndexes), 1, 0, 0, 0);
 
