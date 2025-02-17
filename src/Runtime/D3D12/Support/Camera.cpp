@@ -24,10 +24,8 @@ void Camera::Matrix(float FOVdeg, float nearPlane, float farPlane)
 	m_cameraMatrix = projection * view;
 }
 
-void Camera::UpdateMatrix(ID3D12GraphicsCommandList* cmdList, int bufferSlot, glm::vec3 modelPosition)
+void Camera::UpdateMatrix(ID3D12GraphicsCommandList* cmdList, int bufferSlot, glm::mat4 modelMatrix)
 {
-	glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), modelPosition);
-
 	struct Matrices
 	{
 		glm::mat4 viewProj = glm::mat4(1.0f);

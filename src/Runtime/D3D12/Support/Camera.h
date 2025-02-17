@@ -28,7 +28,7 @@ class Camera
 
 		void UpdateWindowSize(int width, int height);
 		void Matrix(float FOVdeg, float nearPlane, float farPlane);
-		void UpdateMatrix(ID3D12GraphicsCommandList* cmdList, int bufferSlot, glm::vec3 modelPosition);
+		void UpdateMatrix(ID3D12GraphicsCommandList* cmdList, int bufferSlot, glm::mat4 modelMatrix);
 		void Inputs();
 
 	private:

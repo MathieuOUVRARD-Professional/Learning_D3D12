@@ -1,17 +1,15 @@
 /*
 *   Root Signature Layout (CPU)
-*   - 0:        float3 "Light Color"
-*   - 1:        matrix "cameraMatrix
-*   - 2:        matrix "modelMatrix"
+*   - 0:        matrix "cameraMatrix
+*   - 1:        glm::vec3 "lightColor"
 *
 *   Root Signature Layout (GPU)
-*   - b0:       float3 "Light Color"
-*   - b1:       matrix "cameraMatrix
-*   - b2:       matrix modelMatrix
+*   - b0:       matrix "cameraMatrix
+*   - b2:       float3 lightColor
 */
 
 
 #define LIGHTSIG \
 "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
-"RootConstants(num32BitConstants = 4, b0),"\
-"RootConstants(num32BitConstants = 32, b1),"
+"RootConstants(num32BitConstants = 32, b0),"\
+"RootConstants(num32BitConstants = 4, b1),"

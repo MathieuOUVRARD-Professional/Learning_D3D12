@@ -1,6 +1,9 @@
 #include "LightRootSignature.hlsl"
 
-float3 lightColor : register(b0);
+cbuffer LightColor : register(b1)
+{
+	float3 lightColor;
+};
 
 [RootSignature(LIGHTSIG)]
 void main(

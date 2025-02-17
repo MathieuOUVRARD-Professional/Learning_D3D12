@@ -1,9 +1,10 @@
 #include "LightRootSignature.hlsl"
 #include "Pipeline.hlsli"
 
-#pragma pack_matrix(column_major)
-
-Matrices matrices : register(b1);
+cbuffer MatricesConstants : register(b0)
+{
+	Matrices matrices;
+};
 
 [RootSignature(LIGHTSIG)]
 void main(

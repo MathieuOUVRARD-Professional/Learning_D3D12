@@ -175,28 +175,49 @@ int main()
 		{
 			float x, y, z;
 			float u, v;
+			float nX, nY, nZ;
 		}; 
 		Vertex vertices[] =
 		{
-			//  X	   Y	  Z	  ||  U	   V
-			{ -0.5f,  0.0f,  0.5f , 0.0f, 1.0f },
-			{ -0.5f,  0.0f, -0.5f , 1.0f, 1.0f },
-			{  0.5f,  0.0f, -0.5f , 0.0f, 1.0f },
-			{  0.5f,  0.0f,  0.5f , 1.0f, 1.0f },
-			{  0.0f,  1.0f,  0.0f , 0.5f, 0.0f },
+			//  X	   Y	  Z	  ||  U	   V  ||  Nx	 Ny		Nz
+			{ -0.5f,  0.0f,  0.5f , 0.0f, 1.0f,  0.0f, -1.0f,  0.0f },	// Bottom side
+			{ -0.5f,  0.0f, -0.5f , 1.0f, 1.0f,  0.0f, -1.0f,  0.0f },	//
+			{  0.5f,  0.0f, -0.5f , 0.0f, 1.0f,  0.0f, -1.0f,  0.0f },	//
+			{  0.5f,  0.0f,  0.5f , 1.0f, 1.0f,  0.0f, -1.0f,  0.0f },	//
+
+			{ -0.5f,  0.0f,  0.5f , 0.0f, 1.0f, -1.0f,  0.5f,  0.0f },	// Left side
+			{ -0.5f,  0.0f, -0.5f , 1.0f, 1.0f, -1.0f,  0.5f,  0.0f },	//
+			{  0.0f,  1.0f,  0.0f , 0.5f, 0.0f, -1.0f,  0.5f,  0.0f },	//
+
+			{ -0.5f,  0.0f, -0.5f , 1.0f, 1.0f,  0.0f,  0.5f, -1.0f },	// Back side
+			{  0.5f,  0.0f, -0.5f , 0.0f, 1.0f,  0.0f,  0.5f, -1.0f },	//
+			{  0.0f,  1.0f,  0.0f , 0.5f, 0.0f,  0.0f,  0.5f, -1.0f },	//
+
+			{  0.5f,  0.0f, -0.5f , 0.0f, 1.0f,  1.0f,  0.5f,  0.0f },	// Right side
+			{  0.5f,  0.0f,  0.5f , 1.0f, 1.0f,  1.0f,  0.5f,  0.0f },	//
+			{  0.0f,  1.0f,  0.0f , 0.5f, 0.0f,  1.0f,  0.5f,  0.0f },	//
+
+			{  0.5f,  0.0f,  0.5f , 1.0f, 1.0f,  0.0f,  0.5f,  1.0f },	// Front side
+			{ -0.5f,  0.0f,  0.5f , 0.0f, 1.0f,  0.0f,  0.5f,  1.0f },	//
+			{  0.0f,  1.0f,  0.0f , 0.5f, 0.0f,  0.0f,  0.5f,  1.0f },	//
 		};
 		DWORD indexes[] = {
-			0,1,2,
-			0,2,3,
-			0,4,1,
-			1,4,2,
-			2,4,3,
-			3,4,0
+			0,1,2,		//Bottom faces
+			0,2,3,		//
+
+			4,5,6,		//Left face
+
+			7,8,9,		//Back face
+
+			10,11,12,	//Right face
+
+			13,14,15	//Front face
 		};
 		D3D12_INPUT_ELEMENT_DESC vertexLayout[] =
 		{
 			{ "Position", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-			{ "Texcoord", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+			{ "Texcoord", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+			{ "Normal", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 5, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 		};
 		//============================//
 
@@ -403,6 +424,8 @@ int main()
 		ImGui_ImplDX12_Init(&init_info);
 #endif // IMGUI
 
+		float angle = 0.0f;
+
 		// === MAIN LOOP=== //
 		DXWindow::Get().SetFullscreen(true);
 		while (!DXWindow::Get().ShouldClose())
@@ -458,37 +481,50 @@ int main()
 			cmdList->RSSetScissorRects(1, &scRect);
 
 			// === UPDATE === //
-			glm::vec3 pyramidPosition = glm::vec3(.0f, 0.0f, 0.0f);
-			static float color[] = { 0.0f, 1.0f, 0.0f };
+			angle += 0.005f;
+
+			glm::vec3 pyramidPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+			glm::mat4 pyramidModel = glm::translate(glm::mat4(1.0f), pyramidPosition);
+			pyramidModel = glm::rotate(pyramidModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
+			static float color[] = { 0.0f, 1.0f, 0.0f , 1.0f };
 			ColorPuke(color);
+
+			float lightColor[] = { 1.0f, 1.0f, 1.0f };
+			glm::vec3 lightPosition = glm::vec3(1.0f, 1.5f, .5f);
+			glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+
+			struct Light
+			{
+				glm::vec4 lightcolor = glm::vec4(1.0f, 1.0f, 1.0, 1.0f);
+				glm::vec4 lightPosition;
+			};
+			Light cubeLight;
+			cubeLight.lightcolor = glm::vec4(color[0], color[1], color[2], 1.0f);
+			cubeLight.lightPosition = glm::vec4(lightPosition, 1.0f);
 
 			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
 			camera.Inputs();
 			camera.Matrix(45.0f, 0.01f, 100.0f);
-			glm::mat4 pyramidModel = glm::mat4(1.0f);
-			pyramidModel = glm::translate(pyramidModel, pyramidPosition);
 
 			// === ROOT === //
-			cmdList->SetGraphicsRoot32BitConstants(0, 3, &color, 0);
-			camera.UpdateMatrix(cmdList, 1, pyramidPosition);
-			eyeTexture.AddCommands(cmdList, 2);
+			camera.UpdateMatrix(cmdList, 0, pyramidModel);
+			cmdList->SetGraphicsRoot32BitConstants(1, 8, &cubeLight, 0);
+			cmdList->SetGraphicsRoot32BitConstants(2, 4, &color, 0);
+			cmdList->SetGraphicsRoot32BitConstants(3, 4, &camera.m_position, 0);
+			eyeTexture.AddCommands(cmdList, 4);
 			// === Draw === //
 			// Object 1
 			cmdList->DrawIndexedInstanced(_countof(indexes), 1, 0, 0, 0);
 
 			// Object 2
-			float lightColor[] = { 1.0f, 1.0f, 1.0f };
-			glm::vec3 lightPosition = glm::vec3(1.0f, 1.5f, .5f);
-			glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
-
 			cmdList->SetPipelineState(lightPso.Get());
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			cmdList->IASetVertexBuffers(0, 1, &cubeVbv);
 			cmdList->IASetIndexBuffer(&cubeIbv);
 			cmdList->SetGraphicsRootSignature(lightRootSignature);
 
-			cmdList->SetGraphicsRoot32BitConstants(0, 3, &lightColor, 0);
-			camera.UpdateMatrix(cmdList, 1, lightPosition);
+			camera.UpdateMatrix(cmdList, 0, lightModel);
+			cmdList->SetGraphicsRoot32BitConstants(1, 4, &color, 0);
 
 			cmdList->DrawIndexedInstanced(_countof(cubeIndexes), 1, 0, 0, 0);
 
