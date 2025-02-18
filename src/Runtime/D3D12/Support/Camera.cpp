@@ -39,77 +39,90 @@ void Camera::UpdateMatrix(ID3D12GraphicsCommandList* cmdList, int bufferSlot, gl
 
 void Camera::Inputs()
 {
-	if (GetAsyncKeyState(0x5A)) // Z
+	if (GetAsyncKeyState(VK_RETURN) && m_controlKeyReleased)
 	{
-		m_position += m_speed * m_orientation;
+		m_controlMode = !m_controlMode;
+		m_controlKeyReleased = false;
 	}
-	if (GetAsyncKeyState(0x51)) // Q
+	if(!GetAsyncKeyState(VK_RETURN) && !m_controlKeyReleased)
 	{
-		m_position += m_speed * -glm::normalize(glm::cross(m_orientation, m_up));
-	}
-	if (GetAsyncKeyState(0x53)) // S
-	{
-		m_position += m_speed * -m_orientation;
-	}
-	if (GetAsyncKeyState(0x44)) // D
-	{
-		m_position += m_speed * glm::normalize(glm::cross(m_orientation, m_up));
-	}
-	if (GetAsyncKeyState(VK_SPACE)) // SPACE
-	{
-		m_position += m_speed * m_up;
-	}
-	if (GetAsyncKeyState(VK_LCONTROL)) // LSHIFT
-	{
-		m_position += m_speed * -m_up;
-	}
-	if (GetAsyncKeyState(VK_LSHIFT)) // LSHIFT
-	{
-		m_speed = defaultSpeed * 2.5f;
-	}
-	else // !LSHIFT
-	{
-		m_speed = defaultSpeed;
+		m_controlKeyReleased = true;
 	}
 
-	if (GetAsyncKeyState(VK_RBUTTON)) // RCLICK
+	if (m_controlMode)
 	{
-		BOOL ret = ShowCursor(false);
-		while (ret > 0)
+		if (GetAsyncKeyState(0x5A)) // Z
 		{
-			ret = ShowCursor(false);
+			m_position += m_speed * m_orientation;
+		}
+		if (GetAsyncKeyState(0x51)) // Q
+		{
+			m_position += m_speed * -glm::normalize(glm::cross(m_orientation, m_up));
+		}
+		if (GetAsyncKeyState(0x53)) // S
+		{
+			m_position += m_speed * -m_orientation;
+		}
+		if (GetAsyncKeyState(0x44)) // D
+		{
+			m_position += m_speed * glm::normalize(glm::cross(m_orientation, m_up));
+		}
+		if (GetAsyncKeyState(VK_SPACE)) // SPACE
+		{
+			m_position += m_speed * m_up;
+		}
+		if (GetAsyncKeyState(VK_LCONTROL)) // LSHIFT
+		{
+			m_position += m_speed * -m_up;
+		}
+		if (GetAsyncKeyState(VK_LSHIFT)) // LSHIFT
+		{
+			m_speed = m_defaultSpeed * 2.5f;
+		}
+		else // !LSHIFT
+		{
+			m_speed = m_defaultSpeed;
 		}
 
-		if (m_firstClick)
+		if (GetAsyncKeyState(VK_RBUTTON)) // RCLICK
 		{
+			BOOL ret = ShowCursor(false);
+			while (ret > 0)
+			{
+				ret = ShowCursor(false);
+			}
+
+			if (m_firstClick)
+			{
+				SetCursorPos(m_width / 2, m_height / 2);
+				m_firstClick = false;
+			}
+
+			POINT mousePos;
+			GetCursorPos(&mousePos);
+
+			float rotX = m_sensitivity * (float)(mousePos.y - (m_height / 2)) / m_height;
+			float roty = m_sensitivity * (float)(mousePos.x - (m_width / 2)) / m_width;
+
+			glm::vec3 newOrientation = glm::rotate(m_orientation, glm::radians(-rotX), glm::normalize(glm::cross(m_orientation, m_up)));
+			if (!((glm::angle(newOrientation, m_up) <= glm::radians(5.0f)) || glm::angle(newOrientation, -m_up) <= glm::radians(5.0f)))
+			{
+
+				m_orientation = newOrientation;
+			}
+			m_orientation = glm::rotate(m_orientation, glm::radians(-roty), m_up);
 			SetCursorPos(m_width / 2, m_height / 2);
-			m_firstClick = false;
+
 		}
-
-		POINT mousePos;		
-		GetCursorPos(&mousePos);
-
-		float rotX = m_sensitivity * (float)(mousePos.y - (m_height / 2)) / m_height;
-		float roty = m_sensitivity * (float)(mousePos.x - (m_width / 2)) / m_width;
-
-		glm::vec3 newOrientation = glm::rotate(m_orientation, glm::radians(-rotX), glm::normalize(glm::cross(m_orientation, m_up)));
-		if (!((glm::angle(newOrientation, m_up) <= glm::radians(5.0f)) || glm::angle(newOrientation, -m_up) <= glm::radians(5.0f)))
+		else
 		{
-			
-			m_orientation = newOrientation;
+			BOOL ret = ShowCursor(true);
+			while (ret < 0)
+			{
+				ret = ShowCursor(true);
+			}
+			m_firstClick = true;
 		}
-		m_orientation = glm::rotate(m_orientation, glm::radians(-roty), m_up);
-		SetCursorPos(m_width / 2, m_height / 2);
-
-	}
-	else
-	{
-		BOOL ret = ShowCursor(true);
-		while (ret < 0)
-		{
-			ret = ShowCursor(true);
-		}
-		m_firstClick = true;
-	}
+	}	
 }
 

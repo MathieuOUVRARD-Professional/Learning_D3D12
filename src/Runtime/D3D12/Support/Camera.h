@@ -32,5 +32,7 @@ class Camera
 		void Inputs();
 
 	private:
-		float defaultSpeed = 0.05f;
+		float m_defaultSpeed = 0.05f;
+		bool m_controlMode = false;
+		bool m_controlKeyReleased = true;
 };

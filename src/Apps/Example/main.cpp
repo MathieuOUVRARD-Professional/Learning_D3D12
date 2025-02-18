@@ -25,6 +25,8 @@
 
 #include <directx/d3dx12.h>
 
+#include <ImGui/CustomImGui.h>
+
 #define IMGUI
 
 void ColorPuke(float* color)
@@ -498,7 +500,11 @@ int main()
 			static float color[] = { 0.0f, 1.0f, 0.0f , 1.0f };
 			ColorPuke(color);
 
-			float lightColor[] = { 1.0f, 1.0f, 1.0f };
+			//float lightColor[] = { 1.0f, 1.0f, 1.0f };
+			std::string colorPickerName = "Light color";
+			std::vector<float> lightColor = ImGuiColorPicker(&colorPickerName, true);
+			ImGuiPerfOverlay(true);
+
 			glm::vec3 lightPosition = glm::vec3(1.0f, 1.5f, .5f);
 			glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
 
@@ -508,7 +514,8 @@ int main()
 				glm::vec4 lightPosition;
 			};
 			Light cubeLight;
-			cubeLight.lightcolor = glm::vec4(color[0], color[1], color[2], 1.0f);
+			//cubeLight.lightcolor = glm::vec4(color[0], color[1], color[2], 1.0f);
+			cubeLight.lightcolor = glm::vec4(lightColor[0], lightColor[1], lightColor[2], lightColor[3]);
 			cubeLight.lightPosition = glm::vec4(lightPosition, 1.0f);
 
 			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
@@ -533,7 +540,7 @@ int main()
 			cmdList->SetGraphicsRootSignature(lightRootSignature);
 
 			camera.UpdateMatrix(cmdList, 0, lightModel);
-			cmdList->SetGraphicsRoot32BitConstants(1, 4, &color, 0);
+			cmdList->SetGraphicsRoot32BitConstants(1, 4, &cubeLight.lightcolor, 0);
 
 			cmdList->DrawIndexedInstanced(_countof(cubeIndexes), 1, 0, 0, 0);
 

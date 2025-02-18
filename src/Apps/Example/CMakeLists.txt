@@ -1,3 +1,6 @@
+file(GLOB CUSTOM_IMGUI_CPP_FILES CONFIGURE_DEPENDS "ImGui/*.cpp")
+file(GLOB CUSTOM_IMGUI_H_FILES CONFIGURE_DEPENDS "ImGui/*.h")
+
 file(GLOB SHADERS_FILES CONFIGURE_DEPENDS "Shaders/*.hlsl")
 file(GLOB SHADERS_INTERFACE_FILES CONFIGURE_DEPENDS "Shaders/*.hlsli")
  
@@ -27,17 +30,22 @@ foreach(SHADER_FILE ${SHADERS_FILES})
   )
 endforeach()
 
-add_executable(App main.cpp ${SHADERS_FILES} ${SHADERS_INTERFACE_FILES})
+add_executable(App main.cpp ${SHADERS_FILES} ${SHADERS_INTERFACE_FILES} ${CUSTOM_IMGUI_H_FILES} ${CUSTOM_IMGUI_CPP_FILES})
 
 set_target_properties(App PROPERTIES
   VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/app/"
 )
 
+source_group("ImGui\\Source Files" FILES ${CUSTOM_IMGUI_CPP_FILES})
+source_group("ImGui\\Header Files" FILES ${CUSTOM_IMGUI_H_FILES})
+
 source_group("Shaders" FILES ${SHADERS_FILES})
 source_group("Shaders\\Interfaces" FILES ${SHADERS_INTERFACE_FILES})
 
 target_compile_features(App PRIVATE cxx_std_20)
- 
+
+target_include_directories(App PUBLIC ".")
+
 target_link_libraries(App PRIVATE D3D12 ImGui)
 
 target_compile_definitions(App PRIVATE
