@@ -16,7 +16,8 @@ cbuffer CameraPosition : register(b3)
 	float3 cameraPosition;
 };
 
-Texture2D<float4> textures[] : register(t0);
+Texture2D<float4> texture : register(t0);
+Texture2D<float4> specTexture : register(t1);
 sampler textureSampler : register(s0);
 
 [RootSignature(ROOTSIG)]
@@ -41,6 +42,7 @@ void main(
 	float specAmmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 50);
 	float specular = specAmmount * specularLight;
 
-	float4 texel = textures[0].Sample(textureSampler, i_uv);
-	pixel = float4(texel.rgb * ((diffuse + ambient + specular) * light.color.xyz), 1.0f);
+	float4 texel = texture.Sample(textureSampler, i_uv);
+    float4 texelSpec = specTexture.Sample(textureSampler, i_uv);
+    pixel = float4(texel.rgb * light.color.xyz * (diffuse + ambient) + texelSpec.r * specular , 1.0f);
 }

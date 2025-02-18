@@ -38,7 +38,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   add_subdirectory(src/Runtime/ImGui)
   add_subdirectory(src/Apps/Example)
   
-  target_link_libraries(App PRIVATE Microsoft::DirectX-Headers)
+  target_link_libraries(App PRIVATE "dxguid.lib" Microsoft::DirectX-Headers)
   target_link_libraries(App PRIVATE fmt::fmt)
   target_link_libraries(App PRIVATE glm::glm)
   target_link_libraries(App PRIVATE spdlog::spdlog)

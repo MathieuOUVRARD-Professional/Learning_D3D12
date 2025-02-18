@@ -23,6 +23,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <dxcapi.h>
 
+#include <directx/d3dx12.h>
+
 #define IMGUI
 
 void ColorPuke(float* color)
@@ -259,15 +261,16 @@ int main()
 		//============================//
 
 		auto* cmdList = DXContext::Get().InitCommandList();
-
+		std::string eyeTexturePaths[2] = { "Textures/auge_512_512_BGRA_32BPP.png", "Textures/auge_spec_512_512_BGRA_32BPP.png" };
+		LPCWSTR eyeTextureNames[2] = { L"All_Seeing_Eye", L"All_Seeing_Eye_SPECULAR" };
 		//=== Textures ===//
-		Texture eyeTexture = Texture("Textures/auge_512_512_BGRA_32BPP.png", L"All_Seeing_Eye");
+		Texture eyeTextures = Texture(2, eyeTexturePaths, eyeTextureNames);
 
 		// === Upload, vertex & indexes buffers === //
 		D3D12_RESOURCE_DESC rdu{};
 		rdu.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 		rdu.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		rdu.Width = eyeTexture.GetTextureSize() + 2048;
+		rdu.Width = eyeTextures.GetTotalTextureSize() + 2048;
 		rdu.Height = 1;
 		rdu.DepthOrArraySize = 1;
 		rdu.MipLevels = 1;
@@ -314,27 +317,33 @@ int main()
 		vertexBuffer.Get()->SetName(L"Vertex_Buffer");
 		indexBuffer.Get()->SetName(L"Index_Buffer");
 
-		eyeTexture.Init(&defaultHeapProperties, uploadBuffer, cmdList);
+		eyeTextures.Init(&defaultHeapProperties, uploadBuffer, cmdList);
 		ZBuffer zBuffer = ZBuffer(&defaultHeapProperties);
 
-		// Copy void* --> CPU Resource
+		// === Copy void* --> CPU Resource === //
 		char* uploadBufferAdress;
 		D3D12_RANGE uploadRange;
 		uploadRange.Begin = 0;
-		uploadRange.End = eyeTexture.GetTextureSize() + 2048;
+		uploadRange.End = eyeTextures.GetTotalTextureSize() + 2048;
 		uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
-		memcpy(&uploadBufferAdress[0], eyeTexture.GetTextureData().content.data(), eyeTexture.GetTextureSize());
+
+		std::cout << "Texture 0 Data: " << (void*)eyeTextures.GetTextureData(0) << std::endl;
+		std::cout << "Texture 1 Data: " << (void*)eyeTextures.GetTextureData(1) << std::endl;
+
+		// Texture copy
+		memcpy(&uploadBufferAdress[0], eyeTextures.GetTextureData(0), eyeTextures.GetTextureSize(0));
+		memcpy(&uploadBufferAdress[eyeTextures.GetTextureSize(0)], eyeTextures.GetTextureData(1), eyeTextures.GetTextureSize(1));
 		//Pyramid buffers copy
-		memcpy(&uploadBufferAdress[eyeTexture.GetTextureSize()], vertices, sizeof(vertices));
-		memcpy(&uploadBufferAdress[eyeTexture.GetTextureSize() + 1024], indexes, sizeof(indexes));
+		memcpy(&uploadBufferAdress[eyeTextures.GetTotalTextureSize()], vertices, sizeof(vertices));
+		memcpy(&uploadBufferAdress[eyeTextures.GetTotalTextureSize() + 1024], indexes, sizeof(indexes));
 		//Cube buffers copy: vertices are placed right after pyramid's ones, same for indexes
-		memcpy(&uploadBufferAdress[eyeTexture.GetTextureSize() + sizeof(vertices)], cubeVertices, sizeof(cubeVertices));
-		memcpy(&uploadBufferAdress[eyeTexture.GetTextureSize() + 1024 + sizeof(indexes)], cubeIndexes, sizeof(cubeIndexes));
+		memcpy(&uploadBufferAdress[eyeTextures.GetTotalTextureSize() + sizeof(vertices)], cubeVertices, sizeof(cubeVertices));
+		memcpy(&uploadBufferAdress[eyeTextures.GetTotalTextureSize() + 1024 + sizeof(indexes)], cubeIndexes, sizeof(cubeIndexes));
 		uploadBuffer->Unmap(0, &uploadRange);
 
 		// Async Copy CPU Resource --> GPU Resource
-		cmdList->CopyBufferRegion(vertexBuffer, 0, uploadBuffer, eyeTexture.GetTextureSize(), 1024);
-		cmdList->CopyBufferRegion(indexBuffer, 0, uploadBuffer, eyeTexture.GetTextureSize() + 1024, 1024);		
+		cmdList->CopyBufferRegion(vertexBuffer, 0, uploadBuffer, eyeTextures.GetTotalTextureSize(), 1024);
+		cmdList->CopyBufferRegion(indexBuffer, 0, uploadBuffer, eyeTextures.GetTotalTextureSize() + 1024, 1024);
 
 		DXContext::Get().ExecuteCommandList();
 
@@ -511,7 +520,7 @@ int main()
 			cmdList->SetGraphicsRoot32BitConstants(1, 8, &cubeLight, 0);
 			cmdList->SetGraphicsRoot32BitConstants(2, 4, &color, 0);
 			cmdList->SetGraphicsRoot32BitConstants(3, 4, &camera.m_position, 0);
-			eyeTexture.AddCommands(cmdList, 4);
+			eyeTextures.AddCommands(cmdList, 4);
 			// === Draw === //
 			// Object 1
 			cmdList->DrawIndexedInstanced(_countof(indexes), 1, 0, 0, 0);
