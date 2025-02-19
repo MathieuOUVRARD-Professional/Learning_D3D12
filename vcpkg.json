@@ -1,9 +1,10 @@
 {
   "dependencies": [
+    "directx-headers",
     "fmt",
     "freetype",
     "glm",
     "spdlog",
-    "directx-headers"
+    "assimp"
   ]
 }

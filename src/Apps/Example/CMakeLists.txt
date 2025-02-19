@@ -11,7 +11,7 @@ foreach(SHADER_FILE ${SHADERS_FILES})
  
   if(${SHADER_NAME} MATCHES "RootSignature") 
     set(SHADER_TYPE "RootSignature")
-    set(SHADER_MODEL "rootsig_1_1")
+    set(SHADER_MODEL "1.1")
     set(SHADER_ENTRYPOINT "ROOTSIG")
   elseif(${SHADER_NAME} MATCHES "VertexShader")
     set(SHADER_TYPE "Vertex")

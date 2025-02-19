@@ -30,18 +30,20 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 
   find_package(directx-headers CONFIG REQUIRED)
   find_package(glm CONFIG REQUIRED)
-  find_package(fmt CONFIG REQUIRED)  
   find_package(spdlog CONFIG REQUIRED)
+  find_package(fmt CONFIG REQUIRED)  
+  find_package(assimp CONFIG REQUIRED)
   find_package(Freetype CONFIG REQUIRED)
 
-  add_subdirectory(src/Runtime/D3D12)
-  add_subdirectory(src/Runtime/ImGui)
-  add_subdirectory(src/Apps/Example)
+  add_subdirectory(src/Runtime/D3D12)   #D3D12 Custom Lib
+  add_subdirectory(src/Runtime/ImGui)   #ImGui Lib
+  add_subdirectory(src/Apps/Example)    #App and related files
   
   target_link_libraries(App PRIVATE "dxguid.lib" Microsoft::DirectX-Headers)
-  target_link_libraries(App PRIVATE fmt::fmt)
   target_link_libraries(App PRIVATE glm::glm)
   target_link_libraries(App PRIVATE spdlog::spdlog)
+  target_link_libraries(App PRIVATE fmt::fmt)
+  target_link_libraries(App PRIVATE assimp::assimp)
 endif()
  
  
