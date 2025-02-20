@@ -23,7 +23,7 @@ class Texture
 		inline uint32_t GetTotalTextureSize()
 		{
 			uint32_t totalSize = 0;
-			for (int i = 0; i < m_count; i++)
+			for (unsigned int i = 0; i < m_count; i++)
 			{
 				totalSize += GetTextureSize(i);
 			}

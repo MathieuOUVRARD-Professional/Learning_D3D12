@@ -28,7 +28,7 @@ Texture::Texture(int count, std::string* path, LPCWSTR* name)
 void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, ID3D12GraphicsCommandList* cmdList)
 {
 	// Create D3D12 resource for each texture
-	for (int i = 0; i < m_count; i++)
+	for (unsigned int i = 0; i < m_count; i++)
 	{
 		D3D12_RESOURCE_DESC rdt{};
 		rdt.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -61,7 +61,7 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource*
 	CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle(m_srvHeap->GetCPUDescriptorHandleForHeapStart());
 	UINT descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	for (int i = 0; i < m_count; i++)
+	for (unsigned int i = 0; i < m_count; i++)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 		srvDesc.Format = m_textureDatas[i].giPixelFormat;
@@ -82,7 +82,7 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource*
 
 	// === Copy textures to Upload Buffer === //
 
-	for (int i = 0; i < m_count; i++)
+	for (unsigned int i = 0; i < m_count; i++)
 	{
 		// Source
 		D3D12_TEXTURE_COPY_LOCATION txtSrc;

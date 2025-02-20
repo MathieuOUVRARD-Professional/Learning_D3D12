@@ -6,6 +6,7 @@
 #include <Support/Shader.h>
 #include <Support/ImageLoader.h>
 #include <Support/Camera.h>
+#include <Support/AssImpUsage.h>
 
 #include <Debug/DebugLayer.h>
 
@@ -172,6 +173,8 @@ int main()
 		defaultHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
 		defaultHeapProperties.CreationNodeMask = 0;
 		defaultHeapProperties.VisibleNodeMask = 0;
+
+		C_AssImp::Import("Sponza/NewSponza_Main_glTF_003.gltf");		
 
 		// === Vertex data === //
 		// PYRAMID DATA 

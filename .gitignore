@@ -3,6 +3,7 @@
 /CMakeBuild
 /temp
 /deploy
+/app/Sponza
 
 #Logs
 /app/log
