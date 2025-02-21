@@ -207,7 +207,7 @@ void DXWindow::Shutdown()
 	}
 }
 
-void DXWindow::BeginFrame(ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHeap* dsvHeap)
+void DXWindow::BeginFrame(ID3D12GraphicsCommandList*& cmdList, ID3D12DescriptorHeap* dsvHeap)
 {
 	m_currentBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
 
@@ -231,7 +231,7 @@ void DXWindow::BeginFrame(ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHe
 
 }
 
-void DXWindow::EndFrame(ID3D12GraphicsCommandList* cmdList)
+void DXWindow::EndFrame(ID3D12GraphicsCommandList*& cmdList)
 {
 	D3D12_RESOURCE_BARRIER barrier;
 	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;

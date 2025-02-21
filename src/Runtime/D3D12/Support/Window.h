@@ -19,8 +19,8 @@ public:
 	void SetFullscreen(bool enabled);
 	void Shutdown();
 
-	void BeginFrame(ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHeap* dsvHeap);
-	void EndFrame(ID3D12GraphicsCommandList* cmdList);
+	void BeginFrame(ID3D12GraphicsCommandList*& cmdList, ID3D12DescriptorHeap* dsvHeap);
+	void EndFrame(ID3D12GraphicsCommandList*& cmdList);
 
 	inline HWND GetWindow() const
 	{

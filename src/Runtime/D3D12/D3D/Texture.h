@@ -14,7 +14,7 @@ class Texture
 {
 	public:
 		void Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, ID3D12GraphicsCommandList* cmdList);
-		void AddCommands(ID3D12GraphicsCommandList* cmdList, UINT rootParameterIndex);
+		void AddCommands(ID3D12GraphicsCommandList*& cmdList, UINT rootParameterIndex);
 
 		inline uint32_t GetTextureSize(int textureIndex)
 		{

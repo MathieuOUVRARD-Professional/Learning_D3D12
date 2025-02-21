@@ -19,9 +19,8 @@
 #include <Util/EzException.h>
 #include <Util/HRException.h>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
 #include <dxcapi.h>
 
 #include <directx/d3dx12.h>
@@ -174,16 +173,12 @@ int main()
 		defaultHeapProperties.CreationNodeMask = 0;
 		defaultHeapProperties.VisibleNodeMask = 0;
 
-		C_AssImp::Import("Sponza/NewSponza_Main_glTF_003.gltf");		
+		std::list<SceneObject> objectsList;
+
+		C_AssImp::Import("Sponza/NewSponza_Main_glTF_003.gltf", objectsList);
 
 		// === Vertex data === //
 		// PYRAMID DATA 
-		struct Vertex
-		{
-			float x, y, z;
-			float u, v;
-			float nX, nY, nZ;
-		}; 
 		Vertex vertices[] =
 		{
 			//  X	   Y	  Z	  ||  U	   V  ||  Nx	 Ny		Nz
@@ -331,9 +326,6 @@ int main()
 		uploadRange.Begin = 0;
 		uploadRange.End = eyeTextures.GetTotalTextureSize() + 2048;
 		uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
-
-		std::cout << "Texture 0 Data: " << (void*)eyeTextures.GetTextureData(0) << std::endl;
-		std::cout << "Texture 1 Data: " << (void*)eyeTextures.GetTextureData(1) << std::endl;
 
 		// Texture copy
 		memcpy(&uploadBufferAdress[0], eyeTextures.GetTextureData(0), eyeTextures.GetTextureSize(0));

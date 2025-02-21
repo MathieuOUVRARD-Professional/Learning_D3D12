@@ -6,10 +6,12 @@
 
 #include <Util/HRException.h>
 
+#include <vector>
+
 
 namespace C_AssImp
 {
-	void Import(const std::string& filePath);
-	void CopyNodesWithMeshes(aiNode node, SceneObject* targetParent, glm::mat4 parentTransform = glm::mat4(1.0f));
-	void CopyMeshes(aiNode node, SceneObject obectToAddMeshTo);
+	void Import(const std::string& filePath, std::list<SceneObject>& objectList);
+	void CopyNodesWithMeshes(std::list<SceneObject>& objectList, const aiScene& scene, aiNode& node, SceneObject& targetParent, glm::mat4 parentTransform = glm::mat4(1.0f));
+	void CopyMeshes(const aiScene& scene, aiNode& node, SceneObject& obectToAddMeshTo);
 }

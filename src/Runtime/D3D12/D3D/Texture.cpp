@@ -126,7 +126,7 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource*
 	}
 }
 
-void Texture::AddCommands(ID3D12GraphicsCommandList* cmdList, UINT rootParameterIndex)
+void Texture::AddCommands(ID3D12GraphicsCommandList*& cmdList, UINT rootParameterIndex)
 {
 	cmdList->SetDescriptorHeaps(1, &m_srvHeap);
 	cmdList->SetGraphicsRootDescriptorTable(rootParameterIndex, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
