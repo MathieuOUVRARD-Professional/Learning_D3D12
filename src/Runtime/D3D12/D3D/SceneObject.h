@@ -1,26 +1,17 @@
+#pragma once
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <Util/Vertex.h>
+#include <D3D/Mesh.h>
+#include <string>
 
 class SceneObject
 {
 	public:
-		inline std::vector<Vertex>& GetVertices()
+		inline void SetMesh(Mesh& mesh)
 		{
-			return m_vertices;
-		}
-		inline void SetVertices(std::vector<Vertex>& vertices)
-		{
-			m_vertices = vertices;
-		}
-		inline std::vector<uint32_t>& GetIndices()
-		{
-			return m_indices;
-		}
-		inline void SetIndices(std::vector<uint32_t>& indices)
-		{
-			m_indices = indices;
+			m_mesh = mesh;
 		}
 
 		inline void AddChild(SceneObject* newChild)
@@ -33,7 +24,7 @@ class SceneObject
 
 		SceneObject* m_parent = nullptr;
 		std::vector<SceneObject*> m_childrens;
+
+		Mesh m_mesh;
 	private:
-		std::vector<Vertex> m_vertices;
-		std::vector<uint32_t> m_indices;
 };

@@ -7,6 +7,7 @@
 #include <Support/ImageLoader.h>
 #include <Support/Camera.h>
 #include <Support/AssImpUsage.h>
+#include <Support/ObjectList.h>
 
 #include <Debug/DebugLayer.h>
 
@@ -173,9 +174,9 @@ int main()
 		defaultHeapProperties.CreationNodeMask = 0;
 		defaultHeapProperties.VisibleNodeMask = 0;
 
-		std::list<SceneObject> objectsList;
+		ObjectList mainObjList;
 
-		C_AssImp::Import("Sponza/NewSponza_Main_glTF_003.gltf", objectsList);
+		C_AssImp::Import("Sponza/NewSponza_Main_glTF_003.gltf", mainObjList.GetList());
 
 		// === Vertex data === //
 		// PYRAMID DATA 
@@ -270,7 +271,7 @@ int main()
 		D3D12_RESOURCE_DESC rdu{};
 		rdu.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 		rdu.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		rdu.Width = eyeTextures.GetTotalTextureSize() + 2048;
+		rdu.Width = eyeTextures.GetTotalTextureSize() + mainObjList.TotalSize() + 2048;
 		rdu.Height = 1;
 		rdu.DepthOrArraySize = 1;
 		rdu.MipLevels = 1;
@@ -283,7 +284,7 @@ int main()
 		D3D12_RESOURCE_DESC rdv{};
 		rdv.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 		rdv.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		rdv.Width = 1024;
+		rdv.Width = mainObjList.TotalVerticesSize() + 1024;
 		rdv.Height = 1;
 		rdv.DepthOrArraySize = 1;
 		rdv.MipLevels = 1;
@@ -296,7 +297,7 @@ int main()
 		D3D12_RESOURCE_DESC rdi{};
 		rdi.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 		rdi.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		rdi.Width = 1024;
+		rdi.Width = mainObjList.TotalIndicesSize() + 1024;
 		rdi.Height = 1;
 		rdi.DepthOrArraySize = 1;
 		rdi.MipLevels = 1;
@@ -336,6 +337,7 @@ int main()
 		//Cube buffers copy: vertices are placed right after pyramid's ones, same for indexes
 		memcpy(&uploadBufferAdress[eyeTextures.GetTotalTextureSize() + sizeof(vertices)], cubeVertices, sizeof(cubeVertices));
 		memcpy(&uploadBufferAdress[eyeTextures.GetTotalTextureSize() + 1024 + sizeof(indexes)], cubeIndexes, sizeof(cubeIndexes));
+
 		uploadBuffer->Unmap(0, &uploadRange);
 
 		// Async Copy CPU Resource --> GPU Resource

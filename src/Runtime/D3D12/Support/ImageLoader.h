@@ -1,4 +1,5 @@
 #pragma once
+
 #include<Support/WinInclude.h>
 #include<Support/ComPointer.h>
 

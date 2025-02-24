@@ -26,7 +26,7 @@ void C_AssImp::Import(const std::string& filePath, std::list<SceneObject>& objec
 
 	objectList.emplace_back(mainObject);
 
-	CopyNodesWithMeshes(objectList, *scene, *scene->mRootNode, objectList.front());
+	CopyNodesWithMeshes(objectList, *scene, *scene->mRootNode, objectList.back());
 }
 
 void C_AssImp::CopyNodesWithMeshes(std::list<SceneObject>& objectList, const aiScene& scene, aiNode& node, SceneObject& targetParent, glm::mat4 parentTransform)
@@ -79,7 +79,9 @@ void C_AssImp::CopyMeshes(const aiScene& scene, aiNode& node, SceneObject& objec
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 
-	std::cout << "Node: " << node.mName.C_Str() << "\r\nParent node: " << node.mParent->mName.C_Str() << "\r\nCopying " << node.mNumMeshes << " meshes\r\n";
+	std::cout << "Node: " << node.mName.C_Str() << "\r\nParent node: " << node.mParent->mName.C_Str() << "\r\nCopying "; 
+	node.mNumMeshes > 1 ? std::cout << node.mNumMeshes << " submeshes\r\n" : std::cout << "a mesh\r\n";
+
 	if (objectToAddMeshTo.m_parent != 0x0000000000000000)
 	{
 		std::cout << "Parent obj: " << objectToAddMeshTo.m_parent->m_name.c_str();
@@ -88,37 +90,54 @@ void C_AssImp::CopyMeshes(const aiScene& scene, aiNode& node, SceneObject& objec
 
 	for (int i = 0; i < node.mNumMeshes; i++)
 	{
-		aiMesh* mesh = scene.mMeshes[node.mMeshes[i]];
-		std::cout << "Mesh: " << mesh->mName.C_Str() << " | " << mesh->mNumFaces << " faces\r\n";
+		aiMesh* meshNode = scene.mMeshes[node.mMeshes[i]];
+		node.mNumMeshes > 1 ? std::cout << "Submesh: " : std::cout << "Mesh: ";
+		std::cout << meshNode->mName.C_Str() << " | " << meshNode->mNumFaces << " faces\r\n";
 
-		for (int j = 0; j < mesh->mNumVertices; j++)
+		for (int j = 0; j < meshNode->mNumVertices; j++)
 		{
 			Vertex vertex{};
-			vertex.x = mesh->mVertices[i].x;
-			vertex.y = mesh->mVertices[i].y;
-			vertex.z = mesh->mVertices[i].z;
+			vertex.x = meshNode->mVertices[i].x;
+			vertex.y = meshNode->mVertices[i].y;
+			vertex.z = meshNode->mVertices[i].z;
 
-			vertex.u = mesh->mTextureCoords[0][i].x;
-			vertex.v = mesh->mTextureCoords[0][i].y;			
+			vertex.u = meshNode->mTextureCoords[0][i].x;
+			vertex.v = meshNode->mTextureCoords[0][i].y;
 
-			vertex.nX = mesh->mNormals[i].x;
-			vertex.nY = mesh->mNormals[i].y;
-			vertex.nZ = mesh->mNormals[i].z;
+			vertex.nX = meshNode->mNormals[i].x;
+			vertex.nY = meshNode->mNormals[i].y;
+			vertex.nZ = meshNode->mNormals[i].z;
 
 			vertices.push_back(vertex);
 		}
 
-		for (int j = 0; j < mesh->mNumFaces; j++)
+		for (int j = 0; j < meshNode->mNumFaces; j++)
 		{
-			aiFace face = mesh->mFaces[j];
+			aiFace face = meshNode->mFaces[j];
 
 			for (int k = 0; k < face.mNumIndices; k++)
 			{
 				indices.push_back(face.mIndices[k]);
 			}
 		}
-		objectToAddMeshTo.SetVertices(vertices);
-		objectToAddMeshTo.SetIndices(indices);
+
+		if (node.mNumMeshes > 1)
+		{
+			Mesh submesh;
+			submesh.SetVertices(vertices);
+			submesh.SetIndices(indices);
+			submesh.m_materialID = meshNode->mMaterialIndex;
+			objectToAddMeshTo.m_mesh.AddSubmesh(submesh);
+		}
+		else
+		{
+			Mesh mesh;
+			mesh.SetVertices(vertices);
+			mesh.SetIndices(indices);
+			mesh.m_materialID = meshNode->mMaterialIndex;
+			objectToAddMeshTo.SetMesh(mesh);
+		}
 	}
+	
 	std::cout << "---------------\r\n\r\n";
 }
