@@ -18,15 +18,17 @@ void C_AssImp::Import(const std::string& filePath, std::list<SceneObject>& objec
 	);
 	if (!scene)
 	{
-		D3EZ::EzException("C_AssImp::Import", 15, "importer.ReadFile()", "scene is empty !");
+		D3EZ::EzException ezException = D3EZ::EzException("C_AssImp::Import", 15, "importer.ReadFile()", "scene is empty !");
 	}
+	else
+	{
+		SceneObject mainObject = SceneObject();
+		mainObject.m_name = "Sponza";
 
-	SceneObject mainObject = SceneObject();
-	mainObject.m_name = "Sponza";
+		objectList.emplace_back(mainObject);
 
-	objectList.emplace_back(mainObject);
-
-	CopyNodesWithMeshes(objectList, *scene, *scene->mRootNode, objectList.back());
+		CopyNodesWithMeshes(objectList, *scene, *scene->mRootNode, objectList.back());
+	}
 }
 
 void C_AssImp::CopyNodesWithMeshes(std::list<SceneObject>& objectList, const aiScene& scene, aiNode& node, SceneObject& targetParent, glm::mat4 parentTransform)
@@ -88,13 +90,13 @@ void C_AssImp::CopyMeshes(const aiScene& scene, aiNode& node, SceneObject& objec
 	}
 	std::cout << "\r\n--------------- \r\n";
 
-	for (int i = 0; i < node.mNumMeshes; i++)
+	for (unsigned int i = 0; i < node.mNumMeshes; i++)
 	{
 		aiMesh* meshNode = scene.mMeshes[node.mMeshes[i]];
 		node.mNumMeshes > 1 ? std::cout << "Submesh: " : std::cout << "Mesh: ";
 		std::cout << meshNode->mName.C_Str() << " | " << meshNode->mNumFaces << " faces\r\n";
 
-		for (int j = 0; j < meshNode->mNumVertices; j++)
+		for (unsigned int j = 0; j < meshNode->mNumVertices; j++)
 		{
 			Vertex vertex{};
 			vertex.x = meshNode->mVertices[i].x;
@@ -111,11 +113,11 @@ void C_AssImp::CopyMeshes(const aiScene& scene, aiNode& node, SceneObject& objec
 			vertices.push_back(vertex);
 		}
 
-		for (int j = 0; j < meshNode->mNumFaces; j++)
+		for (unsigned int j = 0; j < meshNode->mNumFaces; j++)
 		{
 			aiFace face = meshNode->mFaces[j];
 
-			for (int k = 0; k < face.mNumIndices; k++)
+			for (unsigned int k = 0; k < face.mNumIndices; k++)
 			{
 				indices.push_back(face.mIndices[k]);
 			}

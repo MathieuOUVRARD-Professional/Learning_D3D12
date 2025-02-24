@@ -6,14 +6,15 @@ uint32_t Mesh::GetSize()
 
 	if (m_nSubmeshes > 0)
 	{
-		for (int i = 0; i < m_nSubmeshes; i++)
+		for (unsigned int i = 0; i < m_nSubmeshes; i++)
 		{
 			size += m_submeshes[i].GetSize();
 		}		
 	}
 	else
 	{
-		size = sizeof(m_vertices) + sizeof(m_indices);
+		size = VerticesSize() + IndicesSize();
+		
 	}
 	return size;
 }
@@ -24,14 +25,14 @@ uint32_t Mesh::VerticesSize()
 
 	if (m_nSubmeshes > 0)
 	{
-		for (int i = 0; i < m_nSubmeshes; i++)
+		for (unsigned int i = 0; i < m_nSubmeshes; i++)
 		{
 			size += m_submeshes[i].VerticesSize();
 		}
 	}
 	else
 	{
-		size = sizeof(m_vertices);
+		size = uint32_t(sizeof(Vertex) * m_vertices.size());
 	}
 	return size;
 }
@@ -42,14 +43,14 @@ uint32_t Mesh::IndicesSize()
 
 	if (m_nSubmeshes > 0)
 	{
-		for (int i = 0; i < m_nSubmeshes; i++)
+		for (unsigned int i = 0; i < m_nSubmeshes; i++)
 		{
 			size += m_submeshes[i].IndicesSize();
 		}
 	}
 	else
 	{
-		size = sizeof(m_indices);
+		size = uint32_t(sizeof(uint32_t) * m_indices.size());
 	}
 	return size;
 }

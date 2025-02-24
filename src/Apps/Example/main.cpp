@@ -329,22 +329,52 @@ int main()
 		uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
 
 		// Texture copy
-		memcpy(&uploadBufferAdress[0], eyeTextures.GetTextureData(0), eyeTextures.GetTextureSize(0));
-		memcpy(&uploadBufferAdress[eyeTextures.GetTextureSize(0)], eyeTextures.GetTextureData(1), eyeTextures.GetTextureSize(1));
+		memcpy(&uploadBufferAdress
+			[0], 
+			eyeTextures.GetTextureData(0), 
+			eyeTextures.GetTextureSize(0));
+		memcpy(&uploadBufferAdress
+			[eyeTextures.GetTextureSize(0)],
+			eyeTextures.GetTextureData(1), 
+			eyeTextures.GetTextureSize(1));
+
 		//Pyramid buffers copy
-		memcpy(&uploadBufferAdress[eyeTextures.GetTotalTextureSize()], vertices, sizeof(vertices));
-		memcpy(&uploadBufferAdress[eyeTextures.GetTotalTextureSize() + 1024], indexes, sizeof(indexes));
+		memcpy(&uploadBufferAdress
+			[eyeTextures.GetTotalTextureSize()], 
+			vertices, 
+			sizeof(vertices));
+
+		memcpy(&uploadBufferAdress
+			[eyeTextures.GetTotalTextureSize() + 1024 + mainObjList.TotalVerticesSize()], 
+			indexes, 
+			sizeof(indexes));
+
 		//Cube buffers copy: vertices are placed right after pyramid's ones, same for indexes
-		memcpy(&uploadBufferAdress[eyeTextures.GetTotalTextureSize() + sizeof(vertices)], cubeVertices, sizeof(cubeVertices));
-		memcpy(&uploadBufferAdress[eyeTextures.GetTotalTextureSize() + 1024 + sizeof(indexes)], cubeIndexes, sizeof(cubeIndexes));
+		memcpy(&uploadBufferAdress
+			[eyeTextures.GetTotalTextureSize() + sizeof(vertices)], 
+			cubeVertices, 
+			sizeof(cubeVertices));
+
+		memcpy(&uploadBufferAdress
+			[eyeTextures.GetTotalTextureSize() + 1024 + mainObjList.TotalVerticesSize() + sizeof(indexes)], 
+			cubeIndexes, 
+			sizeof(cubeIndexes));
 
 		uploadBuffer->Unmap(0, &uploadRange);
 
+		mainObjList.CopyToUploadBuffer
+		(
+			uploadBuffer, 1024, 1024,
+			eyeTextures.GetTotalTextureSize()
+		);
+
 		// Async Copy CPU Resource --> GPU Resource
-		cmdList->CopyBufferRegion(vertexBuffer, 0, uploadBuffer, eyeTextures.GetTotalTextureSize(), 1024);
-		cmdList->CopyBufferRegion(indexBuffer, 0, uploadBuffer, eyeTextures.GetTotalTextureSize() + 1024, 1024);
+		cmdList->CopyBufferRegion(vertexBuffer, 0, uploadBuffer, eyeTextures.GetTotalTextureSize(), 1024 + mainObjList.TotalVerticesSize());
+		cmdList->CopyBufferRegion(indexBuffer, 0, uploadBuffer, eyeTextures.GetTotalTextureSize() + 1024 + mainObjList.TotalVerticesSize() , mainObjList.TotalIndicesSize() + 1024);
 
 		DXContext::Get().ExecuteCommandList();
+
+		mainObjList.CreateBufferViews(vertexBuffer, indexBuffer);
 
 		// === Shaders === //
 		Shader rootSignatureShader("RootSignature.cso");
@@ -508,7 +538,7 @@ int main()
 			struct Light
 			{
 				glm::vec4 lightcolor = glm::vec4(1.0f, 1.0f, 1.0, 1.0f);
-				glm::vec4 lightPosition;
+				glm::vec4 lightPosition = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 			};
 			Light cubeLight;
 			//cubeLight.lightcolor = glm::vec4(color[0], color[1], color[2], 1.0f);
