@@ -314,6 +314,7 @@ int main()
 		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdv, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&vertexBuffer));
 		DXContext::Get().GetDevice()->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdi, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&indexBuffer));		
 
+		// SetNames
 		uploadBuffer.Get()->SetName(L"Upload_Buffer");
 		vertexBuffer.Get()->SetName(L"Vertex_Buffer");
 		indexBuffer.Get()->SetName(L"Index_Buffer");
@@ -328,53 +329,70 @@ int main()
 		uploadRange.End = eyeTextures.GetTotalTextureSize() + 2048;
 		uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
 
-		// Texture copy
+		// === Copy to Upload Buffer === //
+		uint32_t offset = 0;
+		
+		// Textures
 		memcpy(&uploadBufferAdress
-			[0], 
+			[offset],
 			eyeTextures.GetTextureData(0), 
 			eyeTextures.GetTextureSize(0));
+		offset += eyeTextures.GetTextureSize(0);
+
 		memcpy(&uploadBufferAdress
-			[eyeTextures.GetTextureSize(0)],
+			[offset],
 			eyeTextures.GetTextureData(1), 
 			eyeTextures.GetTextureSize(1));
+		offset += eyeTextures.GetTextureSize(1);
 
-		//Pyramid buffers copy
+		// Vertices
 		memcpy(&uploadBufferAdress
-			[eyeTextures.GetTotalTextureSize()], 
+			[offset], 
 			vertices, 
 			sizeof(vertices));
+		offset += sizeof(vertices);
 
 		memcpy(&uploadBufferAdress
-			[eyeTextures.GetTotalTextureSize() + 1024 + mainObjList.TotalVerticesSize()], 
-			indexes, 
-			sizeof(indexes));
-
-		//Cube buffers copy: vertices are placed right after pyramid's ones, same for indexes
-		memcpy(&uploadBufferAdress
-			[eyeTextures.GetTotalTextureSize() + sizeof(vertices)], 
-			cubeVertices, 
+			[offset],
+			cubeVertices,
 			sizeof(cubeVertices));
 
+		// Indices
+		offset = eyeTextures.GetTotalTextureSize() + 1024 + mainObjList.TotalVerticesSize();
 		memcpy(&uploadBufferAdress
-			[eyeTextures.GetTotalTextureSize() + 1024 + mainObjList.TotalVerticesSize() + sizeof(indexes)], 
+			[offset],
+			indexes,
+			sizeof(indexes));
+		offset += sizeof(indexes);
+
+		memcpy(&uploadBufferAdress
+			[offset],
 			cubeIndexes, 
 			sizeof(cubeIndexes));
 
 		uploadBuffer->Unmap(0, &uploadRange);
-
+		
+		// Object list
 		mainObjList.CopyToUploadBuffer
 		(
 			uploadBuffer, 1024, 1024,
 			eyeTextures.GetTotalTextureSize()
 		);
 
-		// Async Copy CPU Resource --> GPU Resource
-		cmdList->CopyBufferRegion(vertexBuffer, 0, uploadBuffer, eyeTextures.GetTotalTextureSize(), 1024 + mainObjList.TotalVerticesSize());
-		cmdList->CopyBufferRegion(indexBuffer, 0, uploadBuffer, eyeTextures.GetTotalTextureSize() + 1024 + mainObjList.TotalVerticesSize() , mainObjList.TotalIndicesSize() + 1024);
-
+		// === Async Copy CPU --> GPU === //
+		cmdList->CopyBufferRegion
+		(
+			vertexBuffer, 0, 
+			uploadBuffer, eyeTextures.GetTotalTextureSize(), 
+			1024 + mainObjList.TotalVerticesSize()
+		);
+		cmdList->CopyBufferRegion
+		(
+			indexBuffer, 0, 
+			uploadBuffer, eyeTextures.GetTotalTextureSize() + 1024 + mainObjList.TotalVerticesSize(), 
+			mainObjList.TotalIndicesSize() + 1024
+		);
 		DXContext::Get().ExecuteCommandList();
-
-		mainObjList.CreateBufferViews(vertexBuffer, indexBuffer);
 
 		// === Shaders === //
 		Shader rootSignatureShader("RootSignature.cso");
@@ -393,16 +411,23 @@ int main()
 		lightRootSignature.Get()->SetName(L"Light_RootSignature");
 
 		// === Pipeline states === //
-		DXPipelineState pso, lightPso;
+		DXPipelineState pso, lightPso, wireframePso;
 		pso.Init(L"Main_PSO", rootSignature, vertexLayout, _countof(vertexLayout), vertexShader, pixelShader);
 		lightPso.Init(L"Light_PSO", lightRootSignature, cubeVertexLayout, _countof(cubeVertexLayout), lightVertexShader, lightPixelShader);
+		//wireframePso.Init(L"Wireframe_PSO", rootSignature, vertexLayout, _countof(vertexLayout), vertexShader, pixelShader); 
+		//wireframePso.SetWireframe();
 
-		// === Vertex buffer view === //
+		// === Buffer Views === //
 		// Pyramid
 		D3D12_VERTEX_BUFFER_VIEW vbv{};
 		vbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
 		vbv.SizeInBytes = sizeof(Vertex) * _countof(vertices);
 		vbv.StrideInBytes = sizeof(Vertex);
+
+		D3D12_INDEX_BUFFER_VIEW ibv{};
+		ibv.BufferLocation = indexBuffer->GetGPUVirtualAddress();
+		ibv.SizeInBytes = sizeof(DWORD) * _countof(indexes);
+		ibv.Format = DXGI_FORMAT_R32_UINT;
 
 		// Cube
 		D3D12_VERTEX_BUFFER_VIEW cubeVbv{};
@@ -410,17 +435,18 @@ int main()
 		cubeVbv.SizeInBytes = sizeof(VertexWithoutUVs) * _countof(cubeVertices);
 		cubeVbv.StrideInBytes = sizeof(VertexWithoutUVs);
 
-		// === Index buffer view === //
-		//Pyramid
-		D3D12_INDEX_BUFFER_VIEW ibv{};
-		ibv.BufferLocation = indexBuffer->GetGPUVirtualAddress();
-		ibv.SizeInBytes = sizeof(DWORD) * _countof(indexes);
-		ibv.Format = DXGI_FORMAT_R32_UINT;
-		//Cube
 		D3D12_INDEX_BUFFER_VIEW cubeIbv{};
 		cubeIbv.BufferLocation = indexBuffer->GetGPUVirtualAddress() + (sizeof(DWORD) * _countof(indexes));
 		cubeIbv.SizeInBytes = sizeof(DWORD) * _countof(cubeIndexes);
 		cubeIbv.Format = DXGI_FORMAT_R32_UINT;
+		
+		// Object list
+		mainObjList.CreateBufferViews(vertexBuffer, indexBuffer);
+
+		auto it = mainObjList.GetList().begin();
+		std::advance(it, 1);
+
+		SceneObject testObject = *it;
 
 		Camera camera(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth(), glm::vec3(0.0f, 0.0f, 2.0f));
 
@@ -490,16 +516,7 @@ int main()
 			// Begin drawing
 			cmdList = DXContext::Get().InitCommandList();
 
-			DXWindow::Get().BeginFrame(cmdList, zBuffer.GetDescriptorHeap());			
-
-			// === PSO === //
-			cmdList->SetPipelineState(pso.Get());
-			cmdList->SetGraphicsRootSignature(rootSignature);
-
-			// === IA == /
-			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			cmdList->IASetVertexBuffers(0, 1, &vbv);
-			cmdList->IASetIndexBuffer(&ibv);			
+			DXWindow::Get().BeginFrame(cmdList, zBuffer.GetDescriptorHeap());						
 
 			// === RS == //
 			// View Port
@@ -547,8 +564,16 @@ int main()
 
 			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
 			camera.Inputs();
-			camera.Matrix(45.0f, 0.01f, 100.0f);
-
+			camera.Matrix(45.0f, 0.01f, 100.0f);			
+						
+			// Object 1
+			// === PSO === //
+			cmdList->SetPipelineState(pso.Get());
+			cmdList->SetGraphicsRootSignature(rootSignature);
+			// === IA === //
+			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			cmdList->IASetVertexBuffers(0, 1, &vbv);
+			cmdList->IASetIndexBuffer(&ibv);
 			// === ROOT === //
 			camera.UpdateMatrix(cmdList, 0, pyramidModel);
 			cmdList->SetGraphicsRoot32BitConstants(1, 8, &cubeLight, 0);
@@ -556,19 +581,25 @@ int main()
 			cmdList->SetGraphicsRoot32BitConstants(3, 4, &camera.m_position, 0);
 			eyeTextures.AddCommands(cmdList, 4);
 			// === Draw === //
-			// Object 1
 			cmdList->DrawIndexedInstanced(_countof(indexes), 1, 0, 0, 0);
 
+			// Sponza
+			// === PSO === //
+			//cmdList->SetPipelineState(wireframePso.Get());
+			//cmdList->SetGraphicsRootSignature(rootSignature);
+
 			// Object 2
+			// === PSO === //
 			cmdList->SetPipelineState(lightPso.Get());
+			cmdList->SetGraphicsRootSignature(lightRootSignature);
+			// === IA === //
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			cmdList->IASetVertexBuffers(0, 1, &cubeVbv);
 			cmdList->IASetIndexBuffer(&cubeIbv);
-			cmdList->SetGraphicsRootSignature(lightRootSignature);
-
+			// === ROOT === //
 			camera.UpdateMatrix(cmdList, 0, lightModel);
 			cmdList->SetGraphicsRoot32BitConstants(1, 4, &cubeLight.lightcolor, 0);
-
+			// === Draw === //
 			cmdList->DrawIndexedInstanced(_countof(cubeIndexes), 1, 0, 0, 0);
 
 #ifdef IMGUI

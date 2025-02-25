@@ -59,3 +59,8 @@ Mesh& Mesh::GetSubmesh(int index)
 {
 	return m_submeshes[index];
 }
+
+void Mesh::Draw()
+{
+
+}

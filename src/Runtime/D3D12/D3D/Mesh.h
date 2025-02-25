@@ -16,6 +16,7 @@ public:
 	uint32_t VerticesSize();
 	uint32_t IndicesSize();
 	Mesh& GetSubmesh(int index);
+	void Draw();
 
 	inline std::vector<Vertex>& GetVertices()
 	{

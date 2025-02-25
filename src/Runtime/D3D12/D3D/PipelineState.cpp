@@ -78,6 +78,9 @@ void DXPipelineState::Init(LPCWSTR name, ComPointer<ID3D12RootSignature> &rootSi
 	gfxPsod.CachedPSO.pCachedBlob = nullptr;
 	gfxPsod.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
+	m_gfxPsod = gfxPsod;
+	m_name = name;
+
 	DXContext::Get().GetDevice()->CreateGraphicsPipelineState(&gfxPsod, IID_PPV_ARGS(&m_pso));
 
 	m_pso.Get()->SetName(name);
@@ -86,4 +89,11 @@ void DXPipelineState::Init(LPCWSTR name, ComPointer<ID3D12RootSignature> &rootSi
 void DXPipelineState::Release()
 {
 	m_pso->Release();
+}
+
+void DXPipelineState::SetWireframe()
+{
+	m_gfxPsod.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME; 
+	DXContext::Get().GetDevice()->CreateGraphicsPipelineState(&m_gfxPsod, IID_PPV_ARGS(&m_pso));
+	m_pso.Get()->SetName(m_name);
 }

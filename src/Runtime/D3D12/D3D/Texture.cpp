@@ -80,7 +80,7 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource*
 	}
 	// =========================== //
 
-	// === Copy textures to Upload Buffer === //
+	// === Copy textures to GPU === //
 
 	for (unsigned int i = 0; i < m_count; i++)
 	{
@@ -101,7 +101,7 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource*
 		txtDst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
 		txtDst.SubresourceIndex = 0;
 
-		// === COPY === //
+		// Resource barrier
 		D3D12_RESOURCE_BARRIER transitionBarrier = {};
 		transitionBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		transitionBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -110,12 +110,14 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource*
 		transitionBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_GENERIC_READ;
 		transitionBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
 
+		//Texture size
 		D3D12_BOX textureSizeAsBox;
 		textureSizeAsBox.left = textureSizeAsBox.top = textureSizeAsBox.front = 0;
 		textureSizeAsBox.right = m_textureDatas[i].width;
 		textureSizeAsBox.bottom = m_textureDatas[i].height;
 		textureSizeAsBox.back = 1;
 
+		// === COPY === //
 		cmdList->ResourceBarrier(1, &transitionBarrier);
 		cmdList->CopyTextureRegion(&txtDst, 0, 0, 0, &txtSrc, &textureSizeAsBox);
 
