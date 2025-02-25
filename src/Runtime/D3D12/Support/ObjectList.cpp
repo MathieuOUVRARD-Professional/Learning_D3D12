@@ -58,27 +58,27 @@ void ObjectList::CopyToUploadBuffer(ID3D12Resource* uploadBuffer, uint32_t destO
 	{
 		if (object.m_mesh.m_nSubmeshes > 0)
 		{
-			uint32_t meshVertexOffset = 0;
-			uint32_t meshIndexOffset = 0;
+			uint32_t submeshVertexOffset = 0;
+			uint32_t submeshIndexOffset = 0;
 			for (unsigned int i = 0; i < object.m_mesh.m_nSubmeshes; i++)
 			{
 				memcpy(&uploadBufferAdress
-					[destBufferOffset + destOffsetVertex + objectVertexOffset + meshVertexOffset],
+					[destBufferOffset + destOffsetVertex + objectVertexOffset + submeshVertexOffset],
 					object.m_mesh.GetSubmesh(i).GetVertices().data(), 
 					object.m_mesh.GetSubmesh(i).VerticesSize());
-				object.m_mesh.GetSubmesh(i).m_vertexBufferOffset = destOffsetVertex + objectVertexOffset + meshVertexOffset;
+				object.m_mesh.GetSubmesh(i).m_vertexBufferOffset = destOffsetVertex + objectVertexOffset + submeshVertexOffset;
 
 				memcpy(&uploadBufferAdress
-					[destBufferOffset + destOffsetIndex + objectIndexOffset + meshIndexOffset],
+					[destBufferOffset + destOffsetIndex + objectIndexOffset + submeshIndexOffset],
 					object.m_mesh.GetSubmesh(i).GetIndices().data(),
 					object.m_mesh.GetSubmesh(i).IndicesSize());
-				object.m_mesh.GetSubmesh(i).m_indexBufferOffset = (destOffsetIndex - destOffsetVertex - TotalVerticesSize()) + objectIndexOffset + meshIndexOffset;
+				object.m_mesh.GetSubmesh(i).m_indexBufferOffset = (destOffsetIndex - destOffsetVertex - TotalVerticesSize()) + objectIndexOffset + submeshIndexOffset;
 
-				meshVertexOffset += object.m_mesh.GetSubmesh(i).VerticesSize();
-				meshIndexOffset += object.m_mesh.GetSubmesh(i).IndicesSize();
+				submeshVertexOffset += object.m_mesh.GetSubmesh(i).VerticesSize();
+				submeshIndexOffset += object.m_mesh.GetSubmesh(i).IndicesSize();
 			}
-			objectVertexOffset += meshVertexOffset;
-			objectIndexOffset += meshIndexOffset;
+			objectVertexOffset += submeshVertexOffset;
+			objectIndexOffset += submeshIndexOffset;
 		}
 		else
 		{

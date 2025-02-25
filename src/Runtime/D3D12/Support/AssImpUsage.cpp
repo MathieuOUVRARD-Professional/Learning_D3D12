@@ -40,9 +40,11 @@ void C_AssImp::CopyNodesWithMeshes(std::list<SceneObject>& objectList, const aiS
 	if (node.mNumMeshes > 0) {
 		SceneObject newObject = SceneObject();
 
+		glm::mat4 nodeTransform = glm::make_mat4(node.mTransformation.Transpose()[0]);
+
 		newObject.m_name = node.mName.C_Str();
 		newObject.m_parent = &targetParent;
-		newObject.m_transform = parentTransform;
+		newObject.m_transform = parentTransform * nodeTransform;
 
 		SceneObject* tmp = &targetParent;
 
@@ -58,13 +60,7 @@ void C_AssImp::CopyNodesWithMeshes(std::list<SceneObject>& objectList, const aiS
 	else {
 		// if no meshes, skip the node, but keep its transformation
 		parent = &targetParent;
-		glm::mat4 nodeTransform = glm::mat4
-		(
-			node.mTransformation.a1, node.mTransformation.a2, node.mTransformation.a3, node.mTransformation.a4,
-			node.mTransformation.b1, node.mTransformation.b2, node.mTransformation.b3, node.mTransformation.b4,
-			node.mTransformation.c1, node.mTransformation.c2, node.mTransformation.c3, node.mTransformation.c4,
-			node.mTransformation.d1, node.mTransformation.d2, node.mTransformation.d3, node.mTransformation.d4
-		);
+		glm::mat4 nodeTransform = glm::make_mat4(node.mTransformation.Transpose()[0]);
 
 		newTransform = nodeTransform * parentTransform;
 	}
@@ -77,10 +73,7 @@ void C_AssImp::CopyNodesWithMeshes(std::list<SceneObject>& objectList, const aiS
 }
 
 void C_AssImp::CopyMeshes(const aiScene& scene, aiNode& node, SceneObject& objectToAddMeshTo)
-{
-	std::vector<Vertex> vertices;
-	std::vector<uint32_t> indices;
-
+{	
 	std::cout << "Node: " << node.mName.C_Str() << "\r\nParent node: " << node.mParent->mName.C_Str() << "\r\nCopying "; 
 	node.mNumMeshes > 1 ? std::cout << node.mNumMeshes << " submeshes\r\n" : std::cout << "a mesh\r\n";
 
@@ -92,25 +85,30 @@ void C_AssImp::CopyMeshes(const aiScene& scene, aiNode& node, SceneObject& objec
 
 	for (unsigned int i = 0; i < node.mNumMeshes; i++)
 	{
+		std::vector<Vertex> vertices;
+		std::vector<uint32_t> indices;
+
 		aiMesh* meshNode = scene.mMeshes[node.mMeshes[i]];
 		node.mNumMeshes > 1 ? std::cout << "Submesh: " : std::cout << "Mesh: ";
 		std::cout << meshNode->mName.C_Str() << " | " << meshNode->mNumFaces << " faces\r\n";
 
+
+
 		for (unsigned int j = 0; j < meshNode->mNumVertices; j++)
 		{
 			Vertex vertex{};
-			vertex.x = meshNode->mVertices[i].x;
-			vertex.y = meshNode->mVertices[i].y;
-			vertex.z = meshNode->mVertices[i].z;
+			vertex.x = meshNode->mVertices[j].x;
+			vertex.y = meshNode->mVertices[j].y;
+			vertex.z = meshNode->mVertices[j].z;
 
-			vertex.u = meshNode->mTextureCoords[0][i].x;
-			vertex.v = meshNode->mTextureCoords[0][i].y;
+			vertex.u = meshNode->mTextureCoords[0][j].x;
+			vertex.v = meshNode->mTextureCoords[0][j].y;
 
-			vertex.nX = meshNode->mNormals[i].x;
-			vertex.nY = meshNode->mNormals[i].y;
-			vertex.nZ = meshNode->mNormals[i].z;
+			vertex.nX = meshNode->mNormals[j].x;
+			vertex.nY = meshNode->mNormals[j].y;
+			vertex.nZ = meshNode->mNormals[j].z;
 
-			vertices.push_back(vertex);
+			vertices.emplace_back(vertex);
 		}
 
 		for (unsigned int j = 0; j < meshNode->mNumFaces; j++)
@@ -119,7 +117,7 @@ void C_AssImp::CopyMeshes(const aiScene& scene, aiNode& node, SceneObject& objec
 
 			for (unsigned int k = 0; k < face.mNumIndices; k++)
 			{
-				indices.push_back(face.mIndices[k]);
+				indices.emplace_back(face.mIndices[k]);
 			}
 		}
 

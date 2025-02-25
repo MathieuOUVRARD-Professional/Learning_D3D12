@@ -546,7 +546,7 @@ int main()
 			// === UPDATE === //
 			angle += 0.005f;
 
-			glm::vec3 pyramidPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+			glm::vec3 pyramidPosition = glm::vec3(0.0f, 1.0f, 0.0f);
 			glm::mat4 pyramidModel = glm::translate(glm::mat4(1.0f), pyramidPosition);
 			pyramidModel = glm::rotate(pyramidModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 			static float color[] = { 0.0f, 1.0f, 0.0f , 1.0f };
@@ -557,7 +557,7 @@ int main()
 			std::vector<float> lightColor = ImGuiColorPicker(&colorPickerName, true);
 			ImGuiPerfOverlay(true);
 
-			glm::vec3 lightPosition = glm::vec3(1.0f, 1.5f, .5f);
+			glm::vec3 lightPosition = glm::vec3(1.0f, 2.5f, .5f);
 			glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
 
 			struct Light
