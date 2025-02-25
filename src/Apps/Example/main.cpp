@@ -399,6 +399,9 @@ int main()
 		Shader vertexShader("VertexShader.cso");
 		Shader pixelShader("PixelShader.cso");
 
+		Shader wireframeVertexShader("WireframeVertex.cso");
+		Shader wireframePixelShader("WireframePixel.cso");
+
 		Shader lightRootSignatureShader("LightRootSignature.cso");
 		Shader lightVertexShader("LightVertexShader.cso");
 		Shader lightPixelShader("LightPixelShader.cso");
@@ -413,9 +416,14 @@ int main()
 		// === Pipeline states === //
 		DXPipelineState pso, lightPso, wireframePso;
 		pso.Init(L"Main_PSO", rootSignature, vertexLayout, _countof(vertexLayout), vertexShader, pixelShader);
+		pso.Create();
+
 		lightPso.Init(L"Light_PSO", lightRootSignature, cubeVertexLayout, _countof(cubeVertexLayout), lightVertexShader, lightPixelShader);
-		//wireframePso.Init(L"Wireframe_PSO", rootSignature, vertexLayout, _countof(vertexLayout), vertexShader, pixelShader); 
-		//wireframePso.SetWireframe();
+		lightPso.Create();
+
+		wireframePso.Init(L"Wireframe_PSO", rootSignature, vertexLayout, _countof(vertexLayout), wireframeVertexShader, wireframePixelShader); 
+		wireframePso.SetWireframe();
+		wireframePso.Create();
 
 		// === Buffer Views === //
 		// Pyramid
@@ -585,8 +593,10 @@ int main()
 
 			// Sponza
 			// === PSO === //
-			//cmdList->SetPipelineState(wireframePso.Get());
-			//cmdList->SetGraphicsRootSignature(rootSignature);
+			cmdList->SetPipelineState(wireframePso.Get());
+			cmdList->SetGraphicsRootSignature(rootSignature);
+			//testObject.m_mesh.Draw(cmdList, camera, testObject.m_transform);
+			mainObjList.Draw(cmdList, camera);
 
 			// Object 2
 			// === PSO === //

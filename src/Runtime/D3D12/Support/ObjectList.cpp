@@ -30,6 +30,18 @@ uint32_t ObjectList::TotalSize()
 	return size;
 }
 
+void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
+{
+	for (SceneObject& object : m_list)
+	{	
+		if (object.m_name == "Sponza")
+		{
+			continue;
+		}
+		object.m_mesh.Draw(cmdList, camera, object.m_transform);
+	}
+}
+
 void ObjectList::CopyToUploadBuffer(ID3D12Resource* uploadBuffer, uint32_t destOffsetVertex, uint32_t destOffsetIndex, uint32_t destBufferOffset)
 {
 	char* uploadBufferAdress;
@@ -60,7 +72,7 @@ void ObjectList::CopyToUploadBuffer(ID3D12Resource* uploadBuffer, uint32_t destO
 					[destBufferOffset + destOffsetIndex + objectIndexOffset + meshIndexOffset],
 					object.m_mesh.GetSubmesh(i).GetIndices().data(),
 					object.m_mesh.GetSubmesh(i).IndicesSize());
-				object.m_mesh.GetSubmesh(i).m_indexBufferOffset = destOffsetIndex + objectIndexOffset + meshIndexOffset;
+				object.m_mesh.GetSubmesh(i).m_indexBufferOffset = (destOffsetIndex - destOffsetVertex - TotalVerticesSize()) + objectIndexOffset + meshIndexOffset;
 
 				meshVertexOffset += object.m_mesh.GetSubmesh(i).VerticesSize();
 				meshIndexOffset += object.m_mesh.GetSubmesh(i).IndicesSize();
@@ -80,7 +92,7 @@ void ObjectList::CopyToUploadBuffer(ID3D12Resource* uploadBuffer, uint32_t destO
 				[destBufferOffset + destOffsetIndex + objectIndexOffset],
 				object.m_mesh.GetIndices().data(),
 				object.m_mesh.IndicesSize());
-			object.m_mesh.m_indexBufferOffset = destOffsetIndex + objectIndexOffset;
+			object.m_mesh.m_indexBufferOffset = (destOffsetIndex - destOffsetVertex - TotalVerticesSize()) + objectIndexOffset;
 
 			objectVertexOffset += object.m_mesh.VerticesSize();
 			objectIndexOffset += object.m_mesh.IndicesSize();

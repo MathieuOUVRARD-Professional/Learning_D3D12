@@ -1,8 +1,12 @@
 #pragma once
 
-#include <vector>
 #include <D3D/Vertex.h>
+#include <Support/Camera.h>
+#include <Util/DebugColors.h>
+
 #include <d3d12.h>
+
+#include <vector>
 
 class Mesh
 {
@@ -16,7 +20,7 @@ public:
 	uint32_t VerticesSize();
 	uint32_t IndicesSize();
 	Mesh& GetSubmesh(int index);
-	void Draw();
+	void Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera, glm::mat4& transform);
 
 	inline std::vector<Vertex>& GetVertices()
 	{
@@ -34,6 +38,7 @@ public:
 	inline void SetIndices(std::vector<uint32_t>& indices)
 	{
 		m_indices = indices;
+		m_nIndex = IndicesSize();
 	}
 
 	inline D3D12_VERTEX_BUFFER_VIEW* GetVBV()
@@ -69,6 +74,8 @@ private:
 	std::vector<Vertex> m_vertices;
 	std::vector<uint32_t> m_indices;
 	std::vector<Mesh> m_submeshes;
+
+	uint32_t m_nIndex = 0;
 
 	D3D12_VERTEX_BUFFER_VIEW m_vbv{};
 	D3D12_INDEX_BUFFER_VIEW m_ibv{};

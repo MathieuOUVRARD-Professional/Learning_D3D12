@@ -60,7 +60,24 @@ Mesh& Mesh::GetSubmesh(int index)
 	return m_submeshes[index];
 }
 
-void Mesh::Draw()
+void Mesh::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera, glm::mat4& transform)
 {
+	if (m_nSubmeshes > 0)
+	{
+		for (unsigned int i = 0; i < m_nSubmeshes; i++)
+		{
+			m_submeshes[i].Draw(cmdList, camera, transform);
+		}
+	}
+	else
+	{
+		// === IA === //
+		cmdList->IASetVertexBuffers(0, 1, &m_vbv);
+		cmdList->IASetIndexBuffer(&m_ibv);
+		// === ROOT === //
+		camera.UpdateMatrix(cmdList, 0, transform);
+		cmdList->SetGraphicsRoot32BitConstants(2, 4, &DebugColorVector[m_materialID], 0);
 
+		cmdList->DrawIndexedInstanced(m_nIndex, 1, 0, 0, 0);
+	}
 }

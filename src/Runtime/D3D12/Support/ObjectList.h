@@ -12,6 +12,7 @@ class ObjectList
 		uint32_t TotalVerticesSize();
 		uint32_t TotalIndicesSize();
 		uint32_t TotalSize();
+		void Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera);
 
 		void CopyToUploadBuffer(ID3D12Resource* uploadBuffer, uint32_t destOffsetVertex = 0, uint32_t destOffsetIndex = 0, uint32_t destBufferOffset = 0);
 		void CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource* indexBuffer);
