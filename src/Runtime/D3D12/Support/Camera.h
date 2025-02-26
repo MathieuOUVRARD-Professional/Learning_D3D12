@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Support/Window.h>
-
 #include<glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
 #include<glm/gtx/rotate_vector.hpp>
 #include<glm/gtx/vector_angle.hpp>
+
+#include<d3d12.h>
 
 class Camera
 {
@@ -30,6 +30,7 @@ class Camera
 		void Matrix(float FOVdeg, float nearPlane, float farPlane);
 		void UpdateMatrix(ID3D12GraphicsCommandList* cmdList, int bufferSlot, glm::mat4 modelMatrix);
 		void Inputs();
+		void ControlMode(bool keyPressed);
 
 	private:
 		float m_defaultSpeed = 0.05f;

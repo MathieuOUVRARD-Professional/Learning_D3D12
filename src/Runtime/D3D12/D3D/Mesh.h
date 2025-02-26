@@ -38,7 +38,7 @@ public:
 	inline void SetIndices(std::vector<uint32_t>& indices)
 	{
 		m_indices = indices;
-		m_nIndex = m_indices.size();
+		m_nIndex = (uint32_t)m_indices.size();
 	}
 
 	inline D3D12_VERTEX_BUFFER_VIEW* GetVBV()

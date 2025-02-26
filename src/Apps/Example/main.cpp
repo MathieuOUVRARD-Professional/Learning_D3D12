@@ -457,6 +457,7 @@ int main()
 		SceneObject testObject = *it;
 
 		Camera camera(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth(), glm::vec3(0.0f, 0.0f, 2.0f));
+		DXWindow::Get().SetMainCamera(camera);
 
 		// === ImGui SetUp === //
 #ifdef IMGUI

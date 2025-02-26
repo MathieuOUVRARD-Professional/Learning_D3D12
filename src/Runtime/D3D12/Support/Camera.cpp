@@ -39,16 +39,6 @@ void Camera::UpdateMatrix(ID3D12GraphicsCommandList* cmdList, int bufferSlot, gl
 
 void Camera::Inputs()
 {
-	if (GetAsyncKeyState(VK_RETURN) && m_controlKeyReleased)
-	{
-		m_controlMode = !m_controlMode;
-		m_controlKeyReleased = false;
-	}
-	if(!GetAsyncKeyState(VK_RETURN) && !m_controlKeyReleased)
-	{
-		m_controlKeyReleased = true;
-	}
-
 	if (m_controlMode)
 	{
 		if (GetAsyncKeyState(0x5A)) // Z
@@ -124,5 +114,18 @@ void Camera::Inputs()
 			m_firstClick = true;
 		}
 	}	
+}
+
+void Camera::ControlMode(bool keyPressed)
+{
+	if (keyPressed && m_controlKeyReleased)
+	{
+		m_controlMode = !m_controlMode;
+		m_controlKeyReleased = false;
+	}
+	if (!keyPressed && !m_controlKeyReleased)
+	{
+		m_controlKeyReleased = true;
+	}
 }
 

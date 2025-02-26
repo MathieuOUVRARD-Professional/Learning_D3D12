@@ -297,6 +297,14 @@ LRESULT CALLBACK DXWindow::OnWindowMessage(HWND window, UINT message, WPARAM wPa
 			{
 				Get().SetFullscreen(!Get().IsFullscreen());
 			}
+			if (wParam == VK_RETURN)
+			{
+				Get().m_camera->ControlMode(true);
+			}
+			else
+			{
+				Get().m_camera->ControlMode(false);
+			}
 			break;
 
 		case WM_CLOSE:

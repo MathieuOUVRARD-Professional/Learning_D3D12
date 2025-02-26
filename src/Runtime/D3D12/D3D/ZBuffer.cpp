@@ -27,7 +27,7 @@ ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties)
 	D3D12_CLEAR_VALUE clearValueDs;
 	ZeroMemory(&clearValueDs, sizeof(D3D12_CLEAR_VALUE));
 	clearValueDs.Format = DXGI_FORMAT_D32_FLOAT;
-	clearValueDs.DepthStencil.Depth = 0.0f;
+	clearValueDs.DepthStencil.Depth = 1.0f;
 	clearValueDs.DepthStencil.Stencil = 0;
 	
 	// Create Ressource
