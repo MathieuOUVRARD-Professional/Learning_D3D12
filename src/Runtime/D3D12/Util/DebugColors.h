@@ -40,7 +40,7 @@ struct DebugColors
 	glm::vec4(0.0840f, 0.7636f, 0.7990f, 1.0000f)*/
 };
 
-inline std::vector<glm::vec4> DebugColorVector =
+inline std::vector<glm::vec4> DebugColorsVector =
 {
 	glm::vec4(0.0000f, 1.0000f, 0.1160f, 1.0000f),
 	glm::vec4(0.0000f, 0.0000f, 0.7790f, 1.0000f),

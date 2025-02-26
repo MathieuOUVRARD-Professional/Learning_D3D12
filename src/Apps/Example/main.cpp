@@ -533,8 +533,8 @@ int main()
 			vp.TopLeftY = 0;
 			vp.Width = (FLOAT)DXWindow::Get().GetWidth();
 			vp.Height = (FLOAT)DXWindow::Get().GetHeigth();
-			vp.MinDepth = 1.0f;
-			vp.MaxDepth = 0.0f;
+			vp.MinDepth = 0.0f;
+			vp.MaxDepth = 1.0f;
 			cmdList->RSSetViewports(1, &vp);
 			// Screeen Rect
 			RECT scRect;

@@ -76,7 +76,7 @@ void Mesh::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera, glm::mat4& t
 		cmdList->IASetIndexBuffer(&m_ibv);
 		// === ROOT === //
 		camera.UpdateMatrix(cmdList, 0, transform);
-		cmdList->SetGraphicsRoot32BitConstants(1, 4, &DebugColorVector[m_materialID], 0);
+		cmdList->SetGraphicsRoot32BitConstants(1, 4, &DebugColorsVector[m_materialID], 0);
 
 		cmdList->DrawIndexedInstanced(m_nIndex, 1, 0, 0, 0);
 	}

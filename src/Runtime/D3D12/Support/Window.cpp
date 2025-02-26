@@ -227,7 +227,7 @@ void DXWindow::BeginFrame(ID3D12GraphicsCommandList*& cmdList, ID3D12DescriptorH
 
 	cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, &dsvHandle);
 
-	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 0.0f, 0, 0, nullptr);
+	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 }
 

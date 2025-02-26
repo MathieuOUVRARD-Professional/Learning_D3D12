@@ -58,7 +58,7 @@ void DXPipelineState::Init(LPCWSTR name, ComPointer<ID3D12RootSignature> &rootSi
 	gfxPsod.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 	// Depth State
 	gfxPsod.DepthStencilState.DepthEnable = TRUE;
-	gfxPsod.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_GREATER;
+	gfxPsod.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
 	gfxPsod.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 	gfxPsod.DepthStencilState.StencilEnable = FALSE;
 	gfxPsod.DepthStencilState.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
