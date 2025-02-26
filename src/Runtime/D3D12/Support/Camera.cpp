@@ -39,7 +39,7 @@ void Camera::UpdateMatrix(ID3D12GraphicsCommandList* cmdList, int bufferSlot, gl
 
 void Camera::Inputs()
 {
-	if (m_controlMode)
+	if (m_controlable)
 	{
 		if (GetAsyncKeyState(0x5A)) // Z
 		{
@@ -116,16 +116,8 @@ void Camera::Inputs()
 	}	
 }
 
-void Camera::ControlMode(bool keyPressed)
+void Camera::ControlMode(bool hasControl)
 {
-	if (keyPressed && m_controlKeyReleased)
-	{
-		m_controlMode = !m_controlMode;
-		m_controlKeyReleased = false;
-	}
-	if (!keyPressed && !m_controlKeyReleased)
-	{
-		m_controlKeyReleased = true;
-	}
+	m_controlable = hasControl;
 }
 

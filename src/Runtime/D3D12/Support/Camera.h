@@ -34,6 +34,5 @@ class Camera
 
 	private:
 		float m_defaultSpeed = 0.05f;
-		bool m_controlMode = false;
-		bool m_controlKeyReleased = true;
+		bool m_controlable = true;
 };
