@@ -16,7 +16,7 @@ public:
 	unsigned int m_vertexBufferOffset = 0;
 	unsigned int m_indexBufferOffset = 0;
 
-	uint32_t GetSize();
+	uint32_t Size();
 	uint32_t VerticesSize();
 	uint32_t IndicesSize();
 	Mesh& GetSubmesh(int index);

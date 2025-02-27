@@ -14,7 +14,7 @@
 class Texture
 {
 	public:
-		void Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, ID3D12GraphicsCommandList* cmdList);
+		void Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, uint32_t uploadBufferOffset, ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHeap* bindlessSRVHeap = nullptr, uint32_t bindlessSRVOffset = 0);
 		void AddCommands(ID3D12GraphicsCommandList*& cmdList, UINT rootParameterIndex);
 
 		inline uint32_t GetTextureSize(int textureIndex)
@@ -35,12 +35,13 @@ class Texture
 			return m_textureDatas[textureIndex].content.data();
 		};
 		
-		Texture(int count, std::string* path, LPCWSTR* name);
+		Texture(std::vector<std::string>& paths, std::vector<std::string>& names);
+		Texture();
 
-		unsigned int m_count = 0;
+		uint32_t m_count = 0;
 
 	private:
-		std::vector<LPCWSTR> m_names;
+		std::vector<std::string> m_names;
 		std::vector<ComPointer<ID3D12Resource>> m_textures;
 		ComPointer<ID3D12DescriptorHeap> m_srvHeap;
 

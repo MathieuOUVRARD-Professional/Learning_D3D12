@@ -1,6 +1,6 @@
 #include <D3D/Mesh.h>
 
-uint32_t Mesh::GetSize()
+uint32_t Mesh::Size()
 {
 	uint32_t size = 0;
 
@@ -8,7 +8,7 @@ uint32_t Mesh::GetSize()
 	{
 		for (unsigned int i = 0; i < m_nSubmeshes; i++)
 		{
-			size += m_submeshes[i].GetSize();
+			size += m_submeshes[i].Size();
 		}		
 	}
 	else

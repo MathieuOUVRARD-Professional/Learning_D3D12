@@ -1,31 +1,35 @@
 #include "D3D/Texture.h"
 #include <iostream>
 
-Texture::Texture(int count, std::string* path, LPCWSTR* name)
+Texture::Texture(std::vector<std::string>& paths, std::vector<std::string>& names)
 {
 	// === Texture Data === //
-	if (count < 1)
+	if (paths.size() < 1)
 	{
 		D3EZ::EzException::EzException("Texture::Texture", 1, "Texture cannot be created", "Texture count parameter < 1");
 	}
 	else
 	{
-		m_count = count;
-		for (int i = 0; i < count; i++)
+		m_count = paths.size();
+		for (int i = 0; i < m_count; i++)
 		{
 			ImageLoader::ImageData imageData;
-			ImageLoader::LoadImageFromDisk(path[i], imageData);
+			ImageLoader::LoadImageFromDisk(paths[i], imageData);
 
 			m_textures.push_back(nullptr);
 			m_textureDatas.push_back(imageData);
 			m_textureStrides.push_back(m_textureDatas[i].width * ((m_textureDatas[i].bitPerPixel + 7) / 8));
 			m_textureSizes.push_back(m_textureDatas[i].height * m_textureStrides[i]);
-			m_names.push_back(name[i]);
+			m_names.push_back(names[i]);
 		}
 	}	
 }
 
-void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, ID3D12GraphicsCommandList* cmdList)
+Texture::Texture()
+{
+}
+
+void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, uint32_t uploadBufferOffset, ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHeap* bindlessSRVHeap, uint32_t bindlessSRVOffset)
 {
 	// Create D3D12 resource for each texture
 	for (unsigned int i = 0; i < m_count; i++)
@@ -44,22 +48,45 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource*
 		rdt.Flags = D3D12_RESOURCE_FLAG_NONE;
 		
 		DXContext::Get().GetDevice()->CreateCommittedResource(defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdt, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m_textures[i]));
-		m_textures[i].Get()->SetName(m_names[i]);
+
+		std::wstring wideName = std::wstring(m_names[i].begin(), m_names[i].end());
+
+		m_textures[i].Get()->SetName(wideName.c_str());
 	}	
 
-	//Texture Descriptor Heap
-	D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescText{};
-	descriptorHeapDescText.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	descriptorHeapDescText.NumDescriptors = m_count;
-	descriptorHeapDescText.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	descriptorHeapDescText.NodeMask = 0;
-	
-	DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescText, IID_PPV_ARGS(&m_srvHeap));
-	m_srvHeap.Get()->SetName(((std::wstring)(m_names[0]) + L" DescriptorHeap").c_str());
-
 	// === SRV === //
-	CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle(m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+	if (bindlessSRVHeap == nullptr)
+	{
+		//Textures Descriptor Heap
+		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescText{};
+		descriptorHeapDescText.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		descriptorHeapDescText.NumDescriptors = m_count;
+		descriptorHeapDescText.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		descriptorHeapDescText.NodeMask = 0;
+
+		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescText, IID_PPV_ARGS(&m_srvHeap));
+		std::string temp = m_names[0] + " DescriptorHeap";
+		std::wstring wideHeapName = std::wstring(temp.begin(), temp.end());
+
+		m_srvHeap.Get()->SetName(wideHeapName.c_str());
+	}
+	else
+	{
+		m_srvHeap = bindlessSRVHeap;
+	}	
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle;
 	UINT descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	if (bindlessSRVHeap == nullptr)
+	{
+		srvHandle = m_srvHeap->GetCPUDescriptorHandleForHeapStart();
+	}
+	else
+	{
+		srvHandle = m_srvHeap->GetCPUDescriptorHandleForHeapStart();
+		srvHandle.Offset(bindlessSRVOffset, descriptorSize);
+	}
 
 	for (unsigned int i = 0; i < m_count; i++)
 	{
@@ -88,7 +115,7 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource*
 		D3D12_TEXTURE_COPY_LOCATION txtSrc;
 		txtSrc.pResource = uploadBuffer;
 		txtSrc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-		txtSrc.PlacedFootprint.Offset = i < 1 ? 0 : m_textureSizes[i - 1];
+		txtSrc.PlacedFootprint.Offset = i < 1 ? uploadBufferOffset + 0 : uploadBufferOffset + m_textureSizes[i - 1];
 		txtSrc.PlacedFootprint.Footprint.Width  = m_textureDatas[i].width;
 		txtSrc.PlacedFootprint.Footprint.Height = m_textureDatas[i].height;
 		txtSrc.PlacedFootprint.Footprint.Depth = 1;

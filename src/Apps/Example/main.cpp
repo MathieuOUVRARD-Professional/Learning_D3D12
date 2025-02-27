@@ -176,7 +176,7 @@ int main()
 
 		ObjectList mainObjList;
 
-		C_AssImp::Import("Sponza/NewSponza_Main_glTF_003.gltf", mainObjList.GetList());
+		C_AssImp::Import("Sponza/NewSponza_Main_glTF_003.gltf", mainObjList);
 
 		// === Vertex data === //
 		// PYRAMID DATA 
@@ -262,16 +262,16 @@ int main()
 		//============================//
 
 		auto* cmdList = DXContext::Get().InitCommandList();
-		std::string eyeTexturePaths[2] = { "Textures/auge_512_512_BGRA_32BPP.png", "Textures/auge_spec_512_512_BGRA_32BPP.png" };
-		LPCWSTR eyeTextureNames[2] = { L"All_Seeing_Eye", L"All_Seeing_Eye_SPECULAR" };
+		std::vector<std::string> eyeTexturePaths= { "Textures/auge_512_512_BGRA_32BPP.png", "Textures/auge_spec_512_512_BGRA_32BPP.png" };
+		std::vector<std::string> eyeTextureNames = { "All_Seeing_Eye", "All_Seeing_Eye_SPECULAR" };
 		//=== Textures ===//
-		Texture eyeTextures = Texture(2, eyeTexturePaths, eyeTextureNames);
+		Texture eyeTextures = Texture(eyeTexturePaths, eyeTextureNames);
 
 		// === Upload, vertex & indexes buffers === //
 		D3D12_RESOURCE_DESC rdu{};
 		rdu.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 		rdu.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		rdu.Width = eyeTextures.GetTotalTextureSize() + mainObjList.TotalSize() + 2048;
+		rdu.Width = eyeTextures.GetTotalTextureSize() + 2048 + mainObjList.TotalSize();
 		rdu.Height = 1;
 		rdu.DepthOrArraySize = 1;
 		rdu.MipLevels = 1;

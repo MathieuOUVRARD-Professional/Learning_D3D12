@@ -1,7 +1,6 @@
 #include <Support/AssImpUsage.h>
-#include <iostream>
 
-void C_AssImp::Import(const std::string& filePath, std::list<SceneObject>& objectList)
+void C_AssImp::Import(const std::string& filePath, ObjectList& objectList)
 {
 	// Create an instance of the Importer class
 	Assimp::Importer importer;
@@ -25,13 +24,19 @@ void C_AssImp::Import(const std::string& filePath, std::list<SceneObject>& objec
 		SceneObject mainObject = SceneObject();
 		mainObject.m_name = "Sponza";
 
-		objectList.emplace_back(mainObject);
+		objectList.GetList().emplace_back(mainObject);
 
-		CopyNodesWithMeshes(objectList, *scene, *scene->mRootNode, objectList.back());
+		std::string folderPath = filePath.substr(0, filePath.find('/')) + "/"; 
+		
+		std::cout << "LOADING MATERIALS" << std::endl << std::endl;
+		ProcessMaterials(objectList, *scene, folderPath);
+
+		std::cout << "LOADING MESHES" << std::endl << std::endl;
+		ProcessMeshesNodes(objectList.GetList(), *scene, *scene->mRootNode, objectList.GetList().back());
 	}
 }
 
-void C_AssImp::CopyNodesWithMeshes(std::list<SceneObject>& objectList, const aiScene& scene, aiNode& node, SceneObject& targetParent, glm::mat4 parentTransform)
+void C_AssImp::ProcessMeshesNodes(std::list<SceneObject>& objectList, const aiScene& scene, aiNode& node, SceneObject& targetParent, glm::mat4 parentTransform)
 {
 	SceneObject* parent;
 	glm::mat4 newTransform = glm::mat4(1.0f);
@@ -52,7 +57,7 @@ void C_AssImp::CopyNodesWithMeshes(std::list<SceneObject>& objectList, const aiS
 		targetParent.AddChild(&objectList.back());
 
 		// copy the meshes
-		C_AssImp::CopyMeshes(scene, node, objectList.back());
+		C_AssImp::LoadMeshes(scene, node, objectList.back());
 
 		//The new object is the parent for all child nodes
 		parent = &objectList.back();
@@ -68,11 +73,11 @@ void C_AssImp::CopyNodesWithMeshes(std::list<SceneObject>& objectList, const aiS
 	// continue for all child nodes
 	for( unsigned int child = 0; child <  node.mNumChildren; child ++)
 	{
-		C_AssImp::CopyNodesWithMeshes(objectList, scene, *node.mChildren[child], *parent, newTransform);
+		C_AssImp::ProcessMeshesNodes(objectList, scene, *node.mChildren[child], *parent, newTransform);
 	}
 }
 
-void C_AssImp::CopyMeshes(const aiScene& scene, aiNode& node, SceneObject& objectToAddMeshTo)
+void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, SceneObject& objectToAddMeshTo)
 {	
 	std::cout << "Node: " << node.mName.C_Str() << "\r\nParent node: " << node.mParent->mName.C_Str() << "\r\nCopying "; 
 	node.mNumMeshes > 1 ? std::cout << node.mNumMeshes << " submeshes\r\n" : std::cout << "a mesh\r\n";
@@ -140,4 +145,116 @@ void C_AssImp::CopyMeshes(const aiScene& scene, aiNode& node, SceneObject& objec
 	}
 	
 	std::cout << "---------------\r\n\r\n";
+}
+
+void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, std::string sceneDirectory)
+{
+	std::vector<Material> materials;
+	
+	for (int i = 0; i < scene.mNumMaterials; i++)
+	{
+		aiMaterial* materialNode = scene.mMaterials[i];
+		aiString texturePath;
+
+		std::vector<std::string> texturesPaths;
+		std::vector<std::string> texturesNames;
+
+		std::string baseColorTexturePath;
+		std::string diffuseTexturePath;
+		std::string normalTexturePath;
+		std::string roughnessMetalnessTexturePath;
+
+		Material material;
+		aiColor3D baseColor;
+		aiColor3D emissive;
+		float opacity = 1.0f;
+
+		material.m_name = materialNode->GetName().C_Str();
+		std::cout << "Material name: " << material.m_name << std::endl;
+		
+		if (materialNode->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS )
+		{
+			std::cout << "BaseColor : " << baseColor.r << ", " << baseColor.g << ", " << baseColor.b << std::endl;
+			material.m_baseColor = glm::vec3(baseColor.r, baseColor.g, baseColor.b);
+		}
+
+		if (materialNode->Get(AI_MATKEY_COLOR_EMISSIVE, emissive) == AI_SUCCESS && (emissive.r > 0 && emissive.g > 0 && emissive.b > 0))
+		{
+			std::cout << "Emissive color: " << emissive.r << ", " << emissive.g << ", " << emissive.b << std::endl;
+			material.m_emissiveColor = glm::vec3(emissive.r, emissive.g, emissive.b);
+		}
+
+		if (materialNode->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS && opacity < 1.0f)
+		{
+			std::cout << "Material opacity: " << opacity << std::endl;
+			material.m_opacity = opacity;
+		}		
+		
+		if (materialNode->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS)
+		{
+			diffuseTexturePath = sceneDirectory + texturePath.C_Str();
+			texturesPaths.emplace_back(diffuseTexturePath);
+
+			std::string name = texturePath.C_Str();
+			name = name.substr(name.find_last_of('/',name.size()) + 1, name.size());			
+
+			texturesNames.emplace_back(name.c_str());
+		}
+		else if (materialNode->GetTexture(aiTextureType_BASE_COLOR, 0, &texturePath) == AI_SUCCESS)
+		{
+			baseColorTexturePath = sceneDirectory + texturePath.C_Str();
+			texturesPaths.emplace_back(diffuseTexturePath);
+
+			std::string name = texturePath.C_Str();
+			name = name.substr(name.find_last_of('/', name.size()) + 1, name.size());
+
+			texturesNames.emplace_back(name.c_str());
+		}
+		
+		if (materialNode->GetTexture(aiTextureType_NORMALS, 0, &texturePath) == AI_SUCCESS)
+		{
+			normalTexturePath = sceneDirectory + texturePath.C_Str();
+			texturesPaths.emplace_back(normalTexturePath);
+
+			std::string name = texturePath.C_Str();
+			name = name.substr(name.find_last_of('/', name.size()) + 1, name.size());
+
+			texturesNames.emplace_back(name.c_str());
+		}
+		if (materialNode->GetTexture(aiTextureType_METALNESS, 0, &texturePath) == AI_SUCCESS)
+		{
+			roughnessMetalnessTexturePath = sceneDirectory + texturePath.C_Str();
+			texturesPaths.emplace_back(roughnessMetalnessTexturePath);
+
+			std::string name = texturePath.C_Str();
+			name = name.substr(name.find_last_of('/', name.size()) + 1, name.size());
+
+			texturesNames.emplace_back(name.c_str());
+		}
+		else
+		{
+			float metallicFactor = 0.0f;
+			float roughnessFactor = 1.0f;
+
+			materialNode->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor);
+			material.m_metallicFactor = metallicFactor;
+			materialNode->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor);
+			material.m_roughnessFactor = roughnessFactor;
+
+			std::cout << "Metallic Factor: " << metallicFactor << " Roughness Factor: " << roughnessFactor << std::endl;
+		}
+		std::cout << std::endl;
+
+		if (texturesPaths.size() == 0)
+		{
+			texturesPaths.emplace_back("Textures/White.png");
+			texturesNames.emplace_back("White");
+		}
+
+		Texture materialTextures(texturesPaths, texturesNames);
+		material.SetTextures(materialTextures);
+
+		materials.emplace_back(material);
+	}
+	objectList.SetMaterials(materials);
 }
