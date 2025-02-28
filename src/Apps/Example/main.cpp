@@ -319,7 +319,7 @@ int main()
 		vertexBuffer.Get()->SetName(L"Vertex_Buffer");
 		indexBuffer.Get()->SetName(L"Index_Buffer");
 
-		eyeTextures.Init(&defaultHeapProperties, uploadBuffer, cmdList);
+		eyeTextures.Init(&defaultHeapProperties, uploadBuffer, 0, cmdList);
 		ZBuffer zBuffer = ZBuffer(&defaultHeapProperties);
 
 		// === Copy void* --> CPU Resource === //
@@ -330,10 +330,11 @@ int main()
 		uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
 
 		// === Copy to Upload Buffer === //
-		uint32_t offset = 0;
-		
+		uint32_t offset = 0;		
+
+		eyeTextures.CopyToUploadBuffer(uploadBuffer, offset);
 		// Textures
-		memcpy(&uploadBufferAdress
+		/*memcpy(&uploadBufferAdress
 			[offset],
 			eyeTextures.GetTextureData(0), 
 			eyeTextures.GetTextureSize(0));
@@ -343,7 +344,7 @@ int main()
 			[offset],
 			eyeTextures.GetTextureData(1), 
 			eyeTextures.GetTextureSize(1));
-		offset += eyeTextures.GetTextureSize(1);
+		offset += eyeTextures.GetTextureSize(1);*/
 
 		// Vertices
 		memcpy(&uploadBufferAdress
@@ -375,21 +376,23 @@ int main()
 		// Object list
 		mainObjList.CopyToUploadBuffer
 		(
-			uploadBuffer, 1024, 1024,
+			cmdList, &defaultHeapProperties,
+			uploadBuffer, 
+			1024, 1024,
 			eyeTextures.GetTotalTextureSize()
 		);
 
 		// === Async Copy CPU --> GPU === //
 		cmdList->CopyBufferRegion
 		(
-			vertexBuffer, 0, 
-			uploadBuffer, eyeTextures.GetTotalTextureSize(), 
+			vertexBuffer, 0,
+			uploadBuffer, eyeTextures.GetTotalTextureSize() + mainObjList.TotalTexturesSize(),
 			1024 + mainObjList.TotalVerticesSize()
 		);
 		cmdList->CopyBufferRegion
 		(
 			indexBuffer, 0, 
-			uploadBuffer, eyeTextures.GetTotalTextureSize() + 1024 + mainObjList.TotalVerticesSize(), 
+			uploadBuffer, eyeTextures.GetTotalTextureSize() + mainObjList.TotalTexturesSize() + 1024 + mainObjList.TotalVerticesSize(),
 			mainObjList.TotalIndicesSize() + 1024
 		);
 		DXContext::Get().ExecuteCommandList();

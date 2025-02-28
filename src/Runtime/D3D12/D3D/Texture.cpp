@@ -10,8 +10,8 @@ Texture::Texture(std::vector<std::string>& paths, std::vector<std::string>& name
 	}
 	else
 	{
-		m_count = paths.size();
-		for (int i = 0; i < m_count; i++)
+		m_count = (uint32_t)paths.size();
+		for (uint32_t i = 0; i < m_count; i++)
 		{
 			ImageLoader::ImageData imageData;
 			ImageLoader::LoadImageFromDisk(paths[i], imageData);
@@ -152,6 +152,25 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource*
 		transitionBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
 
 		cmdList->ResourceBarrier(1, &transitionBarrier);
+	}
+}
+
+void Texture::CopyToUploadBuffer(ID3D12Resource* uploadBuffer, uint32_t destOffset)
+{
+	// === Copy void* --> CPU Resource === //
+	char* uploadBufferAdress;
+	D3D12_RANGE uploadRange;
+	uploadRange.Begin = destOffset;
+	uploadRange.End = destOffset + GetTotalTextureSize();
+	uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
+
+	for (uint32_t i = 0; i < m_count; i++)
+	{
+		memcpy(&uploadBufferAdress
+			[destOffset],
+			GetTextureData(i),
+			GetTextureSize(i));
+		destOffset += GetTextureSize(i);
 	}
 }
 

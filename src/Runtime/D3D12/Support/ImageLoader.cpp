@@ -4,7 +4,9 @@
  const std::vector<ImageLoader::GUID_to_DXGI> ImageLoader::s_lookupTable =
  {
 	 { GUID_WICPixelFormat32bppBGRA, DXGI_FORMAT_B8G8R8A8_UNORM},
-	 { GUID_WICPixelFormat32bppRGBA, DXGI_FORMAT_R8G8B8A8_UNORM}
+	 { GUID_WICPixelFormat32bppRGBA, DXGI_FORMAT_R8G8B8A8_UNORM},
+	 {GUID_WICPixelFormat24bppBGR, DXGI_FORMAT_B8G8R8A8_UNORM},
+	 {GUID_WICPixelFormat24bppRGB, DXGI_FORMAT_R8G8B8A8_UNORM}
  };
 
 bool ImageLoader::LoadImageFromDisk(const std::filesystem::path& imagePath, ImageData& imageData)
@@ -41,6 +43,44 @@ bool ImageLoader::LoadImageFromDisk(const std::filesystem::path& imagePath, Imag
 	__ImageLoader_CAR(
 		wicFrameDecoder->GetPixelFormat(&imageData.wicPixelFormat)
 	);
+
+	ComPointer<IWICFormatConverter> wicConverter;
+	if (imageData.wicPixelFormat != GUID_WICPixelFormat32bppRGBA)
+	{
+		__ImageLoader_CAR(
+			wicFactory->CreateFormatConverter(&wicConverter)
+		);
+		__ImageLoader_CAR(
+			wicConverter->Initialize
+			(
+				wicFrameDecoder.Get(),	// Conversion to R8G8B8
+				GUID_WICPixelFormat32bppRGBA,
+				WICBitmapDitherTypeNone,
+				nullptr,
+				0.0,
+				WICBitmapPaletteTypeCustom
+			)
+		);
+		imageData.wicPixelFormat = GUID_WICPixelFormat32bppRGBA;
+	}
+	else
+	{
+		wicConverter = nullptr;
+		__ImageLoader_CAR(
+			wicFactory->CreateFormatConverter(&wicConverter)
+		);
+		__ImageLoader_CAR(
+			wicConverter->Initialize
+			(
+				wicFrameDecoder.Get(), // No conversion, just adapt it for uniformity
+				GUID_WICPixelFormat32bppRGBA,
+				WICBitmapDitherTypeNone,
+				nullptr,
+				0.0,
+				WICBitmapPaletteTypeCustom
+			)
+		);
+	}
 
 	// Metadata of pixel format
 	ComPointer<IWICComponentInfo> wicComponentInfo;
@@ -84,7 +124,7 @@ bool ImageLoader::LoadImageFromDisk(const std::filesystem::path& imagePath, Imag
 	copyRect.Height = imageData.height;
 
 	__ImageLoader_CAR(
-		wicFrameDecoder->CopyPixels(&copyRect,stride, size, (BYTE*)imageData.content.data())
+		wicConverter->CopyPixels(&copyRect,stride, size, (BYTE*)imageData.content.data())
 	);
 
 	return true;

@@ -142,8 +142,7 @@ void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, SceneObject& objec
 			mesh.m_materialID = meshNode->mMaterialIndex;
 			objectToAddMeshTo.SetMesh(mesh);
 		}
-	}
-	
+	}	
 	std::cout << "---------------\r\n\r\n";
 }
 
@@ -151,7 +150,7 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 {
 	std::vector<Material> materials;
 	
-	for (int i = 0; i < scene.mNumMaterials; i++)
+	for (unsigned int i = 0; i < scene.mNumMaterials; i++)
 	{
 		aiMaterial* materialNode = scene.mMaterials[i];
 		aiString texturePath;
