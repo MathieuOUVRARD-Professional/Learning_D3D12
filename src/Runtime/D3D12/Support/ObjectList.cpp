@@ -1,8 +1,8 @@
 #include <Support/ObjectList.h>
 
-uint32_t ObjectList::TotalTexturesSize()
+UINT64 ObjectList::TotalTexturesSize()
 {
-	uint32_t size = 0;
+	UINT64 size = 0;
 	for (Material material : m_materials)
 	{
 		size += material.TextureSize();
@@ -10,9 +10,9 @@ uint32_t ObjectList::TotalTexturesSize()
 	return size;
 }
 
-uint32_t ObjectList::TotalVerticesSize()
+UINT64 ObjectList::TotalVerticesSize()
 {
-	uint32_t size = 0;
+	UINT64 size = 0;
 	for (SceneObject object : m_list)
 	{
 		size += object.m_mesh.VerticesSize();
@@ -20,9 +20,9 @@ uint32_t ObjectList::TotalVerticesSize()
 	return size;
 }
 
-uint32_t ObjectList::TotalIndicesSize()
+UINT64 ObjectList::TotalIndicesSize()
 {
-	uint32_t size = 0;
+	UINT64 size = 0;
 	for (SceneObject object : m_list)
 	{
 		size += object.m_mesh.IndicesSize();
@@ -30,9 +30,9 @@ uint32_t ObjectList::TotalIndicesSize()
 	return size;
 }
 
-uint32_t ObjectList::TotalSize()
+UINT64 ObjectList::TotalSize()
 {
-	uint32_t size = 0;
+	UINT64 size = 0;
 	for(SceneObject object : m_list)
 	{
 		size += object.m_mesh.Size();
@@ -66,7 +66,7 @@ void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
 	}
 }
 
-void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, uint32_t destOffsetVertex, uint32_t destOffsetIndex, uint32_t destOffsetTexture)
+void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destOffsetVertex, UINT64 destOffsetIndex, UINT64 destOffsetTexture)
 {
 	// Bindless Textures Descriptor Heap
 	D3D12_DESCRIPTOR_HEAP_DESC bindlessDescriptorHeapDescText{};
@@ -82,32 +82,32 @@ void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HE
 	m_srvHeap.Get()->SetName(wideHeapName.c_str());
 
 	// Textures copy
-	uint32_t srvOffset = 0;
+	uint32_t srvIndex = 0;
 	for (Material material : m_materials)
 	{
-		material.GetTextures().Init(defaultHeapProperties, uploadBuffer, destOffsetTexture, cmdList, m_srvHeap, srvOffset);
+		material.GetTextures().Init(defaultHeapProperties, uploadBuffer, destOffsetTexture, cmdList, m_srvHeap, srvIndex);
 		material.GetTextures().CopyToUploadBuffer(uploadBuffer, destOffsetTexture);
-		srvOffset += material.GetTextures().m_count;
-		destOffsetTexture += material.GetTextures().GetTotalTextureSize();
+		srvIndex += material.GetTextures().m_count;
+		destOffsetTexture += material.TextureSize();
 	}
 
 	// Meshes copy 
 	char* uploadBufferAdress;
 	D3D12_RANGE uploadRange;
 	uploadRange.Begin = destOffsetTexture;
-	uploadRange.End = destOffsetTexture + destOffsetVertex + destOffsetIndex + TotalSize();
+	uploadRange.End = destOffsetTexture + destOffsetVertex + destOffsetIndex + TotalVerticesSize() + TotalIndicesSize(); //Todo adapt to new TotalSize func
 	uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
 
 	destOffsetIndex = destOffsetVertex + TotalVerticesSize() + destOffsetIndex;
 
-	uint32_t objectVertexOffset = 0;
-	uint32_t objectIndexOffset = 0;
+	UINT64 objectVertexOffset = 0;
+	UINT64 objectIndexOffset = 0;
 	for (SceneObject& object : m_list)
 	{
 		if (object.m_mesh.m_nSubmeshes > 0)
 		{
-			uint32_t submeshVertexOffset = 0;
-			uint32_t submeshIndexOffset = 0;
+			UINT64 submeshVertexOffset = 0;
+			UINT64 submeshIndexOffset = 0;
 			for (unsigned int i = 0; i < object.m_mesh.m_nSubmeshes; i++)
 			{
 				memcpy(&uploadBufferAdress

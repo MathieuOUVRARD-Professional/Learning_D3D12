@@ -14,17 +14,17 @@
 class Texture
 {
 	public:
-		void Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, uint32_t uploadBufferOffset, ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHeap* bindlessSRVHeap = nullptr, uint32_t bindlessSRVOffset = 0);
-		void CopyToUploadBuffer(ID3D12Resource* uploadBuffer, uint32_t destOffset);
+		void Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffset, ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHeap* bindlessSRVHeap = nullptr, uint32_t bindlessSRVIndex = 0);
+		void CopyToUploadBuffer(ID3D12Resource* uploadBuffer, UINT64 destOffset);
 		void AddCommands(ID3D12GraphicsCommandList*& cmdList, UINT rootParameterIndex);
 
-		inline uint32_t GetTextureSize(int textureIndex)
+		inline UINT64 GetTextureSize(int textureIndex)
 		{
 			return m_textureSizes[textureIndex];
 		};
-		inline uint32_t GetTotalTextureSize()
+		inline UINT64 GetTotalTextureSize()
 		{
-			uint32_t totalSize = 0;
+			UINT64 totalSize = 0;
 			for (unsigned int i = 0; i < m_count; i++)
 			{
 				totalSize += GetTextureSize(i);
@@ -47,6 +47,6 @@ class Texture
 		ComPointer<ID3D12DescriptorHeap> m_srvHeap;
 
 		std::vector<ImageLoader::ImageData> m_textureDatas;
-		std::vector<uint32_t> m_textureSizes;
+		std::vector<UINT64> m_textureSizes;
 		std::vector<uint32_t> m_textureStrides;
 };

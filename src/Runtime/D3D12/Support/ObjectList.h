@@ -11,12 +11,12 @@
 class ObjectList
 {
 	public:
-		uint32_t TotalTexturesSize();
-		uint32_t TotalVerticesSize();
-		uint32_t TotalIndicesSize();
-		uint32_t TotalSize();
+		UINT64 TotalTexturesSize();
+		UINT64 TotalVerticesSize();
+		UINT64 TotalIndicesSize();
+		UINT64 TotalSize();
 		uint32_t TextureCount();
-		void CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, uint32_t destOffsetVertex = 0, uint32_t destOffsetIndex = 0, uint32_t destBufferOffset = 0);
+		void CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destOffsetVertex = 0, UINT64 destOffsetIndex = 0, UINT64 destBufferOffset = 0);
 		void CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource* indexBuffer);
 		void Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera);
 

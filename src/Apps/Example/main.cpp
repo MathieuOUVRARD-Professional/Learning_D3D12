@@ -261,17 +261,20 @@ int main()
 		};
 		//============================//
 
+
 		auto* cmdList = DXContext::Get().InitCommandList();
 		std::vector<std::string> eyeTexturePaths= { "Textures/auge_512_512_BGRA_32BPP.png", "Textures/auge_spec_512_512_BGRA_32BPP.png" };
 		std::vector<std::string> eyeTextureNames = { "All_Seeing_Eye", "All_Seeing_Eye_SPECULAR" };
 		//=== Textures ===//
-		Texture eyeTextures = Texture(eyeTexturePaths, eyeTextureNames);
+		Texture eyeTextures = Texture(eyeTexturePaths, eyeTextureNames);		
+
+		UINT64 uploadBufferSize = eyeTextures.GetTotalTextureSize() + 2048 + mainObjList.TotalSize();
 
 		// === Upload, vertex & indexes buffers === //
 		D3D12_RESOURCE_DESC rdu{};
 		rdu.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 		rdu.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		rdu.Width = eyeTextures.GetTotalTextureSize() + 2048 + mainObjList.TotalSize();
+		rdu.Width = uploadBufferSize;
 		rdu.Height = 1;
 		rdu.DepthOrArraySize = 1;
 		rdu.MipLevels = 1;
@@ -322,29 +325,17 @@ int main()
 		eyeTextures.Init(&defaultHeapProperties, uploadBuffer, 0, cmdList);
 		ZBuffer zBuffer = ZBuffer(&defaultHeapProperties);
 
+		// === Copy to Upload Buffer === //
+		UINT64 offset = 0;
+		eyeTextures.CopyToUploadBuffer(uploadBuffer, offset);
+		offset = eyeTextures.GetTotalTextureSize();
+
 		// === Copy void* --> CPU Resource === //
 		char* uploadBufferAdress;
 		D3D12_RANGE uploadRange;
-		uploadRange.Begin = 0;
-		uploadRange.End = eyeTextures.GetTotalTextureSize() + 2048;
+		uploadRange.Begin = offset;
+		uploadRange.End = offset + 1024 + mainObjList.TotalVerticesSize() + 1024;
 		uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
-
-		// === Copy to Upload Buffer === //
-		uint32_t offset = 0;		
-
-		eyeTextures.CopyToUploadBuffer(uploadBuffer, offset);
-		// Textures
-		/*memcpy(&uploadBufferAdress
-			[offset],
-			eyeTextures.GetTextureData(0), 
-			eyeTextures.GetTextureSize(0));
-		offset += eyeTextures.GetTextureSize(0);
-
-		memcpy(&uploadBufferAdress
-			[offset],
-			eyeTextures.GetTextureData(1), 
-			eyeTextures.GetTextureSize(1));
-		offset += eyeTextures.GetTextureSize(1);*/
 
 		// Vertices
 		memcpy(&uploadBufferAdress

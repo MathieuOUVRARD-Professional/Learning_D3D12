@@ -11,10 +11,10 @@
 class Mesh
 {
 public:
-	unsigned int m_materialID = -1;
-	unsigned int m_nSubmeshes = 0;
-	unsigned int m_vertexBufferOffset = 0;
-	unsigned int m_indexBufferOffset = 0;
+	uint32_t m_materialID = -1;
+	uint32_t m_nSubmeshes = 0;
+	UINT64 m_vertexBufferOffset = 0;
+	UINT64 m_indexBufferOffset = 0;
 
 	uint32_t Size();
 	uint32_t VerticesSize();

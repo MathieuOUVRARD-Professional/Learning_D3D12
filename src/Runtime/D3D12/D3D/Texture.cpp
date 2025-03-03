@@ -29,7 +29,7 @@ Texture::Texture()
 {
 }
 
-void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, uint32_t uploadBufferOffset, ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHeap* bindlessSRVHeap, uint32_t bindlessSRVOffset)
+void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffset, ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHeap* bindlessSRVHeap, uint32_t bindlessSRVOffset)
 {
 	// Create D3D12 resource for each texture
 	for (unsigned int i = 0; i < m_count; i++)
@@ -100,10 +100,8 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource*
 		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
 		DXContext::Get().GetDevice()->CreateShaderResourceView(m_textures[i], &srvDesc, srvHandle);
-		if (i + 1 < m_count)
-		{
-			srvHandle.Offset(1, descriptorSize);
-		}
+		srvHandle.Offset(1, descriptorSize);
+		
 	}
 	// =========================== //
 
@@ -115,7 +113,7 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource*
 		D3D12_TEXTURE_COPY_LOCATION txtSrc;
 		txtSrc.pResource = uploadBuffer;
 		txtSrc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-		txtSrc.PlacedFootprint.Offset = i < 1 ? uploadBufferOffset + 0 : uploadBufferOffset + m_textureSizes[i - 1];
+		txtSrc.PlacedFootprint.Offset = uploadBufferOffset;
 		txtSrc.PlacedFootprint.Footprint.Width  = m_textureDatas[i].width;
 		txtSrc.PlacedFootprint.Footprint.Height = m_textureDatas[i].height;
 		txtSrc.PlacedFootprint.Footprint.Depth = 1;
@@ -152,10 +150,12 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource*
 		transitionBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
 
 		cmdList->ResourceBarrier(1, &transitionBarrier);
+
+		uploadBufferOffset += GetTextureSize(i);
 	}
 }
 
-void Texture::CopyToUploadBuffer(ID3D12Resource* uploadBuffer, uint32_t destOffset)
+void Texture::CopyToUploadBuffer(ID3D12Resource* uploadBuffer, UINT64 destOffset)
 {
 	// === Copy void* --> CPU Resource === //
 	char* uploadBufferAdress;

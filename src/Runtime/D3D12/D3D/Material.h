@@ -6,7 +6,7 @@
 class Material
 {
 	public:
-		inline uint32_t TextureSize()
+		inline UINT64 TextureSize()
 		{
 			return m_Textures.GetTotalTextureSize();
 		}
