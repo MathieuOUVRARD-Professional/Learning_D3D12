@@ -268,7 +268,8 @@ int main()
 		//=== Textures ===//
 		Texture eyeTextures = Texture(eyeTexturePaths, eyeTextureNames);		
 
-		UINT64 uploadBufferSize = eyeTextures.GetTotalTextureSize() + 2048 + mainObjList.TotalSize();
+		//UINT64 uploadBufferSize = eyeTextures.GetTotalTextureSize() + 2048 + mainObjList.TotalSize();
+		UINT64 uploadBufferSize = 512 * (1024 * 1024);	//512 MB buffer
 
 		// === Upload, vertex & indexes buffers === //
 		D3D12_RESOURCE_DESC rdu{};
@@ -322,20 +323,30 @@ int main()
 		vertexBuffer.Get()->SetName(L"Vertex_Buffer");
 		indexBuffer.Get()->SetName(L"Index_Buffer");
 
-		eyeTextures.Init(&defaultHeapProperties, uploadBuffer, 0, cmdList);
+		eyeTextures.Init(&defaultHeapProperties);
 		ZBuffer zBuffer = ZBuffer(&defaultHeapProperties);
 
 		// === Copy to Upload Buffer === //
 		UINT64 offset = 0;
-		eyeTextures.CopyToUploadBuffer(uploadBuffer, offset);
+		eyeTextures.CopyToUploadBuffer(uploadBuffer, offset, cmdList);
 		offset = eyeTextures.GetTotalTextureSize();
+
+		// Object list
+		mainObjList.CopyToUploadBuffer
+		(
+			cmdList, &defaultHeapProperties,
+			uploadBuffer, offset,
+			1024, 1024
+		);
 
 		// === Copy void* --> CPU Resource === //
 		char* uploadBufferAdress;
 		D3D12_RANGE uploadRange;
-		uploadRange.Begin = offset;
-		uploadRange.End = offset + 1024 + mainObjList.TotalVerticesSize() + 1024;
+		uploadRange.Begin = 0;
+		uploadRange.End = 1024 + mainObjList.TotalVerticesSize() + 1024;
 		uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
+
+		offset = 0;
 
 		// Vertices
 		memcpy(&uploadBufferAdress
@@ -350,7 +361,7 @@ int main()
 			sizeof(cubeVertices));
 
 		// Indices
-		offset = eyeTextures.GetTotalTextureSize() + 1024 + mainObjList.TotalVerticesSize();
+		offset = 1024 + mainObjList.TotalVerticesSize();
 		memcpy(&uploadBufferAdress
 			[offset],
 			indexes,
@@ -362,31 +373,24 @@ int main()
 			cubeIndexes, 
 			sizeof(cubeIndexes));
 
-		uploadBuffer->Unmap(0, &uploadRange);
-		
-		// Object list
-		mainObjList.CopyToUploadBuffer
-		(
-			cmdList, &defaultHeapProperties,
-			uploadBuffer, 
-			1024, 1024,
-			eyeTextures.GetTotalTextureSize()
-		);
+		uploadBuffer->Unmap(0, &uploadRange);		
 
 		// === Async Copy CPU --> GPU === //
-		cmdList->CopyBufferRegion
+		cmdList->CopyBufferRegion				// Vertex Buffer
 		(
 			vertexBuffer, 0,
-			uploadBuffer, eyeTextures.GetTotalTextureSize() + mainObjList.TotalTexturesSize(),
+			uploadBuffer, 0,
 			1024 + mainObjList.TotalVerticesSize()
 		);
-		cmdList->CopyBufferRegion
+		cmdList->CopyBufferRegion				// Index Buffer
 		(
 			indexBuffer, 0, 
-			uploadBuffer, eyeTextures.GetTotalTextureSize() + mainObjList.TotalTexturesSize() + 1024 + mainObjList.TotalVerticesSize(),
-			mainObjList.TotalIndicesSize() + 1024
+			uploadBuffer, 1024 + mainObjList.TotalVerticesSize(),
+			1024 + mainObjList.TotalIndicesSize()
 		);
+
 		DXContext::Get().ExecuteCommandList();
+		cmdList = DXContext::Get().InitCommandList();
 
 		// === Shaders === //
 		Shader rootSignatureShader("RootSignature.cso");

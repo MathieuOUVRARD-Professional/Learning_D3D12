@@ -14,8 +14,8 @@
 class Texture
 {
 	public:
-		void Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffset, ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHeap* bindlessSRVHeap = nullptr, uint32_t bindlessSRVIndex = 0);
-		void CopyToUploadBuffer(ID3D12Resource* uploadBuffer, UINT64 destOffset);
+		void Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12DescriptorHeap* bindlessSRVHeap = nullptr, uint32_t bindlessSRVIndex = 0);
+		UINT64 CopyToUploadBuffer(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffset, ID3D12GraphicsCommandList* cmdList);
 		void AddCommands(ID3D12GraphicsCommandList*& cmdList, UINT rootParameterIndex);
 
 		inline UINT64 GetTextureSize(int textureIndex)

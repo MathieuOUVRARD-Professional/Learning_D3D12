@@ -66,7 +66,7 @@ void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
 	}
 }
 
-void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destOffsetVertex, UINT64 destOffsetIndex, UINT64 destOffsetTexture)
+void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destOffsetTexture, UINT64 destOffsetVertex, UINT64 destOffsetIndex)
 {
 	// Bindless Textures Descriptor Heap
 	D3D12_DESCRIPTOR_HEAP_DESC bindlessDescriptorHeapDescText{};
@@ -83,19 +83,31 @@ void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HE
 
 	// Textures copy
 	uint32_t srvIndex = 0;
-	for (Material material : m_materials)
+	for (Material& material : m_materials)
 	{
-		material.GetTextures().Init(defaultHeapProperties, uploadBuffer, destOffsetTexture, cmdList, m_srvHeap, srvIndex);
-		material.GetTextures().CopyToUploadBuffer(uploadBuffer, destOffsetTexture);
+		material.GetTextures().Init(defaultHeapProperties, m_srvHeap, srvIndex);
+
+		if (destOffsetTexture + material.TextureSize() > uploadBuffer->GetDesc().Width)
+		{
+			DXContext::Get().ExecuteCommandList();	// Fence synchronization
+			cmdList = DXContext::Get().InitCommandList();
+			destOffsetTexture = 0;
+		}
+		material.GetTextures().CopyToUploadBuffer(uploadBuffer, destOffsetTexture, cmdList);
 		srvIndex += material.GetTextures().m_count;
 		destOffsetTexture += material.TextureSize();
 	}
 
+	// Waiting for the buffer to get back before writing meshes
+	DXContext::Get().ExecuteCommandList();
+	cmdList = DXContext::Get().InitCommandList();
+	destOffsetTexture = 0;
+
 	// Meshes copy 
 	char* uploadBufferAdress;
 	D3D12_RANGE uploadRange;
-	uploadRange.Begin = destOffsetTexture;
-	uploadRange.End = destOffsetTexture + destOffsetVertex + destOffsetIndex + TotalVerticesSize() + TotalIndicesSize(); //Todo adapt to new TotalSize func
+	uploadRange.Begin = 0;
+	uploadRange.End = TotalVerticesSize() + TotalIndicesSize(); 
 	uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
 
 	destOffsetIndex = destOffsetVertex + TotalVerticesSize() + destOffsetIndex;
@@ -111,13 +123,13 @@ void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HE
 			for (unsigned int i = 0; i < object.m_mesh.m_nSubmeshes; i++)
 			{
 				memcpy(&uploadBufferAdress
-					[destOffsetTexture + destOffsetVertex + objectVertexOffset + submeshVertexOffset],
+					[destOffsetVertex + objectVertexOffset + submeshVertexOffset],
 					object.m_mesh.GetSubmesh(i).GetVertices().data(), 
 					object.m_mesh.GetSubmesh(i).VerticesSize());
 				object.m_mesh.GetSubmesh(i).m_vertexBufferOffset = destOffsetVertex + objectVertexOffset + submeshVertexOffset;
 
 				memcpy(&uploadBufferAdress
-					[destOffsetTexture + destOffsetIndex + objectIndexOffset + submeshIndexOffset],
+					[destOffsetIndex + objectIndexOffset + submeshIndexOffset],
 					object.m_mesh.GetSubmesh(i).GetIndices().data(),
 					object.m_mesh.GetSubmesh(i).IndicesSize());
 				object.m_mesh.GetSubmesh(i).m_indexBufferOffset = (destOffsetIndex - destOffsetVertex - TotalVerticesSize()) + objectIndexOffset + submeshIndexOffset;
@@ -131,13 +143,13 @@ void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HE
 		else
 		{
 			memcpy(
-				&uploadBufferAdress[destOffsetTexture + destOffsetVertex + objectVertexOffset],
+				&uploadBufferAdress[destOffsetVertex + objectVertexOffset],
 				object.m_mesh.GetVertices().data(),
 				object.m_mesh.VerticesSize());
 			object.m_mesh.m_vertexBufferOffset = destOffsetVertex + objectVertexOffset;
 
 			memcpy(&uploadBufferAdress
-				[destOffsetTexture + destOffsetIndex + objectIndexOffset],
+				[destOffsetIndex + objectIndexOffset],
 				object.m_mesh.GetIndices().data(),
 				object.m_mesh.IndicesSize());
 			object.m_mesh.m_indexBufferOffset = (destOffsetIndex - destOffsetVertex - TotalVerticesSize()) + objectIndexOffset;
