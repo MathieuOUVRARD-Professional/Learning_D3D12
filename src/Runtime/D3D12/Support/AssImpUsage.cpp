@@ -113,6 +113,15 @@ void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, SceneObject& objec
 			vertex.nY = meshNode->mNormals[j].y;
 			vertex.nZ = meshNode->mNormals[j].z;
 
+			//Need to change from Vertex to VertexPBR to add tangent and bitangent 
+			meshNode->mTangents[j].x	
+			meshNode->mTangents[j].y
+			meshNode->mTangents[j].z
+
+			meshNode->mBitangents[j].x
+			meshNode->mBitangents[j].y
+			meshNode->mBitangents[j].z
+
 			vertices.emplace_back(vertex);
 		}
 
@@ -247,11 +256,12 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 		if (texturesPaths.size() == 0)
 		{
 			texturesPaths.emplace_back("Textures/White.png");
-			texturesNames.emplace_back("White");
+			texturesNames.emplace_back(material.m_name);
 		}
 
 		Texture materialTextures(texturesPaths, texturesNames);
 		material.SetTextures(materialTextures);
+		material.m_index = i;
 
 		materials.emplace_back(material);
 	}

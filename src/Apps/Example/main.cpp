@@ -225,10 +225,6 @@ int main()
 		//============================//
 
 		// CUBE DATA
-		struct VertexWithoutUVs
-		{
-			float x, y, z;
-		};
 		VertexWithoutUVs cubeVertices[] =
 		{
 			//  X	   Y	  Z	  
