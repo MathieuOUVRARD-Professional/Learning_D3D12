@@ -3,7 +3,7 @@
 UINT64 ObjectList::TotalTexturesSize()
 {
 	UINT64 size = 0;
-	for (Material material : m_materials)
+	for (Material& material : m_materials)
 	{
 		size += material.TextureSize();
 	}
@@ -13,7 +13,7 @@ UINT64 ObjectList::TotalTexturesSize()
 UINT64 ObjectList::TotalVerticesSize()
 {
 	UINT64 size = 0;
-	for (SceneObject object : m_list)
+	for (SceneObject& object : m_list)
 	{
 		size += object.m_mesh.VerticesSize();
 	}
@@ -23,7 +23,7 @@ UINT64 ObjectList::TotalVerticesSize()
 UINT64 ObjectList::TotalIndicesSize()
 {
 	UINT64 size = 0;
-	for (SceneObject object : m_list)
+	for (SceneObject& object : m_list)
 	{
 		size += object.m_mesh.IndicesSize();
 	}
@@ -33,11 +33,11 @@ UINT64 ObjectList::TotalIndicesSize()
 UINT64 ObjectList::TotalSize()
 {
 	UINT64 size = 0;
-	for(SceneObject object : m_list)
+	for(SceneObject& object : m_list)
 	{
 		size += object.m_mesh.Size();
 	}
-	for (Material material : m_materials)
+	for (Material& material : m_materials)
 	{
 		size += material.TextureSize();
 	}
@@ -47,7 +47,7 @@ UINT64 ObjectList::TotalSize()
 uint32_t ObjectList::TextureCount()
 {
 	uint32_t count = 0;
-	for (Material material : m_materials)
+	for (Material& material : m_materials)
 	{
 		count += material.GetTextures().m_count;
 	}
@@ -89,6 +89,7 @@ void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HE
 
 		if (destOffsetTexture + material.TextureSize() > uploadBuffer->GetDesc().Width)
 		{
+			//Not enough space for next material in the upload buffer
 			DXContext::Get().ExecuteCommandList();	// Fence synchronization
 			cmdList = DXContext::Get().InitCommandList();
 			destOffsetTexture = 0;

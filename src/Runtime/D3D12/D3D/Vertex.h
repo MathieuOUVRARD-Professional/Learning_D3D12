@@ -5,14 +5,14 @@ struct VertexWithoutUVs
 	float x, y, z;
 };
 
-struct Vertex
+struct VertexWithUV
 {
 	float x, y, z;
 	float u, v;
 	float nX, nY, nZ;
 };
 
-struct VertexPBR
+struct Vertex
 {
 	float x, y, z;
 	float u, v;

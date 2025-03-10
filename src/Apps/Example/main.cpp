@@ -178,9 +178,19 @@ int main()
 
 		C_AssImp::Import("Sponza/NewSponza_Main_glTF_003.gltf", mainObjList);
 
+
+		D3D12_INPUT_ELEMENT_DESC vertexLayout[] =
+		{
+			{ "Position", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+			{ "Texcoord", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+			{ "Normal", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 5, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+			{ "Tangent", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 8, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+			{ "Bitangent", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 11, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		};
+
 		// === Vertex data === //
 		// PYRAMID DATA 
-		Vertex vertices[] =
+		VertexWithUV vertices[] =
 		{
 			//  X	   Y	  Z	  ||  U	   V  ||  Nx	 Ny		Nz
 			{ -0.5f,  0.0f,  0.5f , 0.0f, 1.0f,  0.0f, -1.0f,  0.0f },	// Bottom side
@@ -216,7 +226,7 @@ int main()
 
 			13,14,15	//Front face
 		};
-		D3D12_INPUT_ELEMENT_DESC vertexLayout[] =
+		D3D12_INPUT_ELEMENT_DESC pyramidVertexLayout[] =
 		{
 			{ "Position", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 			{ "Texcoord", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
@@ -386,12 +396,16 @@ int main()
 		);
 
 		DXContext::Get().ExecuteCommandList();
-		cmdList = DXContext::Get().InitCommandList();
+		//cmdList = DXContext::Get().InitCommandList();
 
 		// === Shaders === //
 		Shader rootSignatureShader("RootSignature.cso");
 		Shader vertexShader("VertexShader.cso");
 		Shader pixelShader("PixelShader.cso");
+
+		Shader pbrRootSignatureShader("PBR_RootSignature.cso");
+		Shader pbrVertexShader("PBR_Vertex.cso");
+		Shader pbrPixelShader("PBR_Pixel.cso");
 
 		Shader wireframeVertexShader("WireframeVertex.cso");
 		Shader wireframePixelShader("WireframePixel.cso");
@@ -401,30 +415,35 @@ int main()
 		Shader lightPixelShader("LightPixelShader.cso");
 
 		// === Create Root signature === //
-		ComPointer<ID3D12RootSignature> rootSignature, lightRootSignature;
+		ComPointer<ID3D12RootSignature> rootSignature, lightRootSignature, pbrRootSignature;
 		DXContext::Get().GetDevice()->CreateRootSignature(0, rootSignatureShader.GetBuffer(), rootSignatureShader.GetSize(), IID_PPV_ARGS(&rootSignature));
 		DXContext::Get().GetDevice()->CreateRootSignature(0, lightRootSignatureShader.GetBuffer(), lightRootSignatureShader.GetSize(), IID_PPV_ARGS(&lightRootSignature));
+		DXContext::Get().GetDevice()->CreateRootSignature(0, pbrRootSignatureShader.GetBuffer(), pbrRootSignatureShader.GetSize(), IID_PPV_ARGS(&pbrRootSignature));
 		rootSignature.Get()->SetName(L"Main_RootSignature");
 		lightRootSignature.Get()->SetName(L"Light_RootSignature");
+		pbrRootSignature.Get()->SetName(L"PBR_RootSignature");
 
 		// === Pipeline states === //
-		DXPipelineState pso, lightPso, wireframePso;
-		pso.Init(L"Main_PSO", rootSignature, vertexLayout, _countof(vertexLayout), vertexShader, pixelShader);
+		DXPipelineState pso, lightPso, wireframePso, pbrPso;
+		pso.Init(L"Main_PSO", rootSignature, pyramidVertexLayout, _countof(pyramidVertexLayout), vertexShader, pixelShader);
 		pso.Create();
 
 		lightPso.Init(L"Light_PSO", lightRootSignature, cubeVertexLayout, _countof(cubeVertexLayout), lightVertexShader, lightPixelShader);
 		lightPso.Create();
 
-		wireframePso.Init(L"Wireframe_PSO", rootSignature, vertexLayout, _countof(vertexLayout), wireframeVertexShader, wireframePixelShader); 
+		wireframePso.Init(L"Wireframe_PSO", rootSignature, vertexLayout, _countof(vertexLayout), wireframeVertexShader, wireframePixelShader);
 		wireframePso.SetWireframe();
 		wireframePso.Create();
+
+		//pbrPso.Init(L"PBR_PSO", pbrRootSignature, vertexLayout, _countof(vertexLayout), pbrVertexShader, pbrPixelShader);
+		//pbrPso.Create();
 
 		// === Buffer Views === //
 		// Pyramid
 		D3D12_VERTEX_BUFFER_VIEW vbv{};
 		vbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
-		vbv.SizeInBytes = sizeof(Vertex) * _countof(vertices);
-		vbv.StrideInBytes = sizeof(Vertex);
+		vbv.SizeInBytes = sizeof(VertexWithUV) * _countof(vertices);
+		vbv.StrideInBytes = sizeof(VertexWithUV);
 
 		D3D12_INDEX_BUFFER_VIEW ibv{};
 		ibv.BufferLocation = indexBuffer->GetGPUVirtualAddress();
@@ -433,7 +452,7 @@ int main()
 
 		// Cube
 		D3D12_VERTEX_BUFFER_VIEW cubeVbv{};
-		cubeVbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress() + (sizeof(Vertex) * _countof(vertices));
+		cubeVbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress() + (sizeof(VertexWithUV) * _countof(vertices));
 		cubeVbv.SizeInBytes = sizeof(VertexWithoutUVs) * _countof(cubeVertices);
 		cubeVbv.StrideInBytes = sizeof(VertexWithoutUVs);
 

@@ -113,14 +113,13 @@ void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, SceneObject& objec
 			vertex.nY = meshNode->mNormals[j].y;
 			vertex.nZ = meshNode->mNormals[j].z;
 
-			//Need to change from Vertex to VertexPBR to add tangent and bitangent 
-			meshNode->mTangents[j].x	
-			meshNode->mTangents[j].y
-			meshNode->mTangents[j].z
+			vertex.tX = meshNode->mTangents[j].x;	
+			vertex.tY = meshNode->mTangents[j].y;
+			vertex.tZ = meshNode->mTangents[j].z;
 
-			meshNode->mBitangents[j].x
-			meshNode->mBitangents[j].y
-			meshNode->mBitangents[j].z
+			vertex.btX = meshNode->mBitangents[j].x;
+			vertex.btY = meshNode->mBitangents[j].y;
+			vertex.btZ = meshNode->mBitangents[j].z;			
 
 			vertices.emplace_back(vertex);
 		}
