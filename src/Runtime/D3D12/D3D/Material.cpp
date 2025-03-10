@@ -4,8 +4,9 @@ void Material::SendShaderParams(ID3D12GraphicsCommandList* cmdList, UINT bufferS
 {
 	MaterialData materialData =
 	{
-		m_index,
-		m_Textures.m_count,	
+		m_diffuseTextureID,
+		m_normalTextureID,
+		m_ormTextureID,
 
 		m_baseColor,
 		m_emissiveColor,

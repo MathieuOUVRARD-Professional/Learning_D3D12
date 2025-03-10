@@ -20,7 +20,10 @@ class Material
 		}
 		void SendShaderParams(ID3D12GraphicsCommandList* cmdList, UINT bufferSlot);
 
-		uint32_t m_index;
+		uint32_t m_diffuseTextureID;
+		uint32_t m_normalTextureID;
+		uint32_t m_ormTextureID;
+
 		std::string m_name;
 		glm::vec3 m_baseColor = glm::vec3(1.0f, 1.0f, 1.0f);
 		glm::vec3 m_emissiveColor = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -34,8 +37,9 @@ class Material
 
 struct MaterialData
 {
-	uint32_t materialID;
-	uint32_t textureCount;
+	uint32_t diffuseID;
+	uint32_t normalID;
+	uint32_t ormID;
 
 	glm::vec3 baseColor;
 	glm::vec3 emmisiveColor;

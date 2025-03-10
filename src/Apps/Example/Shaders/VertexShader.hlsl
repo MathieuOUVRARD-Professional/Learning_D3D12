@@ -25,5 +25,5 @@ void main(
 
 	o_uv = i_uv;
 
-	o_normal = mul(matrices.model, float4(i_normal, 1.0f));
+	o_normal = (float3)mul(matrices.model, float4(i_normal, 1.0f));
 }

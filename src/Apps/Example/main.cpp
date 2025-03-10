@@ -185,7 +185,7 @@ int main()
 			{ "Texcoord", 0, DXGI_FORMAT_R32G32_FLOAT, 0, sizeof(float) * 3, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 			{ "Normal", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 5, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 			{ "Tangent", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 8, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-			{ "Bitangent", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 11, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+			{ "Tangent", 1, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(float) * 11, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 		};
 
 		// === Vertex data === //
@@ -435,8 +435,8 @@ int main()
 		wireframePso.SetWireframe();
 		wireframePso.Create();
 
-		//pbrPso.Init(L"PBR_PSO", pbrRootSignature, vertexLayout, _countof(vertexLayout), pbrVertexShader, pbrPixelShader);
-		//pbrPso.Create();
+		pbrPso.Init(L"PBR_PSO", pbrRootSignature, vertexLayout, _countof(vertexLayout), pbrVertexShader, pbrPixelShader);
+		pbrPso.Create();
 
 		// === Buffer Views === //
 		// Pyramid

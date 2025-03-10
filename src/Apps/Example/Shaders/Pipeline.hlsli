@@ -7,8 +7,9 @@ struct Matrices
 
 struct MaterialData
 {
-    uint materialID;
-    uint textureCount;
+    uint diffuseID;
+    uint normalID;
+    uint ormID;
     
     float3 baseColor;
     float3 emmisiveColor;
