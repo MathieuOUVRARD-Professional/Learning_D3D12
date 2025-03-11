@@ -7,14 +7,19 @@ static const float PI = 3.14159265359;
 Texture2D bindlessTextures[] : register(t0, space0);
 sampler textureSampler : register(s0);
 
-cbuffer CameraPosition : register(b1)
+cbuffer Camera : register(b1)
 {
 	float3 cameraPosition;
 };
 
-cbuffer MaterialData : register(b1)
+cbuffer Material : register(b2)
 {
 	MaterialData materialData;
+};
+
+cbuffer LightConstants : register(b3)
+{
+	Light light;
 };
 
 float3 ApplyNormalMap(float3 normal, float3 tangent, float3 bitangent, float3 sampledNormal)
@@ -75,34 +80,47 @@ void main(
 	out float4 pixel : SV_Target
 )
 {
-	//Texture sampling
-	float3 albedoTexel = (float3)bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv);
-	float3 normalTexel = (float3)bindlessTextures[NonUniformResourceIndex(materialData.normalID)].Sample(textureSampler, i_uv);
-	float3 ormTexel	 = (float3)bindlessTextures[NonUniformResourceIndex(materialData.ormID)].Sample(textureSampler, i_uv);
-
-	float3 normalWorldSpace = ApplyNormalMap(i_normal, i_tangent, i_bitangent, normalTexel);
-
 	float ambient = 0.1f;
 	float3 normal = normalize(i_normal);
 
-	float specularLight = 1.0f;
+	// Texture sampling
+	float3 albedoTexel = materialData.baseColor * (float3)bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv);
+	float3 normalTexel = (float3)bindlessTextures[NonUniformResourceIndex(materialData.normalID)].Sample(textureSampler, i_uv);
+	float3 ormTexel	 = (float3)bindlessTextures[NonUniformResourceIndex(materialData.ormID)].Sample(textureSampler, i_uv);
+	float roughness = materialData.roughness *  ormTexel.g;
+	float metalness = materialData.metalness *  ormTexel.b;
+
+	// Convert normal map to world space
+	float3 normalWorldSpace = ApplyNormalMap(normal, i_tangent, i_bitangent, normalTexel);
+	
+	// View & Light vectors
 	float3 viewDirection = normalize(cameraPosition - i_currentPos.xyz);
+	float3 lightDirection = normalize(i_currentPos.xyz - light.position.xyz);
+	float3 halfwayVec = normalize(viewDirection + lightDirection);
 	
-	// Default dielectric reflectance
-	float3 F0 = float3(0.04f, 0.04f, 0.04f);	
-	// Metals use albedo as F0
-	F0 = lerp(F0, albedoTexel, ormTexel.b);
+	// Compute Fresnel Reflectance at Normal Incidence (F0)	
+	float3 F0 = float3(0.04f, 0.04f, 0.04f);	// Default dielectric reflectance
+	F0 = lerp(F0, albedoTexel, metalness);		// Metals use albedo as F0
 
-	float NDF = NormalDistributionGGX(normalWorldSpace, HALFWAYVEC, ormTexel.g);
-	float G = GeometrySmith(normalWorldSpace, viewDirection, ormTexel.g);
-	float3 F = FresnelSchlick(max(dot(HALFWAYVEC, viewDirection), 0.0f), F0);
+	// Compute Cook-Torrance BRDF Components
+	float NDF = NormalDistributionGGX(normalWorldSpace, halfwayVec, roughness);
+	float G = GeometrySmith(normalWorldSpace, viewDirection, halfwayVec, roughness);
+	float3 F = FresnelSchlick(max(dot(halfwayVec, viewDirection), 0.0f), F0);
 
-	// BRDF
-	float3 sLambert = albedoTexel / PI;
-	float3 sCookTorrance = 
-		((NDF * F * G) / 
-		(4.0f * max(dot(normal, viewDirection), 0.0f) * max(dot(normal, nLIGHTDIR ), 0))) 
-		+ 0.0001f;
+	// Specular BRDF
+	float3 numerator = (NDF * F * G);
+	float3 denomirator = 4.0f * max(dot(normal, viewDirection), 0.0f) * max(dot(normal, lightDirection ), 0.0f) + 0.0001f;
+	float3 specular = numerator / max(denomirator, 0.0001f);
+
+	 // Diffuse Reflection (Lambertian)
+	float3 kD = 1.0f - F;						// Energy conservation
+	kD *= (1.0f - metalness);					// Metals have no diffuse component
+	float3 Lambertian = albedoTexel / PI;
+
+	// Final color computation
+	float NdotL = max(dot(normalWorldSpace, lightDirection), 0.0f);
+	float3 diffuse = kD * Lambertian;
+	float3 finalColor = (diffuse + specular) * NdotL;
 	
-    pixel = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    pixel = float4(finalColor, materialData.opacity);
 }

@@ -125,11 +125,11 @@ UINT64 Texture::CopyToUploadBuffer(ID3D12Resource* uploadBuffer, UINT64 uploadBu
 		D3D12_TEXTURE_COPY_LOCATION txtSrc;
 		txtSrc.pResource = uploadBuffer;
 		txtSrc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-		txtSrc.PlacedFootprint.Offset = (uploadBufferOffset + 511) & ~511; ;
+		txtSrc.PlacedFootprint.Offset = uploadBufferOffset; //(uploadBufferOffset + 511) & ~511 ;
 		txtSrc.PlacedFootprint.Footprint.Width = m_textureDatas[i].width;
 		txtSrc.PlacedFootprint.Footprint.Height = m_textureDatas[i].height;
 		txtSrc.PlacedFootprint.Footprint.Depth = 1;
-		txtSrc.PlacedFootprint.Footprint.RowPitch = (m_textureStrides[i] + 255) & ~255 ;
+		txtSrc.PlacedFootprint.Footprint.RowPitch = m_textureStrides[i]; //(m_textureStrides[i] + 255) & ~255 ;
 		txtSrc.PlacedFootprint.Footprint.Format = m_textureDatas[i].giPixelFormat;
 
 		// Destination

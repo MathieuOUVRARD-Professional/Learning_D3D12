@@ -170,22 +170,33 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 		std::string baseColorTexturePath;
 		std::string diffuseTexturePath;
 		std::string normalTexturePath;
-		std::string roughnessMetalnessTexturePath;
+		std::string ormTexturePath;
+		std::string emissiveTexturePath;
 
 		Material material;
 		aiColor3D baseColor;
 		aiColor3D emissive;
 		float opacity = 1.0f;
 
+		if (i == 0)
+		{
+			texturesPaths.emplace_back("Textures/White.png");
+
+			texturesNames.emplace_back("DefaultTexture");
+
+			textureID++;
+		}
+
+
 		material.m_name = materialNode->GetName().C_Str();
 		std::cout << "Material name: " << material.m_name << std::endl;
 		
-		if (materialNode->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS )
+		if (materialNode->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS && (baseColor.r < 1 || baseColor.g < 1 || baseColor.b < 1))
 		{
 			std::cout << "BaseColor : " << baseColor.r << ", " << baseColor.g << ", " << baseColor.b << std::endl;
 			material.m_baseColor = glm::vec3(baseColor.r, baseColor.g, baseColor.b);
 		}
-		if (materialNode->Get(AI_MATKEY_COLOR_EMISSIVE, emissive) == AI_SUCCESS && (emissive.r > 0 && emissive.g > 0 && emissive.b > 0))
+		if (materialNode->Get(AI_MATKEY_COLOR_EMISSIVE, emissive) == AI_SUCCESS && (emissive.r > 0 || emissive.g > 0 || emissive.b > 0))
 		{
 			std::cout << "Emissive color: " << emissive.r << ", " << emissive.g << ", " << emissive.b << std::endl;
 			material.m_emissiveColor = glm::vec3(emissive.r, emissive.g, emissive.b);
@@ -202,22 +213,24 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 			texturesPaths.emplace_back(diffuseTexturePath);
 
 			std::string name = texturePath.C_Str();
-			name = name.substr(name.find_last_of('/',name.size()) + 1, name.size());			
-			material.m_diffuseTextureID = textureID;
-
+			uint32_t offset = (uint32_t)(name.find_last_of('/', name.size()) + 1);
+			name = name.substr(offset, name.size() - (offset + 4));
 			texturesNames.emplace_back(name.c_str());
+
+			material.m_diffuseTextureID = textureID;
 			textureID++;
 		}
 		else if (materialNode->GetTexture(aiTextureType_BASE_COLOR, 0, &texturePath) == AI_SUCCESS)
 		{
 			baseColorTexturePath = sceneDirectory + texturePath.C_Str();
-			texturesPaths.emplace_back(diffuseTexturePath);
+			texturesPaths.emplace_back(baseColorTexturePath);
 
 			std::string name = texturePath.C_Str();
-			name = name.substr(name.find_last_of('/', name.size()) + 1, name.size());
-			material.m_diffuseTextureID = textureID;
-
+			uint32_t offset = (uint32_t)(name.find_last_of('/', name.size()) + 1);
+			name = name.substr(offset, name.size() - (offset + 4));
 			texturesNames.emplace_back(name.c_str());
+
+			material.m_diffuseTextureID = textureID;
 			textureID++;
 		}
 		
@@ -227,22 +240,25 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 			texturesPaths.emplace_back(normalTexturePath);
 
 			std::string name = texturePath.C_Str();
-			name = name.substr(name.find_last_of('/', name.size()) + 1, name.size());
-			material.m_normalTextureID = textureID;
-
+			uint32_t offset = (uint32_t)(name.find_last_of('/', name.size()) + 1);
+			name = name.substr(offset, name.size() - (offset + 4));
 			texturesNames.emplace_back(name.c_str());
+
+			material.m_normalTextureID = textureID;
 			textureID++;
 		}
+
 		if (materialNode->GetTexture(aiTextureType_METALNESS, 0, &texturePath) == AI_SUCCESS)
 		{
-			roughnessMetalnessTexturePath = sceneDirectory + texturePath.C_Str();
-			texturesPaths.emplace_back(roughnessMetalnessTexturePath);
+			ormTexturePath = sceneDirectory + texturePath.C_Str();
+			texturesPaths.emplace_back(ormTexturePath);
 
 			std::string name = texturePath.C_Str();
-			name = name.substr(name.find_last_of('/', name.size()) + 1, name.size());
-			material.m_ormTextureID = textureID;
-
+			uint32_t offset = (uint32_t)(name.find_last_of('/', name.size()) + 1);
+			name = name.substr(offset, name.size() - (offset + 4));
 			texturesNames.emplace_back(name.c_str());
+
+			material.m_ormTextureID = textureID;
 			textureID++;
 		}
 		else
@@ -258,18 +274,35 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 			std::cout << "Metallic Factor: " << metallicFactor << " Roughness Factor: " << roughnessFactor << std::endl;
 		}
 		std::cout << std::endl;
-
-		if (texturesPaths.size() == 0)
+		if (materialNode->GetTexture(aiTextureType_EMISSIVE, 0, &texturePath) == AI_SUCCESS)
 		{
-			texturesPaths.emplace_back("Textures/White.png");
-			material.m_diffuseTextureID = material.m_normalTextureID = material.m_ormTextureID = textureID;
+			emissiveTexturePath = sceneDirectory + texturePath.C_Str();
+			texturesPaths.emplace_back(emissiveTexturePath);
 
-			texturesNames.emplace_back(material.m_name);
+			std::string name = texturePath.C_Str();
+			uint32_t offset = (uint32_t)(name.find_last_of('/', name.size()) + 1);
+			name = name.substr(offset, name.size() - (offset + 4));
+			material.m_emissiveTextureID = textureID;
+			texturesNames.emplace_back(name.c_str());
+
+			material.m_emissiveTextureID = textureID;
 			textureID++;
 		}
+		else
+		{
+			material.m_emissiveTextureID = 0;
+		}
 
-		Texture materialTextures(texturesPaths, texturesNames);
-		material.SetTextures(materialTextures);
+		// No texture
+		if (texturesPaths.size() == 0)		
+		{
+			material.m_diffuseTextureID = material.m_normalTextureID = material.m_ormTextureID = material.m_emissiveTextureID = 0;
+		}
+		else
+		{
+			Texture materialTextures(texturesPaths, texturesNames);
+			material.SetTextures(materialTextures);
+		}	
 
 		materials.emplace_back(material);
 	}

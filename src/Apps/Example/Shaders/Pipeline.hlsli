@@ -10,9 +10,10 @@ struct MaterialData
     uint diffuseID;
     uint normalID;
     uint ormID;
+    uint emissiveID;
     
     float3 baseColor;
-    float3 emmisiveColor;
+    float3 emissiveColor;
     
     float opacity;
     float roughness;
