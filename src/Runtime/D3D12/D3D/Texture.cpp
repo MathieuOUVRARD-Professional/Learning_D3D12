@@ -147,16 +147,16 @@ UINT64 Texture::CopyToUploadBuffer(ID3D12Resource* uploadBuffer, UINT64 uploadBu
 		transitionBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_GENERIC_READ;
 		transitionBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
 
-		//Texture size
-		D3D12_BOX textureSizeAsBox;
-		textureSizeAsBox.left = textureSizeAsBox.top = textureSizeAsBox.front = 0;
-		textureSizeAsBox.right = m_textureDatas[i].width;
-		textureSizeAsBox.bottom = m_textureDatas[i].height;
-		textureSizeAsBox.back = 1;
+		////Box for when only copying part of the texture 
+		//D3D12_BOX textureSizeAsBox;
+		//textureSizeAsBox.left = textureSizeAsBox.top = textureSizeAsBox.front = 0;
+		//textureSizeAsBox.right = m_textureDatas[i].width;
+		//textureSizeAsBox.bottom = m_textureDatas[i].height;
+		//textureSizeAsBox.back = 1;
 
 		// === COPY === //
 		cmdList->ResourceBarrier(1, &transitionBarrier);
-		cmdList->CopyTextureRegion(&txtDst, 0, 0, 0, &txtSrc, &textureSizeAsBox);
+		cmdList->CopyTextureRegion(&txtDst, 0, 0, 0, &txtSrc, nullptr);
 
 		transitionBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
 		transitionBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
