@@ -7,11 +7,11 @@
 #include <d3d12.h>
 
 #include <vector>
+#include "Material.h"
 
 class Mesh
 {
 public:
-	uint32_t m_materialID = -1;
 	uint32_t m_nSubmeshes = 0;
 	UINT64 m_vertexBufferOffset = 0;
 	UINT64 m_indexBufferOffset = 0;
@@ -39,6 +39,15 @@ public:
 	{
 		m_indices = indices;
 		m_nIndex = (uint32_t)m_indices.size();
+	}
+
+	inline void SetMaterial(Material& material)
+	{
+		m_material = &material;
+	}
+	inline Material& GetMaterial()
+	{
+		return *m_material;
 	}
 
 	inline D3D12_VERTEX_BUFFER_VIEW* GetVBV()
@@ -74,6 +83,8 @@ private:
 	std::vector<Vertex> m_vertices;
 	std::vector<uint32_t> m_indices;
 	std::vector<Mesh> m_submeshes;
+
+	Material* m_material;
 
 	uint32_t m_nIndex = 0;
 

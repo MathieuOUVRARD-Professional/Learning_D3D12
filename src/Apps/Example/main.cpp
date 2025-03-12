@@ -571,7 +571,7 @@ int main()
 			std::vector<float> lightColor = ImGuiColorPicker(&colorPickerName, true);
 			ImGuiPerfOverlay(true);
 
-			glm::vec3 lightPosition = glm::vec3(1.0f, 2.5f, .5f);
+			glm::vec3 lightPosition = glm::vec3(0.0f, 20.0f, 0.0f);
 			glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
 
 			struct Light
@@ -588,7 +588,7 @@ int main()
 			camera.Inputs();
 			camera.Matrix(45.0f, 0.01f, 100.0f);			
 						
-			// Object 1
+			// Pyramid
 			// === PSO === //
 			cmdList->SetPipelineState(pso.Get());
 			cmdList->SetGraphicsRootSignature(rootSignature);
@@ -607,12 +607,13 @@ int main()
 
 			// Sponza
 			// === PSO === //
-			cmdList->SetPipelineState(wireframePso.Get());
-			cmdList->SetGraphicsRootSignature(rootSignature);
-			//testObject.m_mesh.Draw(cmdList, camera, testObject.m_transform);
+			cmdList->SetPipelineState(pbrPso.Get());
+			cmdList->SetGraphicsRootSignature(pbrRootSignature);
+			mainObjList.BindDescriptorHeap(cmdList, 4);
+			cmdList->SetGraphicsRoot32BitConstants(3, 8, &cubeLight, 0);
 			mainObjList.Draw(cmdList, camera);
 
-			// Object 2
+			// Cube
 			// === PSO === //
 			cmdList->SetPipelineState(lightPso.Get());
 			cmdList->SetGraphicsRootSignature(lightRootSignature);

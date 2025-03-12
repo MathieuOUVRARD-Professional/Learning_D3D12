@@ -32,13 +32,13 @@ void C_AssImp::Import(const std::string& filePath, ObjectList& objectList)
 		ProcessMaterials(objectList, *scene, folderPath);
 
 		std::cout << "LOADING MESHES" << std::endl << std::endl;
-		ProcessMeshesNodes(objectList.GetList(), *scene, *scene->mRootNode, objectList.GetList().back());
+		ProcessMeshesNodes(objectList, *scene, *scene->mRootNode, objectList.GetList().back());
 
 		objectList.GetList().remove(mainObject);
 	}
 }
 
-void C_AssImp::ProcessMeshesNodes(std::list<SceneObject>& objectList, const aiScene& scene, aiNode& node, SceneObject& targetParent, glm::mat4 parentTransform)
+void C_AssImp::ProcessMeshesNodes(ObjectList& objectList, const aiScene& scene, aiNode& node, SceneObject& targetParent, glm::mat4 parentTransform)
 {
 	SceneObject* parent;
 	glm::mat4 newTransform = glm::mat4(1.0f);
@@ -55,14 +55,14 @@ void C_AssImp::ProcessMeshesNodes(std::list<SceneObject>& objectList, const aiSc
 
 		SceneObject* tmp = &targetParent;
 
-		objectList.emplace_back(newObject);
-		targetParent.AddChild(&objectList.back());
+		objectList.GetList().emplace_back(newObject);
+		targetParent.AddChild(&objectList.GetList().back());
 
 		// copy the meshes
-		C_AssImp::LoadMeshes(scene, node, objectList.back());
+		C_AssImp::LoadMeshes(scene, node, objectList);
 
 		//The new object is the parent for all child nodes
-		parent = &objectList.back();
+		parent = &objectList.GetList().back();
 	}
 	else {
 		// if no meshes, skip the node, but keep its transformation
@@ -79,14 +79,14 @@ void C_AssImp::ProcessMeshesNodes(std::list<SceneObject>& objectList, const aiSc
 	}
 }
 
-void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, SceneObject& objectToAddMeshTo)
+void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, ObjectList& objectList)
 {	
 	std::cout << "Node: " << node.mName.C_Str() << "\r\nParent node: " << node.mParent->mName.C_Str() << "\r\nCopying "; 
 	node.mNumMeshes > 1 ? std::cout << node.mNumMeshes << " submeshes\r\n" : std::cout << "a mesh\r\n";
 
-	if (objectToAddMeshTo.m_parent != 0x0000000000000000)
+	if (objectList.GetList().back().m_parent != 0x0000000000000000)
 	{
-		std::cout << "Parent obj: " << objectToAddMeshTo.m_parent->m_name.c_str();
+		std::cout << "Parent obj: " << objectList.GetList().back().m_parent->m_name.c_str();
 	}
 	std::cout << "\r\n--------------- \r\n";
 
@@ -141,16 +141,17 @@ void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, SceneObject& objec
 			Mesh submesh;
 			submesh.SetVertices(vertices);
 			submesh.SetIndices(indices);
-			submesh.m_materialID = meshNode->mMaterialIndex;
-			objectToAddMeshTo.m_mesh.AddSubmesh(submesh);
+			submesh.SetMaterial(objectList.GetMaterials()[meshNode->mMaterialIndex]);
+
+			objectList.GetList().back().m_mesh.AddSubmesh(submesh);
 		}
 		else
 		{
 			Mesh mesh;
 			mesh.SetVertices(vertices);
 			mesh.SetIndices(indices);
-			mesh.m_materialID = meshNode->mMaterialIndex;
-			objectToAddMeshTo.SetMesh(mesh);
+			mesh.SetMaterial(objectList.GetMaterials()[meshNode->mMaterialIndex]);
+			objectList.GetList().back().SetMesh(mesh);
 		}
 	}	
 	std::cout << "---------------\r\n\r\n";

@@ -16,7 +16,7 @@
 namespace C_AssImp
 {
 	void Import(const std::string& filePath, ObjectList& objectList);
-	void ProcessMeshesNodes(std::list<SceneObject>& objectList, const aiScene& scene, aiNode& node, SceneObject& targetParent, glm::mat4 parentTransform = glm::mat4(1.0f));
-	void LoadMeshes(const aiScene& scene, aiNode& node, SceneObject& obectToAddMeshTo);
+	void ProcessMeshesNodes(ObjectList& objectList, const aiScene& scene, aiNode& node, SceneObject& targetParent, glm::mat4 parentTransform = glm::mat4(1.0f));
+	void LoadMeshes(const aiScene& scene, aiNode& node, ObjectList& obectToAddMeshTo);
 	void ProcessMaterials(ObjectList& objectList, const aiScene& scene, std::string sceneDirectory);
 }

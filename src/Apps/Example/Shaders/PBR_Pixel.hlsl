@@ -80,13 +80,13 @@ void main(
 	out float4 pixel : SV_Target
 )
 {
-	float ambient = 0.1f;
+	float ambient = 0.05f;
 	float3 normal = normalize(i_normal);
 
 	// Texture sampling
-	float3 albedoTexel = materialData.baseColor * (float3)bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv);
-	float3 normalTexel = (float3)bindlessTextures[NonUniformResourceIndex(materialData.normalID)].Sample(textureSampler, i_uv);
-	float3 ormTexel	 = (float3)bindlessTextures[NonUniformResourceIndex(materialData.ormID)].Sample(textureSampler, i_uv);
+	float3 albedoTexel = materialData.baseColor * bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv).rgb;
+	float3 normalTexel = bindlessTextures[NonUniformResourceIndex(materialData.normalID)].Sample(textureSampler, i_uv).rgb;
+	float3 ormTexel	 = bindlessTextures[NonUniformResourceIndex(materialData.ormID)].Sample(textureSampler, i_uv).rgb;
 	float roughness = materialData.roughness *  ormTexel.g;
 	float metalness = materialData.metalness *  ormTexel.b;
 
@@ -95,7 +95,7 @@ void main(
 	
 	// View & Light vectors
 	float3 viewDirection = normalize(cameraPosition - i_currentPos.xyz);
-	float3 lightDirection = normalize(i_currentPos.xyz - light.position.xyz);
+	float3 lightDirection = normalize(light.position.xyz - i_currentPos.xyz );
 	float3 halfwayVec = normalize(viewDirection + lightDirection);
 	
 	// Compute Fresnel Reflectance at Normal Incidence (F0)	
@@ -103,14 +103,15 @@ void main(
 	F0 = lerp(F0, albedoTexel, metalness);		// Metals use albedo as F0
 
 	// Compute Cook-Torrance BRDF Components
+	float k = (roughness + 1.0f) * (roughness + 1.0f) / 8.0f;
 	float NDF = NormalDistributionGGX(normalWorldSpace, halfwayVec, roughness);
-	float G = GeometrySmith(normalWorldSpace, viewDirection, halfwayVec, roughness);
+	float G = GeometrySmith(normalWorldSpace, viewDirection, halfwayVec, k);
 	float3 F = FresnelSchlick(max(dot(halfwayVec, viewDirection), 0.0f), F0);
 
 	// Specular BRDF
 	float3 numerator = (NDF * F * G);
-	float3 denomirator = 4.0f * max(dot(normal, viewDirection), 0.0f) * max(dot(normal, lightDirection ), 0.0f) + 0.0001f;
-	float3 specular = numerator / max(denomirator, 0.0001f);
+	float3 denominator = 4.0f * max(dot(normalWorldSpace, viewDirection), 0.0f) * max(dot(normalWorldSpace, lightDirection ), 0.0f) + 0.0001f;
+	float3 specular = numerator / max(denominator, 0.0001f);
 
 	 // Diffuse Reflection (Lambertian)
 	float3 kD = 1.0f - F;						// Energy conservation
@@ -120,7 +121,7 @@ void main(
 	// Final color computation
 	float NdotL = max(dot(normalWorldSpace, lightDirection), 0.0f);
 	float3 diffuse = kD * Lambertian;
-	float3 finalColor = (diffuse + specular) * NdotL;
+	float3 finalColor = (diffuse + specular) * NdotL + ambient;
 	
     pixel = float4(finalColor, materialData.opacity);
 }

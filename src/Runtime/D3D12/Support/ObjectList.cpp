@@ -209,3 +209,9 @@ void ObjectList::CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource*
 		}
 	}
 }
+
+void ObjectList::BindDescriptorHeap(ID3D12GraphicsCommandList* cmdList, uint32_t rootParameterIndex)
+{
+	cmdList->SetDescriptorHeaps(1, &m_srvHeap);
+	cmdList->SetGraphicsRootDescriptorTable(rootParameterIndex, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+}
