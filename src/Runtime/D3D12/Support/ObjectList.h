@@ -11,6 +11,8 @@
 class ObjectList
 {
 	public:
+		bool hasDefaultTexture = false;
+
 		UINT64 TotalTexturesSize();
 		UINT64 TotalVerticesSize();
 		UINT64 TotalIndicesSize();

@@ -178,8 +178,10 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 		aiColor3D emissive;
 		float opacity = 1.0f;
 
-		if (i == 0)
+		if (i == 0 && !objectList.hasDefaultTexture)
 		{
+			objectList.hasDefaultTexture = true;
+
 			texturesPaths.emplace_back("Textures/White.png");
 
 			texturesNames.emplace_back("DefaultTexture");
