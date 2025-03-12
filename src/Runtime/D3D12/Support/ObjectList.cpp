@@ -58,10 +58,6 @@ void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
 {
 	for (SceneObject& object : m_list)
 	{	
-		if (object.m_name == "Sponza")
-		{
-			continue;
-		}
 		object.m_mesh.Draw(cmdList, camera, object.m_transform);
 	}
 }

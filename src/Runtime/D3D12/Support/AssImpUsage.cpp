@@ -33,6 +33,8 @@ void C_AssImp::Import(const std::string& filePath, ObjectList& objectList)
 
 		std::cout << "LOADING MESHES" << std::endl << std::endl;
 		ProcessMeshesNodes(objectList.GetList(), *scene, *scene->mRootNode, objectList.GetList().back());
+
+		objectList.GetList().remove(mainObject);
 	}
 }
 

@@ -23,5 +23,14 @@ class SceneObject
 		std::vector<SceneObject*> m_childrens;
 
 		Mesh m_mesh;
+
+		bool operator == (const SceneObject& sceneObject) const
+		{
+			if (m_name == sceneObject.m_name)
+			{
+				return true;
+			}
+			return false;
+		}
 	private:
 };
