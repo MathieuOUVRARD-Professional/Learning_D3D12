@@ -30,7 +30,7 @@ bool DXWindow::Init()
 	// Place window on current cursor's screen
 	POINT cursorPos{ 0,0 };
 	GetCursorPos(&cursorPos);
-	HMONITOR monitor = MonitorFromPoint(cursorPos, MONITOR_DEFAULTTOPRIMARY);
+	HMONITOR monitor = MonitorFromPoint(cursorPos, MONITOR_DEFAULTTONEAREST);
 	MONITORINFO monitorInfo{};
 	monitorInfo.cbSize = sizeof(monitorInfo);
 	GetMonitorInfoW(monitor, &monitorInfo);
@@ -143,6 +143,8 @@ void DXWindow::Resize()
 
 		//TODO: Validate result of resizing
 		D3EZ_CHECK_HR_D(m_swapChain->ResizeBuffers((UINT)GetFrameCount(), m_width, m_height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING), "m_swapChain->ResizeBuffers() FAILED");
+
+		m_ZBuffer->Recreate(m_width, m_height);
 		m_shouldResize = false;
 	}	
 
@@ -207,7 +209,7 @@ void DXWindow::Shutdown()
 	}
 }
 
-void DXWindow::BeginFrame(ID3D12GraphicsCommandList*& cmdList, ID3D12DescriptorHeap* dsvHeap)
+void DXWindow::BeginFrame(ID3D12GraphicsCommandList*& cmdList)
 {
 	m_currentBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
 
@@ -219,13 +221,14 @@ void DXWindow::BeginFrame(ID3D12GraphicsCommandList*& cmdList, ID3D12DescriptorH
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsvHeap->GetCPUDescriptorHandleForHeapStart();
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_ZBuffer->GetDescriptorHeap()->GetCPUDescriptorHandleForHeapStart();
 
 	cmdList->ResourceBarrier(1, &barrier);
 
-	cmdList->ClearRenderTargetView(m_rtvHandles[m_currentBufferIndex], m_backGroundColor, 0, nullptr);
-
 	cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, &dsvHandle);
+
+	cmdList->ClearRenderTargetView(m_rtvHandles[m_currentBufferIndex], m_backGroundColor, 0, nullptr);
+	
 
 	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 

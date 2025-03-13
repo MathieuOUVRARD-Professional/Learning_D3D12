@@ -330,7 +330,8 @@ int main()
 		indexBuffer.Get()->SetName(L"Index_Buffer");
 
 		eyeTextures.Init(&defaultHeapProperties);
-		ZBuffer zBuffer = ZBuffer(&defaultHeapProperties);
+		ZBuffer zBuffer = ZBuffer(&defaultHeapProperties, DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
+		DXWindow::Get().SetZBuffer(&zBuffer);
 
 		// === Copy to Upload Buffer === //
 		UINT64 offset = 0;
@@ -538,7 +539,7 @@ int main()
 			// Begin drawing
 			cmdList = DXContext::Get().InitCommandList();
 
-			DXWindow::Get().BeginFrame(cmdList, zBuffer.GetDescriptorHeap());						
+			DXWindow::Get().BeginFrame(cmdList);						
 
 			// === RS == //
 			// View Port

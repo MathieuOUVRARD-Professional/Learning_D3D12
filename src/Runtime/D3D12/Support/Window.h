@@ -8,6 +8,7 @@
 #include <Support/ComPointer.h>
 
 #include<D3D/DXContext.h>
+#include<D3D/ZBuffer.h>
 #include <Support/Camera.h>
 
 class DXWindow
@@ -20,7 +21,7 @@ public:
 	void SetFullscreen(bool enabled);
 	void Shutdown();
 
-	void BeginFrame(ID3D12GraphicsCommandList*& cmdList, ID3D12DescriptorHeap* dsvHeap);
+	void BeginFrame(ID3D12GraphicsCommandList*& cmdList);
 	void EndFrame(ID3D12GraphicsCommandList*& cmdList);	
 
 	inline HWND GetWindow() const
@@ -70,6 +71,11 @@ public:
 		m_camera = &mainCamera;
 	}
 
+	inline void SetZBuffer(ZBuffer* zBuffer)
+	{
+		m_ZBuffer = zBuffer;
+	}
+
 	static constexpr size_t FrameCount = 2;
 	static constexpr size_t GetFrameCount()
 	{
@@ -103,6 +109,8 @@ private:
 
 	ComPointer<ID3D12DescriptorHeap> m_rtvDescHeap = nullptr;
 	D3D12_CPU_DESCRIPTOR_HANDLE m_rtvHandles[FrameCount];
+
+	ZBuffer* m_ZBuffer = nullptr;
 
 	//Singleton 
 public:

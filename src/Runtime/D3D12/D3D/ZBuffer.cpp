@@ -1,20 +1,15 @@
 #include <D3D/ZBuffer.h>
 
-ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties)
+ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, UINT width, UINT height)
 {
-
-	// Monitor Info
-	HMONITOR monitor = MonitorFromWindow(DXWindow::Get().GetWindow(), MONITOR_DEFAULTTOPRIMARY);
-	MONITORINFO monitorInfo{};
-	monitorInfo.cbSize = sizeof(monitorInfo);
-	GetMonitorInfoW(monitor, &monitorInfo);
+	m_defaultHeapProperties = defaultHeapProperties;
 
 	//Buffer
 	D3D12_RESOURCE_DESC rdd{};
 	rdd.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 	rdd.Alignment = 0;
-	rdd.Width = monitorInfo.rcMonitor.right == 0 ? 2560 : abs(monitorInfo.rcMonitor.right);
-	rdd.Height = monitorInfo.rcMonitor.bottom == 0 ? 1440 : monitorInfo.rcMonitor.bottom;
+	rdd.Width = width;
+	rdd.Height = height;
 	rdd.DepthOrArraySize = 1;
 	rdd.MipLevels = 1;
 	rdd.Format = DXGI_FORMAT_D32_FLOAT;
