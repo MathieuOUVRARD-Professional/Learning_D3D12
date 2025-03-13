@@ -86,20 +86,21 @@ void main(
 	float3 albedoTexel = materialData.baseColor * bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv).rgb;
 	float3 normalTexel = bindlessTextures[NonUniformResourceIndex(materialData.normalID)].Sample(textureSampler, i_uv).rgb;
 	float3 ormTexel	 = bindlessTextures[NonUniformResourceIndex(materialData.ormID)].Sample(textureSampler, i_uv).rgb;
+    float3 emmisive = materialData.emissiveColor * bindlessTextures[NonUniformResourceIndex(materialData.emissiveID)].Sample(textureSampler, i_uv).rgb;
 	float roughness = materialData.roughness *  ormTexel.g;
-	float metalness = materialData.metalness *  ormTexel.b;	
+	float metalness = materialData.metalness *  ormTexel.b;
 	
     float alpha = bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv).a;
     clip(alpha - 0.25f); // Discards the pixel if alpha <= 0
 	
-    float3 ambient = 0.05 * albedoTexel;
+    float3 ambient = 0.05f * albedoTexel;
 	
 	// Convert normal map to world space
 	float3 normalWorldSpace = ApplyNormalMap(normal, i_tangent, i_bitangent, normalTexel);
 	
 	// View & Light vectors
 	float3 viewDirection = normalize(cameraPosition - i_currentPos.xyz);
-    float3 lightDirection = normalize(light.position.xyz - i_currentPos.xyz);
+    float3 lightDirection = normalize(light.position.xyz /*- i_currentPos.xyz*/);
 	float3 halfwayVec = normalize(viewDirection + lightDirection);
 	
 	// Compute Fresnel Reflectance at Normal Incidence (F0)	
@@ -125,7 +126,10 @@ void main(
 	// Final color computation
 	float NdotL = max(dot(normalWorldSpace, lightDirection), 0.0f);
 	float3 diffuse = kD * Lambertian;
-	float3 finalColor = (diffuse + specular) * NdotL * light.color.rgb + ambient;
+    float3 finalColor = (diffuse + specular) * NdotL * light.color.rgb + emmisive + ambient;
+	
+    float gamma = 2.2;
+    finalColor.rgb = pow(finalColor.rgb, float3(1.0f / gamma, 1.0f / gamma, 1.0f / gamma));
 	
     pixel = float4(finalColor, materialData.opacity);
 }
