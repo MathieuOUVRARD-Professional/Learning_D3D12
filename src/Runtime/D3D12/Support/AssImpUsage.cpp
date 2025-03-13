@@ -13,7 +13,8 @@ void C_AssImp::Import(const std::string& filePath, ObjectList& objectList)
 		aiProcess_CalcTangentSpace |
 		aiProcess_Triangulate |
 		aiProcess_JoinIdenticalVertices |
-		aiProcess_SortByPType
+		aiProcess_SortByPType |
+		aiProcess_FlipUVs
 	);
 	if (!scene)
 	{
@@ -160,7 +161,7 @@ void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, ObjectList& object
 void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, std::string sceneDirectory)
 {
 	std::vector<Material> materials;
-	uint32_t textureID =0;
+	uint32_t textureID = 0;
 	
 	for (unsigned int i = 0; i < scene.mNumMaterials; i++)
 	{
@@ -192,6 +193,17 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 			textureID++;
 		}
 
+		if (i == 0 && !objectList.hasDefaultNormalTexture)
+		{
+
+			objectList.hasDefaultNormalTexture = true;
+
+			texturesPaths.emplace_back("Textures/Normal.png");
+
+			texturesNames.emplace_back("DefaultNormalTexture");
+
+			textureID++;
+		}
 
 		material.m_name = materialNode->GetName().C_Str();
 		std::cout << "Material name: " << material.m_name << std::endl;
@@ -252,6 +264,10 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 			material.m_normalTextureID = textureID;
 			textureID++;
 		}
+		else
+		{
+			material.m_normalTextureID = DEFAULT_NORMAL_TEXTURE;
+		}
 
 		if (materialNode->GetTexture(aiTextureType_METALNESS, 0, &texturePath) == AI_SUCCESS)
 		{
@@ -295,13 +311,14 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 		}
 		else
 		{
-			material.m_emissiveTextureID = 0;
+			material.m_emissiveTextureID = DEFAULT_WHITE_TEXTURE;
 		}
 
 		// No texture
 		if (texturesPaths.size() == 0)		
 		{
-			material.m_diffuseTextureID = material.m_normalTextureID = material.m_ormTextureID = material.m_emissiveTextureID = 0;
+			material.m_diffuseTextureID = material.m_ormTextureID = material.m_emissiveTextureID = DEFAULT_WHITE_TEXTURE;
+			material.m_normalTextureID = DEFAULT_NORMAL_TEXTURE;
 		}
 		else
 		{

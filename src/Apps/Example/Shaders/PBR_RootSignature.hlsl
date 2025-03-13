@@ -22,6 +22,6 @@
 "RootConstants(num32BitConstants = 16, b2),"\
 "RootConstants(num32BitConstants = 8, b3),"\
 "DescriptorTable(" \
-    "SRV(t0, numDescriptors = 2, flags=DATA_VOLATILE)"\
+    "SRV(t0, numDescriptors = 73, flags=DATA_VOLATILE)"\
 "),"\
 "StaticSampler(s0)"

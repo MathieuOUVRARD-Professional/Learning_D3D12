@@ -30,7 +30,7 @@ class Material
 		glm::vec3 m_emissiveColor		= glm::vec3(0.0f, 0.0f, 0.0f);
 
 		float m_opacity					= 1.0f;
-		float m_metallicFactor			= 1.0f;
+		float m_metallicFactor			= 0.0f;
 		float m_roughnessFactor			= 1.0f;
 
 	private:
@@ -45,11 +45,13 @@ struct MaterialData
 	uint32_t emissiveID;
 
 	glm::vec3 baseColor;
+	float padding1;
+
 	glm::vec3 emissiveColor;
+	float padding2;
 
 	float opacity;
 	float roughness;
 	float metalness;
-
-	float padding[3];
+	float padding3;
 };

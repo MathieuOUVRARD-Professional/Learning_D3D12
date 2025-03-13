@@ -47,11 +47,11 @@ void DXPipelineState::Init(LPCWSTR name, ComPointer<ID3D12RootSignature> &rootSi
 	gfxPsod.BlendState.AlphaToCoverageEnable = FALSE;
 	gfxPsod.BlendState.IndependentBlendEnable = FALSE;
 	gfxPsod.BlendState.RenderTarget[0].BlendEnable = TRUE;
-	gfxPsod.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
-	gfxPsod.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
+	gfxPsod.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+	gfxPsod.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
 	gfxPsod.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-	gfxPsod.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ZERO;
-	gfxPsod.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+	gfxPsod.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+	gfxPsod.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
 	gfxPsod.BlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
 	gfxPsod.BlendState.RenderTarget[0].LogicOpEnable = FALSE;
 	gfxPsod.BlendState.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;;

@@ -4,7 +4,7 @@
 // PBR Lighting Constants
 static const float PI = 3.14159265359;
 
-Texture2D bindlessTextures[] : register(t0, space0);
+Texture2D<float4> bindlessTextures[] : register(t0, space0);
 sampler textureSampler : register(s0);
 
 cbuffer Camera : register(b1)
@@ -80,7 +80,6 @@ void main(
 	out float4 pixel : SV_Target
 )
 {
-	float ambient = 0.05f;
 	float3 normal = normalize(i_normal);
 
 	// Texture sampling
@@ -88,14 +87,19 @@ void main(
 	float3 normalTexel = bindlessTextures[NonUniformResourceIndex(materialData.normalID)].Sample(textureSampler, i_uv).rgb;
 	float3 ormTexel	 = bindlessTextures[NonUniformResourceIndex(materialData.ormID)].Sample(textureSampler, i_uv).rgb;
 	float roughness = materialData.roughness *  ormTexel.g;
-	float metalness = materialData.metalness *  ormTexel.b;
+	float metalness = materialData.metalness *  ormTexel.b;	
+	
+    float alpha = bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv).a;
+    clip(alpha - 0.25f); // Discards the pixel if alpha <= 0
 
+    float ambient =  0.1f;
+	
 	// Convert normal map to world space
 	float3 normalWorldSpace = ApplyNormalMap(normal, i_tangent, i_bitangent, normalTexel);
 	
 	// View & Light vectors
 	float3 viewDirection = normalize(cameraPosition - i_currentPos.xyz);
-	float3 lightDirection = normalize(light.position.xyz - i_currentPos.xyz );
+    float3 lightDirection = normalize(light.position.xyz - i_currentPos.xyz);
 	float3 halfwayVec = normalize(viewDirection + lightDirection);
 	
 	// Compute Fresnel Reflectance at Normal Incidence (F0)	
@@ -110,7 +114,7 @@ void main(
 
 	// Specular BRDF
 	float3 numerator = (NDF * F * G);
-	float3 denominator = 4.0f * max(dot(normalWorldSpace, viewDirection), 0.0f) * max(dot(normalWorldSpace, lightDirection ), 0.0f) + 0.0001f;
+	float denominator = 4.0f * max(dot(normalWorldSpace, viewDirection), 0.0f) * max(dot(normalWorldSpace, lightDirection ), 0.0f) + 0.0001f;
 	float3 specular = numerator / max(denominator, 0.0001f);
 
 	 // Diffuse Reflection (Lambertian)
@@ -121,7 +125,7 @@ void main(
 	// Final color computation
 	float NdotL = max(dot(normalWorldSpace, lightDirection), 0.0f);
 	float3 diffuse = kD * Lambertian;
-	float3 finalColor = (diffuse + specular) * NdotL + ambient;
+	float3 finalColor = (diffuse + specular) * NdotL * light.color.rgb + ambient;
 	
     pixel = float4(finalColor, materialData.opacity);
 }

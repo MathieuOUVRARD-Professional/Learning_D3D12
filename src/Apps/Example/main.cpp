@@ -571,13 +571,15 @@ int main()
 			std::vector<float> lightColor = ImGuiColorPicker(&colorPickerName, true);
 			ImGuiPerfOverlay(true);
 
-			glm::vec3 lightPosition = glm::vec3(0.0f, 20.0f, 0.0f);
+			glm::vec3 lightPosition = glm::vec3(0.0f, 25.0f, 0.0f);
 			glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
 
 			struct Light
 			{
-				glm::vec4 lightcolor = glm::vec4(1.0f, 1.0f, 1.0, 1.0f);
-				glm::vec4 lightPosition = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+				glm::vec3 lightcolor = glm::vec3(1.0f, 1.0f, 1.0);
+				float padding = 0;
+				glm::vec3 lightPosition = glm::vec3(0.0f, 0.0f, 0.0);
+				float pading2 = 0;
 			};
 			Light cubeLight;
 			//cubeLight.lightcolor = glm::vec4(color[0], color[1], color[2], 1.0f);

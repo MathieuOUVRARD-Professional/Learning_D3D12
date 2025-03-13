@@ -13,15 +13,21 @@ struct MaterialData
     uint emissiveID;
     
     float3 baseColor;
+    float padding1;
+    
     float3 emissiveColor;
+    float padding2;
     
     float opacity;
     float roughness;
     float metalness;
+    float padding3;    
 };
 
 struct Light
 {
-    float4 color;
-    float4 position;
+    float3 color;
+    float padding1;
+    float3 position;
+    float padding2;
 };
