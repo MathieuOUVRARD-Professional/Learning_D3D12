@@ -91,8 +91,8 @@ void main(
 	
     float alpha = bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv).a;
     clip(alpha - 0.25f); // Discards the pixel if alpha <= 0
-
-    float ambient =  0.1f;
+	
+    float3 ambient = 0.05 * albedoTexel;
 	
 	// Convert normal map to world space
 	float3 normalWorldSpace = ApplyNormalMap(normal, i_tangent, i_bitangent, normalTexel);

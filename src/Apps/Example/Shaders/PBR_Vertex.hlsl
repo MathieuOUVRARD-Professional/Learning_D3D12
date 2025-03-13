@@ -26,11 +26,11 @@ void main(
 {	
 	o_uv = i_uv;
 
-	o_normal = (float3)mul(matrices.model, float4(i_normal, 1.0f));
+    o_normal = (float3) mul((float3x3) matrices.model, i_normal);
 
-	o_tangent = i_tangent;
+    o_tangent = (float3) mul((float3x3) matrices.model, i_tangent);
 
-	o_bitangent = i_bitangent;
+    o_bitangent = (float3) mul((float3x3) matrices.model, i_bitangent);
 
 	o_currentPos = mul(matrices.model, float4(i_pos, 1.0f));
 
