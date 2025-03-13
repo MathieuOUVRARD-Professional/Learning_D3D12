@@ -21,6 +21,8 @@ public:
 	void SetFullscreen(bool enabled);
 	void Shutdown();
 
+	bool MonitorHasChanged();
+
 	void BeginFrame(ID3D12GraphicsCommandList*& cmdList);
 	void EndFrame(ID3D12GraphicsCommandList*& cmdList);	
 
@@ -88,13 +90,16 @@ private:
 	static LRESULT CALLBACK OnWindowMessage(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
+	HMONITOR m_currentMonitor;
+
 	Camera* m_camera;
 	ATOM m_windowClass = 0;
 	HWND m_window = nullptr;
 
 	bool m_shouldClose = false;
 	bool m_shouldResize = false;
-	bool m_isFullscreen = false;
+	bool m_isFullscreen = false; 
+	bool m_monitorHasChanged = false;
 
 	UINT m_width = 1920;
 	UINT m_height = 1080;

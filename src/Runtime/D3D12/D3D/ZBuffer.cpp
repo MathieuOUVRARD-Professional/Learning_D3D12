@@ -1,5 +1,12 @@
 #include <D3D/ZBuffer.h>
 
+ZBuffer::ZBuffer()
+{
+	m_defaultHeapProperties = nullptr;
+	m_depth = nullptr;
+	m_dsvHeap = nullptr;
+}
+
 ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, UINT width, UINT height)
 {
 	m_defaultHeapProperties = defaultHeapProperties;

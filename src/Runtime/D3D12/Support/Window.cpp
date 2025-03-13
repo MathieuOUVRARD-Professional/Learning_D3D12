@@ -134,20 +134,38 @@ void DXWindow::Present()
 void DXWindow::Resize()
 {
 	ReleaseBuffers();
+	m_ZBuffer->Release();
 
-	RECT clientRect;
-	if (GetClientRect(m_window, &clientRect))
+	if (m_monitorHasChanged && m_isFullscreen)
 	{
-		m_width = clientRect.right - clientRect.left;
-		m_height = clientRect.bottom - clientRect.top;
+		MONITORINFO monitorInfo{};
+		monitorInfo.cbSize = sizeof(monitorInfo);
 
-		//TODO: Validate result of resizing
-		D3EZ_CHECK_HR_D(m_swapChain->ResizeBuffers((UINT)GetFrameCount(), m_width, m_height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING), "m_swapChain->ResizeBuffers() FAILED");
-
-		m_ZBuffer->Recreate(m_width, m_height);
-		m_shouldResize = false;
+		if (GetMonitorInfoW(m_currentMonitor, &monitorInfo))
+		{
+			SetWindowPos(m_window, nullptr,
+				monitorInfo.rcMonitor.left,
+				monitorInfo.rcMonitor.top,
+				monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
+				monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
+				SWP_NOZORDER
+			);
+		}
+	}
+	else
+	{
+		RECT clientRect;
+		if (GetClientRect(m_window, &clientRect))
+		{
+			m_width = clientRect.right - clientRect.left;
+			m_height = clientRect.bottom - clientRect.top;			
+		}
 	}	
 
+	D3EZ_CHECK_HR_D(m_swapChain->ResizeBuffers((UINT)GetFrameCount(), m_width, m_height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING), "m_swapChain->ResizeBuffers() FAILED");
+	m_ZBuffer->Resize(m_width, m_height);
+
+	m_shouldResize = false;	
 	GetBuffers();
 }
 
@@ -207,6 +225,26 @@ void DXWindow::Shutdown()
 	{
 		UnregisterClassW((LPWSTR)m_windowClass, GetModuleHandle(nullptr));
 	}
+}
+
+bool DXWindow::MonitorHasChanged()
+{
+	HMONITOR newMonitor = MonitorFromWindow(m_window, MONITOR_DEFAULTTONEAREST);
+	if (newMonitor != m_currentMonitor)
+	{
+		m_currentMonitor = newMonitor;
+
+		MONITORINFO monitorInfo = { sizeof(monitorInfo) };
+		if (GetMonitorInfoW(newMonitor, &monitorInfo))
+		{
+			m_width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+			m_height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+			m_monitorHasChanged = true;
+			return true;
+		}
+	}
+	
+	return false;
 }
 
 void DXWindow::BeginFrame(ID3D12GraphicsCommandList*& cmdList)
@@ -290,6 +328,13 @@ LRESULT CALLBACK DXWindow::OnWindowMessage(HWND window, UINT message, WPARAM wPa
 	{	
 		case WM_SIZE:
 			if (lParam && (HIWORD(lParam)!= Get().m_height || LOWORD(lParam) != Get().m_width))
+			{
+				Get().m_shouldResize = true;
+			}
+			break;
+
+		case WM_MOVE:
+			if (!Get().m_shouldResize && Get().MonitorHasChanged())
 			{
 				Get().m_shouldResize = true;
 			}

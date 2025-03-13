@@ -11,5 +11,6 @@ A very simple D3D12 renderer that draws Sponza Base Scene from Intel using PBR
 
 ### Download Sponza Base Scene
 
-- Download Intel's Sponza Base Scene here: <https://www.intel.com/content/www/us/en/developer/topic-technology/graphics-research/samples.html>
+- Download Intel's Sponza Base Scene here:  
+<https://www.intel.com/content/www/us/en/developer/topic-technology/graphics-research/samples.html>
 - Unzip Sponza Base Scene ```main1_sponza``` folder content to ```{GitFolder}/app/Sponza/```
