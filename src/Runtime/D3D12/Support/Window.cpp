@@ -142,11 +142,14 @@ void DXWindow::Resize()
 
 		if (GetMonitorInfoW(m_currentMonitor, &monitorInfo))
 		{
+			m_width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+			m_height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+
 			SetWindowPos(m_window, nullptr,
 				monitorInfo.rcMonitor.left,
 				monitorInfo.rcMonitor.top,
-				monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
-				monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
+				m_width,
+				m_height,
 				SWP_NOZORDER
 			);
 		}
@@ -197,6 +200,7 @@ void DXWindow::SetFullscreen(bool enabled)
 				monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
 				SWP_NOZORDER
 			);
+			m_shouldResize = true;
 		}
 	}
 	else

@@ -30,6 +30,8 @@
 
 #include "ImGuizmo.h"
 
+#include<glm/gtx/matrix_decompose.hpp>
+
 #define IMGUI
 
 void ColorPuke(float* color)
@@ -482,8 +484,8 @@ int main()
 		glm::vec3 lightPosition = glm::vec3(10.0f, 25.0f, 10.0f);
 		//glm::vec3 lightPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 		glm::vec3 lightScale = glm::vec3(1.0f, 1.0f, 1.0f);
-		glm::vec3 lightRotation = glm::vec3(0.0f, 0.0f, 0.0f);
-		glm::quat lightQuat;
+		glm::vec3 lightEulerAngles = glm::vec3(0.0f, 0.0f, 0.0f);
+		glm::mat4 lightRotationMat = glm::mat4(1.0f);
 		
 		glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
 
@@ -626,6 +628,7 @@ int main()
 			if (rotate)
 			{
 				RotateGuizmo(camera, lightModel);
+
 			}
 			ImGui::SameLine();
 			ImGui::Checkbox("Scale", &scale);
@@ -647,6 +650,53 @@ int main()
 				lightPosition = glm::vec3(modelPosition[0], modelPosition[1], modelPosition[2]);
 
 				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+				lightModel *= lightRotationMat;
+				lightModel = glm::scale(lightModel, lightScale);
+			}
+
+
+			//lightRotationMat = glm::mat4(glm::mat3(lightRotationMat));
+			//lightEulerAngles = glm::degrees(glm::eulerAngles(glm::quat_cast(lightRotationMat)));
+
+			float modelRotation[] = { lightEulerAngles.x, lightEulerAngles.y, lightEulerAngles.z };
+			ImGui::Text("Rotation: ");
+			if (ImGui::DragFloat3("##Rotation", modelRotation, 0.5f, -181.0f, 181.0f))
+			{
+				if (modelRotation[0] > 180)
+				{
+					modelRotation[0] = -180;
+				}
+				if (modelRotation[1] > 180)
+				{
+					modelRotation[1] = -180;
+				}
+				if (modelRotation[2] > 180)
+				{
+					modelRotation[2] = -180;
+				}
+				if (modelRotation[0] < -180)
+				{
+					modelRotation[0] = 180;
+				}
+				if (modelRotation[1] < -180)
+				{
+					modelRotation[1] = 180;
+				}
+				if (modelRotation[2] < -180)
+				{
+					modelRotation[2] = 180;
+				}
+				glm::vec3 eulerRadians =glm::radians(glm::vec3(modelRotation[0], modelRotation[1], modelRotation[2]));
+				
+
+				// Apply new rotation
+				lightRotationMat = glm::mat4(1.0f);
+				lightRotationMat = glm::rotate(lightRotationMat, eulerRadians.y, glm::vec3(0, 1, 0)); // Yaw
+				lightRotationMat = glm::rotate(lightRotationMat, eulerRadians.x, glm::vec3(1, 0, 0)); // Pitch
+				lightRotationMat = glm::rotate(lightRotationMat, eulerRadians.z, glm::vec3(0, 0, 1)); // Roll
+
+				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+				lightModel *= lightRotationMat;
 				lightModel = glm::scale(lightModel, lightScale);
 			}
 
@@ -657,48 +707,39 @@ int main()
 				lightScale = glm::vec3(modelScale[0], modelScale[1], modelScale[2]);
 
 				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+				lightModel *= lightRotationMat;
 				lightModel = glm::scale(lightModel, lightScale);
-			}
-
-			glm::vec3 test = glm::eulerAngles(glm::quat_cast(lightModel));
-
-			float modelRotation[] =  { glm::degrees(glm::eulerAngles(glm::quat_cast(lightModel)).x),  glm::degrees(glm::eulerAngles(glm::quat_cast(lightModel)).y),  glm::degrees(glm::eulerAngles(glm::quat_cast(lightModel)).z)};
-			ImGui::Text("Rotation: ");
-			if (ImGui::DragFloat3("##Rotation", modelRotation, 1.0f, -180.0f, 180.0f))
-			{
-				lightRotation = glm::vec3(modelRotation[0], modelRotation[1], modelRotation[2]);
-
-				lightQuat = glm::quat(glm::radians(lightRotation));
-
-				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
-				lightModel *= glm::mat4_cast(lightQuat);
-				lightModel = glm::scale(lightModel, lightScale); 
-			}
+			}		
 
 			ImGui::Separator();
 
 			if (ImGui::Button("Reset position"))
 			{
 				lightPosition = glm::vec3(10.0f, 25.0f, 10.0f);
+
 				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+				lightModel *= lightRotationMat;
+				lightModel = glm::scale(lightModel, lightScale);
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Reset Rotation"))
+			{
+				lightEulerAngles = glm::vec3(0.0f, 0.0f, 0.0f);
+				lightRotationMat = glm::mat4(1.0f);
+
+				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+				lightModel *= lightRotationMat;
 				lightModel = glm::scale(lightModel, lightScale);
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Reset Scale"))
 			{
 				lightScale = glm::vec3(1.0f, 1.0f, 1.0f);
-				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
-				lightModel = glm::scale(lightModel, lightScale);
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Reset Rotation"))
-			{
-				lightRotation = glm::vec3(0.0f, 0.0f, 0.0f);
-				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
-				lightModel = glm::scale(lightModel, lightScale);
-			}
 
-			
+				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+				lightModel *= lightRotationMat;
+				lightModel = glm::scale(lightModel, lightScale);
+			}	
 
 			
 			ImGui::End();
