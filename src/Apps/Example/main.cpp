@@ -8,6 +8,7 @@
 #include <Support/Camera.h>
 #include <Support/AssImpUsage.h>
 #include <Support/ObjectList.h>
+#include <Support/Transform.h>
 
 #include <Debug/DebugLayer.h>
 
@@ -480,14 +481,11 @@ int main()
 
 		glm::vec3 pyramidPosition = glm::vec3(0.0f, 1.0f, 0.0f);
 		glm::mat4 pyramidModel = glm::translate(glm::mat4(1.0f), pyramidPosition);
-
-		glm::vec3 lightPosition = glm::vec3(10.0f, 25.0f, 10.0f);
-		//glm::vec3 lightPosition = glm::vec3(0.0f, 0.0f, 0.0f);
-		glm::vec3 lightScale = glm::vec3(1.0f, 1.0f, 1.0f);
-		glm::vec3 lightEulerAngles = glm::vec3(0.0f, 0.0f, 0.0f);
-		glm::mat4 lightRotationMat = glm::mat4(1.0f);
 		
-		glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+		
+		MyTransform lightTransform = MyTransform(glm::vec3(10.0f, 25.0f, 10.0f));		
+		
+		glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightTransform.m_position);
 
 		if (glm::determinant(lightModel) < 0.0001f)
 		{
@@ -605,148 +603,15 @@ int main()
 			Light cubeLight;
 			//cubeLight.lightcolor = glm::vec4(color[0], color[1], color[2], 1.0f);
 			cubeLight.lightcolor = glm::vec4(lightColor[0], lightColor[1], lightColor[2], lightColor[3]);
-			cubeLight.lightPosition = glm::vec4(lightPosition, 1.0f);
+			cubeLight.lightPosition = glm::vec4(lightTransform.m_position, 1.0f);
 
 			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
 			camera.Matrix(45.0f, 0.01f, 100.0f);
 			camera.Inputs();						
 
-			InitGuizmo();
-			ImGui::Begin("ImGuizmo -- Settings");
-			ImGui::Text("Operation:");
-			ImGui::Checkbox("Translate", &translate);
-			if (translate)
-			{
-				if (scale)
-				{
-					scale = false;
-				}
-				TranslateGuizmo(camera, lightModel);
-			}
-			ImGui::SameLine();
-			ImGui::Checkbox("Rotate", &rotate);
-			if (rotate)
-			{
-				RotateGuizmo(camera, lightModel);
-
-			}
-			ImGui::SameLine();
-			ImGui::Checkbox("Scale", &scale);
-			if (scale)
-			{
-				if (translate)
-				{
-					translate = false;
-				}
-				ScaleGuizmo(camera, lightModel);
-			}			
+			TransformUI(camera, lightModel, lightTransform);
 			
-			ImGui::Separator();
-
-			float modelPosition[] = { lightModel[3].x, lightModel[3].y, lightModel[3].z };
-			ImGui::Text("Position: ");
-			if (ImGui::DragFloat3("##Position",modelPosition,	0.01f))
-			{
-				lightPosition = glm::vec3(modelPosition[0], modelPosition[1], modelPosition[2]);
-
-				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
-				lightModel *= lightRotationMat;
-				lightModel = glm::scale(lightModel, lightScale);
-			}
-
-
-			//lightRotationMat = glm::mat4(glm::mat3(lightRotationMat));
-			//lightEulerAngles = glm::degrees(glm::eulerAngles(glm::quat_cast(lightRotationMat)));
-
-			float modelRotation[] = { lightEulerAngles.x, lightEulerAngles.y, lightEulerAngles.z };
-			ImGui::Text("Rotation: ");
-			if (ImGui::DragFloat3("##Rotation", modelRotation, 0.5f, -181.0f, 181.0f))
-			{
-				if (modelRotation[0] > 180)
-				{
-					modelRotation[0] = -180;
-				}
-				if (modelRotation[1] > 180)
-				{
-					modelRotation[1] = -180;
-				}
-				if (modelRotation[2] > 180)
-				{
-					modelRotation[2] = -180;
-				}
-				if (modelRotation[0] < -180)
-				{
-					modelRotation[0] = 180;
-				}
-				if (modelRotation[1] < -180)
-				{
-					modelRotation[1] = 180;
-				}
-				if (modelRotation[2] < -180)
-				{
-					modelRotation[2] = 180;
-				}
-				glm::vec3 eulerRadians =glm::radians(glm::vec3(modelRotation[0], modelRotation[1], modelRotation[2]));
-				lightEulerAngles = glm::vec3(modelRotation[0], modelRotation[1], modelRotation[2]);
-				
-
-				// Apply new rotation
-				lightRotationMat = glm::mat4(1.0f);
-				lightRotationMat = glm::rotate(lightRotationMat, eulerRadians.y, glm::vec3(0, 1, 0)); // Yaw
-				lightRotationMat = glm::rotate(lightRotationMat, eulerRadians.x, glm::vec3(1, 0, 0)); // Pitch
-				lightRotationMat = glm::rotate(lightRotationMat, eulerRadians.z, glm::vec3(0, 0, 1)); // Roll
-
-				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
-				lightModel *= lightRotationMat;
-				lightModel = glm::scale(lightModel, lightScale);
-			}
-
-			float modelScale[] = { glm::length(glm::vec3(lightModel[0])), glm::length(glm::vec3(lightModel[1])), glm::length(glm::vec3(lightModel[2])) };
-			ImGui::Text("Scale: ");
-			if (ImGui::DragFloat3("##Scale", modelScale, 0.01f))
-			{
-				lightScale = glm::vec3(modelScale[0], modelScale[1], modelScale[2]);
-
-				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
-				lightModel *= lightRotationMat;
-				lightModel = glm::scale(lightModel, lightScale);
-			}		
-
-			ImGui::Separator();
-
-			if (ImGui::Button("Reset position"))
-			{
-				lightPosition = glm::vec3(10.0f, 25.0f, 10.0f);
-
-				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
-				lightModel *= lightRotationMat;
-				lightModel = glm::scale(lightModel, lightScale);
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Reset Rotation"))
-			{
-				lightEulerAngles = glm::vec3(0.0f, 0.0f, 0.0f);
-				lightRotationMat = glm::mat4(1.0f);
-
-				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
-				lightModel *= lightRotationMat;
-				lightModel = glm::scale(lightModel, lightScale);
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Reset Scale"))
-			{
-				lightScale = glm::vec3(1.0f, 1.0f, 1.0f);
-
-				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
-				lightModel *= lightRotationMat;
-				lightModel = glm::scale(lightModel, lightScale);
-			}	
-
-			
-			ImGui::End();
-
-			
-			lightPosition = glm::vec3(lightModel[3]);
+			lightTransform.m_position = glm::vec3(lightModel[3]);
 					
 
 			// Pyramid

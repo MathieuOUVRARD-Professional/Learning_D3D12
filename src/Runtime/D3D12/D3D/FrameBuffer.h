@@ -13,6 +13,8 @@ class FrameBuffer
 		void RenderTargetBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties);
 		void DepthBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties);
 		void Clear(ID3D12GraphicsCommandList*& cmdList);
+		void CreateRenderTargetSRV();
+		void CreateDepthBufferSRV();
 
 	private:
 		uint32_t m_width = 0;

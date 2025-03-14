@@ -102,68 +102,143 @@ void ScaleGuizmo(Camera& camera, glm::mat4& model)
 {
    ImGuizmo::Manipulate(glm::value_ptr(camera.m_viewMatrix), glm::value_ptr(camera.m_projMatrix), ImGuizmo::OPERATION::SCALE, ImGuizmo::MODE::WORLD, glm::value_ptr(model));
 }
-//
-//void EditTransform(const Camera& camera, glm::mat4& matrix)
-//{
-//    static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::ROTATE);
-//    static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
-//    if (ImGui::IsKeyPressed(90))
-//        mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
-//    if (ImGui::IsKeyPressed(69))
-//        mCurrentGizmoOperation = ImGuizmo::ROTATE;
-//    if (ImGui::IsKeyPressed(82)) // r Key
-//        mCurrentGizmoOperation = ImGuizmo::SCALE;
-//    if (ImGui::RadioButton("Translate", mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
-//        mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
-//    ImGui::SameLine();
-//    if (ImGui::RadioButton("Rotate", mCurrentGizmoOperation == ImGuizmo::ROTATE))
-//        mCurrentGizmoOperation = ImGuizmo::ROTATE;
-//    ImGui::SameLine();
-//    if (ImGui::RadioButton("Scale", mCurrentGizmoOperation == ImGuizmo::SCALE))
-//        mCurrentGizmoOperation = ImGuizmo::SCALE;
-//    float matrixTranslation[3], matrixRotation[3], matrixScale[3];
-//    ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(matrix), matrixTranslation, matrixRotation, matrixScale);
-//    ImGui::InputFloat3("Tr", matrixTranslation,"%.3f", 3);
-//    ImGui::InputFloat3("Rt", matrixRotation, "%.3f", 3);
-//    ImGui::InputFloat3("Sc", matrixScale, "%.3f", 3);
-//    ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(matrix));
-//
-//    if (mCurrentGizmoOperation != ImGuizmo::SCALE)
-//    {
-//        if (ImGui::RadioButton("Local", mCurrentGizmoMode == ImGuizmo::LOCAL))
-//            mCurrentGizmoMode = ImGuizmo::LOCAL;
-//        ImGui::SameLine();
-//        if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
-//            mCurrentGizmoMode = ImGuizmo::WORLD;
-//    }
-//    static bool useSnap(false);
-//    if (ImGui::IsKeyPressed(83))
-//        useSnap = !useSnap;
-//    ImGui::Checkbox("", &useSnap);
-//    ImGui::SameLine();
-//    vec_t snap;
-//    switch (mCurrentGizmoOperation)
-//    {
-//    case ImGuizmo::TRANSLATE:
-//        snap = config.mSnapTranslation;
-//        ImGui::InputFloat3("Snap", &snap.x);
-//        break;
-//    case ImGuizmo::ROTATE:
-//        snap = config.mSnapRotation;
-//        ImGui::InputFloat("Angle Snap", &snap.x);
-//        break;
-//    case ImGuizmo::SCALE:
-//        snap = config.mSnapScale;
-//        ImGui::InputFloat("Scale Snap", &snap.x);
-//        break;
-//    }
-//    ImGuiIO& io = ImGui::GetIO();
-//    ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-//    ImGuizmo::Manipulate(camera.mView.m16, camera.mProjection.m16, mCurrentGizmoOperation, mCurrentGizmoMode, matrix.m16, NULL, useSnap ? &snap.x : NULL);
-//}
 
+static bool translate = false;
+static bool rotate = false;
+static bool scale = false;
 
-//if (ImGui::IsMousePosValid())
-//ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
-//else
-//ImGui::Text("Mouse Position: <invalid>");
+void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
+{
+    InitGuizmo();
+    ImGui::Begin("ImGuizmo -- Settings");
+    ImGui::Text("Operation:");
+    ImGui::Checkbox("Translate", &translate);
+    if (translate)
+    {
+        if (scale)
+        {
+            scale = false;
+        }
+        TranslateGuizmo(camera, model);
+        transform.m_position = glm::vec3(model[3].x, model[3].y, model[3].z);
+    }
+    ImGui::SameLine();
+    ImGui::Checkbox("Rotate", &rotate);
+    if (rotate)
+    {
+        RotateGuizmo(camera, model);
+
+    }
+    ImGui::SameLine();
+    ImGui::Checkbox("Scale", &scale);
+    if (scale)
+    {
+        if (translate)
+        {
+            translate = false;
+        }
+        ScaleGuizmo(camera, model);
+    }
+
+    ImGui::Separator();
+
+    // Translation sliders
+    float modelPosition[] = { model[3].x, model[3].y, model[3].z };
+    ImGui::Text("Position: ");
+    if (ImGui::DragFloat3("##Position", modelPosition, 0.01f))
+    {
+        transform.m_position = glm::vec3(modelPosition[0], modelPosition[1], modelPosition[2]);
+
+        model = glm::translate(glm::mat4(1.0f), transform.m_position);
+        model *= transform.m_rotationMat;
+        model = glm::scale(model, transform.m_scale);
+    }
+
+    // Rotation sliders
+    float modelRotation[] = { transform.m_rotationEuler.x, transform.m_rotationEuler.y, transform.m_rotationEuler.z };
+    ImGui::Text("Rotation: ");
+    if (ImGui::DragFloat3("##Rotation", modelRotation, 0.5f, -181.0f, 181.0f))
+    {
+        if (modelRotation[0] > 180)
+        {
+            modelRotation[0] = -180;
+        }
+        if (modelRotation[1] > 180)
+        {
+            modelRotation[1] = -180;
+        }
+        if (modelRotation[2] > 180)
+        {
+            modelRotation[2] = -180;
+        }
+        if (modelRotation[0] < -180)
+        {
+            modelRotation[0] = 180;
+        }
+        if (modelRotation[1] < -180)
+        {
+            modelRotation[1] = 180;
+        }
+        if (modelRotation[2] < -180)
+        {
+            modelRotation[2] = 180;
+        }
+        glm::vec3 eulerRadians = glm::radians(glm::vec3(modelRotation[0], modelRotation[1], modelRotation[2]));
+        transform.m_rotationEuler = glm::vec3(modelRotation[0], modelRotation[1], modelRotation[2]);
+
+        // Apply new rotation
+        transform.m_rotationMat = glm::mat4(1.0f);
+        transform.m_rotationMat = glm::rotate(transform.m_rotationMat, eulerRadians.y, glm::vec3(0, 1, 0)); // Yaw
+        transform.m_rotationMat = glm::rotate(transform.m_rotationMat, eulerRadians.x, glm::vec3(1, 0, 0)); // Pitch
+        transform.m_rotationMat = glm::rotate(transform.m_rotationMat, eulerRadians.z, glm::vec3(0, 0, 1)); // Roll
+
+        model = glm::translate(glm::mat4(1.0f), transform.m_position);
+        model *= transform.m_rotationMat;
+        model = glm::scale(model, transform.m_scale);
+    }
+
+    // Scale sliders
+    float modelScale[] = { glm::length(glm::vec3(model[0])), glm::length(glm::vec3(model[1])), glm::length(glm::vec3(model[2])) };
+    ImGui::Text("Scale: ");
+    if (ImGui::DragFloat3("##Scale", modelScale, 0.01f))
+    {
+        transform.m_scale = glm::vec3(modelScale[0], modelScale[1], modelScale[2]);
+
+        model = glm::translate(glm::mat4(1.0f), transform.m_position);
+        model *= transform.m_rotationMat;
+        model = glm::scale(model, transform.m_scale);
+    }
+
+    ImGui::Separator();
+
+    if (ImGui::Button("Reset position"))
+    {
+        transform.m_position = glm::vec3(10.0f, 25.0f, 10.0f);
+
+        model = glm::translate(glm::mat4(1.0f), transform.m_position);
+        model *= transform.m_rotationMat;
+        model = glm::scale(model, transform.m_scale);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Reset Rotation"))
+    {
+        transform.m_rotationEuler = glm::vec3(0.0f, 0.0f, 0.0f);
+        transform.m_rotationMat = glm::mat4(1.0f);
+
+        model = glm::translate(glm::mat4(1.0f), transform.m_position);
+        model *= transform.m_rotationMat;
+        model = glm::scale(model, transform.m_scale);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Reset Scale"))
+    {
+        transform.m_scale = glm::vec3(1.0f, 1.0f, 1.0f);
+
+        model = glm::translate(glm::mat4(1.0f), transform.m_position);
+        model *= transform.m_rotationMat;
+        model = glm::scale(model, transform.m_scale);
+    }
+
+    ImGui::End();
+}
+
