@@ -1,5 +1,4 @@
 #include "Window.h"
-#include <Util/HRException.h>
 
 bool DXWindow::Init()
 {

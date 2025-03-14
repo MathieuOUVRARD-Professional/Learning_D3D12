@@ -100,7 +100,7 @@ void main(
 	
 	// View & Light vectors
 	float3 viewDirection = normalize(cameraPosition - i_currentPos.xyz);
-    float3 lightDirection = normalize(light.position.xyz /*- i_currentPos.xyz*/);
+    float3 lightDirection = normalize(light.position.xyz - i_currentPos.xyz);
 	float3 halfwayVec = normalize(viewDirection + lightDirection);
 	
 	// Compute Fresnel Reflectance at Normal Incidence (F0)	

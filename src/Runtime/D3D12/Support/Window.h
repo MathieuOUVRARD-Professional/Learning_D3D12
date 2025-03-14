@@ -4,12 +4,14 @@
 #include"backends/imgui_impl_dx12.h"
 #include"backends/imgui_impl_win32.h"
 
-#include <Support/WinInclude.h>
-#include <Support/ComPointer.h>
-
 #include<D3D/DXContext.h>
 #include<D3D/ZBuffer.h>
+
+#include <Support/WinInclude.h>
+#include <Support/ComPointer.h>
 #include <Support/Camera.h>
+
+#include <Util/HRException.h>
 
 class DXWindow
 {
@@ -90,9 +92,9 @@ private:
 	static LRESULT CALLBACK OnWindowMessage(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
-	HMONITOR m_currentMonitor;
+	HMONITOR m_currentMonitor = nullptr;
 
-	Camera* m_camera;
+	Camera* m_camera = nullptr;
 	ATOM m_windowClass = 0;
 	HWND m_window = nullptr;
 

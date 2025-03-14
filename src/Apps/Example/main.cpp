@@ -28,6 +28,8 @@
 
 #include <ImGui/CustomImGui.h>
 
+#include "ImGuizmo.h"
+
 #define IMGUI
 
 void ColorPuke(float* color)
@@ -472,6 +474,23 @@ int main()
 
 		Camera camera(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth(), glm::vec3(0.0f, 0.0f, 2.0f));
 		DXWindow::Get().SetMainCamera(camera);
+		camera.Matrix(45.0f, 0.01f, 100.0f);
+
+		glm::vec3 pyramidPosition = glm::vec3(0.0f, 1.0f, 0.0f);
+		glm::mat4 pyramidModel = glm::translate(glm::mat4(1.0f), pyramidPosition);
+
+		glm::vec3 lightPosition = glm::vec3(10.0f, 25.0f, 10.0f);
+		//glm::vec3 lightPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+		glm::vec3 lightScale = glm::vec3(1.0f, 1.0f, 1.0f);
+		glm::vec3 lightRotation = glm::vec3(0.0f, 0.0f, 0.0f);
+		glm::quat lightQuat;
+		
+		glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+
+		if (glm::determinant(lightModel) < 0.0001f)
+		{
+			lightModel = glm::scale(lightModel, glm::vec3(1.0f)); // Reset scale
+		}
 
 		// === ImGui SetUp === //
 #ifdef IMGUI
@@ -509,6 +528,10 @@ int main()
 		init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
 		init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
 		ImGui_ImplDX12_Init(&init_info);
+
+		bool translate = false;
+		bool rotate = false;
+		bool scale = false;
 #endif // IMGUI
 
 		float angle = 0.0f;
@@ -521,8 +544,8 @@ int main()
 			// Start the Dear ImGui frame
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplWin32_NewFrame();
-			ImGui::NewFrame();
-			ImGui::ShowDemoWindow(); // Show demo window! :)
+			ImGui::NewFrame();			
+			ImGui::ShowDemoWindow(); // Show demo window! :)			
 #endif // IMGUIS
 			
 			// Process pending window messages
@@ -558,11 +581,9 @@ int main()
 			scRect.bottom = DXWindow::Get().GetHeigth();
 			cmdList->RSSetScissorRects(1, &scRect);
 
-			// === UPDATE === //
-			angle += 0.005f;
-
-			glm::vec3 pyramidPosition = glm::vec3(0.0f, 1.0f, 0.0f);
-			glm::mat4 pyramidModel = glm::translate(glm::mat4(1.0f), pyramidPosition);
+			// === UPDATE === //			
+			pyramidModel = glm::translate(glm::mat4(1.0f), pyramidPosition);
+			angle += 0.005f;			
 			pyramidModel = glm::rotate(pyramidModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 			static float color[] = { 0.0f, 1.0f, 0.0f , 1.0f };
 			ColorPuke(color);
@@ -570,10 +591,7 @@ int main()
 			//float lightColor[] = { 1.0f, 1.0f, 1.0f };
 			std::string colorPickerName = "Light color";
 			std::vector<float> lightColor = ImGuiColorPicker(&colorPickerName, true);
-			ImGuiPerfOverlay(true);
-
-			glm::vec3 lightPosition = glm::vec3(10.0f, 25.0f, 10.0f);
-			glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+			ImGuiPerfOverlay(true);			
 
 			struct Light
 			{
@@ -588,9 +606,107 @@ int main()
 			cubeLight.lightPosition = glm::vec4(lightPosition, 1.0f);
 
 			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
-			camera.Inputs();
-			camera.Matrix(45.0f, 0.01f, 100.0f);			
-						
+			camera.Matrix(45.0f, 0.01f, 100.0f);
+			camera.Inputs();						
+
+			InitGuizmo();
+			ImGui::Begin("ImGuizmo -- Settings");
+			ImGui::Text("Operation:");
+			ImGui::Checkbox("Translate", &translate);
+			if (translate)
+			{
+				if (scale)
+				{
+					scale = false;
+				}
+				TranslateGuizmo(camera, lightModel);
+			}
+			ImGui::SameLine();
+			ImGui::Checkbox("Rotate", &rotate);
+			if (rotate)
+			{
+				RotateGuizmo(camera, lightModel);
+			}
+			ImGui::SameLine();
+			ImGui::Checkbox("Scale", &scale);
+			if (scale)
+			{
+				if (translate)
+				{
+					translate = false;
+				}
+				ScaleGuizmo(camera, lightModel);
+			}			
+			
+			ImGui::Separator();
+
+			float modelPosition[] = { lightModel[3].x, lightModel[3].y, lightModel[3].z };
+			ImGui::Text("Position: ");
+			if (ImGui::DragFloat3("##Position",modelPosition,	0.01f))
+			{
+				lightPosition = glm::vec3(modelPosition[0], modelPosition[1], modelPosition[2]);
+
+				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+				lightModel = glm::scale(lightModel, lightScale);
+			}
+
+			float modelScale[] = { glm::length(glm::vec3(lightModel[0])), glm::length(glm::vec3(lightModel[1])), glm::length(glm::vec3(lightModel[2])) };
+			ImGui::Text("Scale: ");
+			if (ImGui::DragFloat3("##Scale", modelScale, 0.01f))
+			{
+				lightScale = glm::vec3(modelScale[0], modelScale[1], modelScale[2]);
+
+				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+				lightModel = glm::scale(lightModel, lightScale);
+			}
+
+			glm::vec3 test = glm::eulerAngles(glm::quat_cast(lightModel));
+
+			float modelRotation[] =  { glm::degrees(glm::eulerAngles(glm::quat_cast(lightModel)).x),  glm::degrees(glm::eulerAngles(glm::quat_cast(lightModel)).y),  glm::degrees(glm::eulerAngles(glm::quat_cast(lightModel)).z)};
+			ImGui::Text("Rotation: ");
+			if (ImGui::DragFloat3("##Rotation", modelRotation, 1.0f, -180.0f, 180.0f))
+			{
+				lightRotation = glm::vec3(modelRotation[0], modelRotation[1], modelRotation[2]);
+
+				lightQuat = glm::quat(glm::radians(lightRotation));
+
+				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+				lightModel *= glm::mat4_cast(lightQuat);
+				lightModel = glm::scale(lightModel, lightScale); 
+			}
+
+			ImGui::Separator();
+
+			if (ImGui::Button("Reset position"))
+			{
+				lightPosition = glm::vec3(10.0f, 25.0f, 10.0f);
+				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+				lightModel = glm::scale(lightModel, lightScale);
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Reset Scale"))
+			{
+				lightScale = glm::vec3(1.0f, 1.0f, 1.0f);
+				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+				lightModel = glm::scale(lightModel, lightScale);
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Reset Rotation"))
+			{
+				lightRotation = glm::vec3(0.0f, 0.0f, 0.0f);
+				lightModel = glm::translate(glm::mat4(1.0f), lightPosition);
+				lightModel = glm::scale(lightModel, lightScale);
+			}
+
+			
+
+			
+			ImGui::End();
+
+			
+			lightPosition = glm::vec3(lightModel[3]);
+					
+
 			// Pyramid
 			// === PSO === //
 			cmdList->SetPipelineState(pso.Get());

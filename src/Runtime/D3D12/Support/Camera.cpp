@@ -20,8 +20,11 @@ void Camera::Matrix(float FOVdeg, float nearPlane, float farPlane)
 
 	view = glm::lookAt(m_position, m_position + m_orientation, m_up);
 	projection = glm::perspective(glm::radians(FOVdeg), ((float)m_width / (float)m_height), nearPlane, farPlane);
+	
+	m_viewMatrix = view;
+	m_projMatrix = projection;
 
-	m_cameraMatrix = projection * view;
+	m_viewProjMatrix = projection * view;
 }
 
 void Camera::UpdateMatrix(ID3D12GraphicsCommandList* cmdList, int bufferSlot, glm::mat4 modelMatrix)
@@ -32,7 +35,7 @@ void Camera::UpdateMatrix(ID3D12GraphicsCommandList* cmdList, int bufferSlot, gl
 		glm::mat4 model = glm::mat4(1.0f);
 	};
 	Matrices matrices;
-	matrices.viewProj = m_cameraMatrix;
+	matrices.viewProj = m_viewProjMatrix;
 	matrices.model = modelMatrix;
 	cmdList->SetGraphicsRoot32BitConstants(bufferSlot, 32, &matrices, 0);
 }
