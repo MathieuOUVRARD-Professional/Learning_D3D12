@@ -687,6 +687,7 @@ int main()
 					modelRotation[2] = 180;
 				}
 				glm::vec3 eulerRadians =glm::radians(glm::vec3(modelRotation[0], modelRotation[1], modelRotation[2]));
+				lightEulerAngles = glm::vec3(modelRotation[0], modelRotation[1], modelRotation[2]);
 				
 
 				// Apply new rotation
