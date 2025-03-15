@@ -81,11 +81,7 @@ void InitGuizmo()
     if (ImGuizmo::IsOver())
     {
         spdlog::info("Gizmo is being hovered!\n");
-    }
-    if (ImGuizmo::IsUsing())
-    {
-        spdlog::info("Gizmo is being used!\n");
-    }
+    }    
 }
 
 void TranslateGuizmo(Camera& camera, glm::mat4& model)
@@ -106,6 +102,7 @@ void ScaleGuizmo(Camera& camera, glm::mat4& model)
 static bool translate = false;
 static bool rotate = false;
 static bool scale = false;
+static bool rotating = false;
 
 void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
 {
@@ -126,8 +123,11 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
     ImGui::Checkbox("Rotate", &rotate);
     if (rotate)
     {
+        if (ImGuizmo::IsUsing())
+        {
+            rotating = true;
+        }
         RotateGuizmo(camera, model);
-
     }
     ImGui::SameLine();
     ImGui::Checkbox("Scale", &scale);
@@ -153,7 +153,11 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         model *= transform.m_rotationMat;
         model = glm::scale(model, transform.m_scale);
     }
-
+    if (rotating)
+    {
+        transform.m_rotationEuler = glm::degrees(glm::eulerAngles(glm::quat_cast(glm::mat3(model))));
+        rotating = false;
+    }
     // Rotation sliders
     float modelRotation[] = { transform.m_rotationEuler.x, transform.m_rotationEuler.y, transform.m_rotationEuler.z };
     ImGui::Text("Rotation: ");
@@ -186,11 +190,14 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         glm::vec3 eulerRadians = glm::radians(glm::vec3(modelRotation[0], modelRotation[1], modelRotation[2]));
         transform.m_rotationEuler = glm::vec3(modelRotation[0], modelRotation[1], modelRotation[2]);
 
-        // Apply new rotation
-        transform.m_rotationMat = glm::mat4(1.0f);
-        transform.m_rotationMat = glm::rotate(transform.m_rotationMat, eulerRadians.y, glm::vec3(0, 1, 0)); // Yaw
-        transform.m_rotationMat = glm::rotate(transform.m_rotationMat, eulerRadians.x, glm::vec3(1, 0, 0)); // Pitch
-        transform.m_rotationMat = glm::rotate(transform.m_rotationMat, eulerRadians.z, glm::vec3(0, 0, 1)); // Roll
+        glm::quat rotationQuat = glm::quat(eulerRadians);
+        transform.m_rotationMat = glm::toMat4(rotationQuat);
+
+        //// Apply new rotation
+        //transform.m_rotationMat = glm::mat4(1.0f);
+        //transform.m_rotationMat = glm::rotate(transform.m_rotationMat, eulerRadians.y, glm::vec3(0, 1, 0)); // Yaw
+        //transform.m_rotationMat = glm::rotate(transform.m_rotationMat, eulerRadians.x, glm::vec3(1, 0, 0)); // Pitch
+        //transform.m_rotationMat = glm::rotate(transform.m_rotationMat, eulerRadians.z, glm::vec3(0, 0, 1)); // Roll
 
         model = glm::translate(glm::mat4(1.0f), transform.m_position);
         model *= transform.m_rotationMat;
