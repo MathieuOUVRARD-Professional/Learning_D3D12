@@ -99,15 +99,22 @@ void ScaleGuizmo(Camera& camera, glm::mat4& model)
    ImGuizmo::Manipulate(glm::value_ptr(camera.m_viewMatrix), glm::value_ptr(camera.m_projMatrix), ImGuizmo::OPERATION::SCALE, ImGuizmo::MODE::WORLD, glm::value_ptr(model));
 }
 
-static bool translate = false;
+static bool translate = true;
 static bool rotate = false;
 static bool scale = false;
 static bool rotating = false;
+static bool cursorWarping = false;
+static ImVec2 lastMousePos = ImVec2(0.0f, 0.0f);
+static float lastRotation[3] = { 0.0f, 0.0f, 0.0f };
+static float activeAxis = -1;
 
 void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
 {
     InitGuizmo();
-    ImGui::Begin("ImGuizmo -- Settings");
+    ImGui::Begin("Transform", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);    
+    ImGui::SetWindowSize(ImVec2(350.0f, ImGui::GetWindowSize().y));
+    ImGui::SetWindowPos(ImVec2(DXWindow::Get().GetWidth() - ImGui::GetWindowSize().x, 0.0f));
+
     ImGui::Text("Operation:");
     ImGui::Checkbox("Translate", &translate);
     if (translate)
@@ -124,7 +131,7 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
     if (rotate)
     {
         if (ImGuizmo::IsUsing())
-        {
+        {           
             rotating = true;
         }
         RotateGuizmo(camera, model);
@@ -145,6 +152,7 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
     // Translation sliders
     float modelPosition[] = { model[3].x, model[3].y, model[3].z };
     ImGui::Text("Position: ");
+    ImGui::PushItemWidth(ImGui::GetWindowWidth() - 15.0f);
     if (ImGui::DragFloat3("##Position", modelPosition, 0.01f))
     {
         transform.m_position = glm::vec3(modelPosition[0], modelPosition[1], modelPosition[2]);
@@ -161,43 +169,76 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
     // Rotation sliders
     float modelRotation[] = { transform.m_rotationEuler.x, transform.m_rotationEuler.y, transform.m_rotationEuler.z };
     ImGui::Text("Rotation: ");
-    if (ImGui::DragFloat3("##Rotation", modelRotation, 0.5f, -181.0f, 181.0f))
+    ImGui::PushItemWidth(ImGui::GetWindowWidth() - 15.0f);
+    if (ImGui::DragFloat3("##Rotation", modelRotation, 0.5f))
     {
-        if (modelRotation[0] > 180)
+        // Detect which axis is being modified by comparing old and new values
+        if (modelRotation[0] != lastRotation[0])
         {
-            modelRotation[0] = -180;
+            activeAxis = 0;
         }
-        if (modelRotation[1] > 180)
+        else if (modelRotation[1] != lastRotation[1])
         {
-            modelRotation[1] = -180;
+            activeAxis = 1;
         }
-        if (modelRotation[2] > 180)
+        else if (modelRotation[2] != lastRotation[2])
         {
-            modelRotation[2] = -180;
-        }
-        if (modelRotation[0] < -180)
+            activeAxis = 2;
+        }        
+
+        ImGuiIO& io = ImGui::GetIO();
+        ImVec2 mousePos = io.MousePos;
+        if (!cursorWarping)
         {
-            modelRotation[0] = 180;
+            if (mousePos.x <= 0)
+            {
+                cursorWarping = true;
+                SetCursorPos(DXWindow::Get().GetWidth() - 2, mousePos.y);
+            }
+            else if (mousePos.x >= DXWindow::Get().GetWidth() - 1)
+            {
+                cursorWarping = true;
+                SetCursorPos(1, mousePos.y);
+            }
         }
-        if (modelRotation[1] < -180)
+        else
         {
-            modelRotation[1] = 180;
+            // Compute the movement offset caused by warping and subtract it **only on the active axis**
+            float warpOffsetX = mousePos.x - lastMousePos.x;
+            for (int i = 0; i < 3; i++)
+            {
+                if (activeAxis == i)
+                {
+                    modelRotation[i] -= warpOffsetX * 0.5; // Counteract the warp movement
+                }            
+            }
+            
+            cursorWarping = false; // Reset warp flag
         }
-        if (modelRotation[2] < -180)
+
+        lastMousePos = io.MousePos;
+        for (int i = 0; i < 3; i++)
         {
-            modelRotation[2] = 180;
+            lastRotation[i] = modelRotation[i];
         }
+
+        for (int i = 0; i < 3; i++) {
+            if (modelRotation[i] > 180)
+            {
+                modelRotation[i] = -180;
+            }
+
+            if (modelRotation[i] < -180)
+            {
+                modelRotation[i] = 180;
+            }
+        }
+
         glm::vec3 eulerRadians = glm::radians(glm::vec3(modelRotation[0], modelRotation[1], modelRotation[2]));
         transform.m_rotationEuler = glm::vec3(modelRotation[0], modelRotation[1], modelRotation[2]);
 
         glm::quat rotationQuat = glm::quat(eulerRadians);
         transform.m_rotationMat = glm::toMat4(rotationQuat);
-
-        //// Apply new rotation
-        //transform.m_rotationMat = glm::mat4(1.0f);
-        //transform.m_rotationMat = glm::rotate(transform.m_rotationMat, eulerRadians.y, glm::vec3(0, 1, 0)); // Yaw
-        //transform.m_rotationMat = glm::rotate(transform.m_rotationMat, eulerRadians.x, glm::vec3(1, 0, 0)); // Pitch
-        //transform.m_rotationMat = glm::rotate(transform.m_rotationMat, eulerRadians.z, glm::vec3(0, 0, 1)); // Roll
 
         model = glm::translate(glm::mat4(1.0f), transform.m_position);
         model *= transform.m_rotationMat;
@@ -207,6 +248,7 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
     // Scale sliders
     float modelScale[] = { glm::length(glm::vec3(model[0])), glm::length(glm::vec3(model[1])), glm::length(glm::vec3(model[2])) };
     ImGui::Text("Scale: ");
+    ImGui::PushItemWidth(ImGui::GetWindowWidth() - 15.0f);
     if (ImGui::DragFloat3("##Scale", modelScale, 0.01f))
     {
         transform.m_scale = glm::vec3(modelScale[0], modelScale[1], modelScale[2]);
@@ -218,7 +260,7 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
 
     ImGui::Separator();
 
-    if (ImGui::Button("Reset position"))
+    if (ImGui::Button("Reset Position", ImVec2((ImGui::GetWindowWidth() - 30.0f) / 3.0f, 0.0f)))
     {
         transform.m_position = glm::vec3(10.0f, 25.0f, 10.0f);
 
@@ -227,7 +269,7 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         model = glm::scale(model, transform.m_scale);
     }
     ImGui::SameLine();
-    if (ImGui::Button("Reset Rotation"))
+    if (ImGui::Button("Reset Rotation", ImVec2((ImGui::GetWindowWidth() - 30.0f) / 3.0f, 0.0f)))
     {
         transform.m_rotationEuler = glm::vec3(0.0f, 0.0f, 0.0f);
         transform.m_rotationMat = glm::mat4(1.0f);
@@ -237,7 +279,7 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         model = glm::scale(model, transform.m_scale);
     }
     ImGui::SameLine();
-    if (ImGui::Button("Reset Scale"))
+    if (ImGui::Button("Reset Scale", ImVec2((ImGui::GetWindowWidth() - 30.0f)/3.0f, 0.0f)))
     {
         transform.m_scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
