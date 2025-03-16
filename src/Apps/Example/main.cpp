@@ -335,7 +335,7 @@ int main()
 		indexBuffer.Get()->SetName(L"Index_Buffer");
 
 		eyeTextures.Init(&defaultHeapProperties);
-		ZBuffer zBuffer = ZBuffer(&defaultHeapProperties, DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
+		ZBuffer zBuffer = ZBuffer(&defaultHeapProperties, "Main_Depth", DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
 		DXWindow::Get().SetZBuffer(&zBuffer);
 
 		// === Copy to Upload Buffer === //

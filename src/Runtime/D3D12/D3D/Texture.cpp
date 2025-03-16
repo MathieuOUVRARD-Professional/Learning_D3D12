@@ -1,5 +1,4 @@
 #include "D3D/Texture.h"
-#include <iostream>
 
 Texture::Texture(std::vector<std::string>& paths, std::vector<std::string>& names)
 {
@@ -29,7 +28,7 @@ Texture::Texture()
 {
 }
 
-void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12DescriptorHeap* bindlessSRVHeap, uint32_t bindlessSRVIndex)
+void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12DescriptorHeap* bindlessDescriptorHeap, uint32_t bindlessHeapIndex)
 {
 	// Create D3D12 resource for each texture
 	for (unsigned int i = 0; i < m_count; i++)
@@ -55,7 +54,7 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Descripto
 	}	
 
 	// === SRV === //
-	if (bindlessSRVHeap == nullptr)
+	if (m_srvHeap == nullptr && bindlessDescriptorHeap == nullptr)
 	{
 		//Textures Descriptor Heap
 		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescText{};
@@ -72,20 +71,16 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Descripto
 	}
 	else
 	{
-		m_srvHeap = bindlessSRVHeap;
+		m_srvHeap = bindlessDescriptorHeap;
 	}	
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle;
-	UINT descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	if (bindlessSRVHeap == nullptr)
+	srvHandle = m_srvHeap->GetCPUDescriptorHandleForHeapStart();
+	if (bindlessHeapIndex >  0)
 	{
-		srvHandle = m_srvHeap->GetCPUDescriptorHandleForHeapStart();
-	}
-	else
-	{
-		srvHandle = m_srvHeap->GetCPUDescriptorHandleForHeapStart();
-		srvHandle.Offset(bindlessSRVIndex, descriptorSize);
+		srvHandle.Offset(bindlessHeapIndex, descriptorSize);
 	}
 
 	for (unsigned int i = 0; i < m_count; i++)
@@ -168,7 +163,7 @@ UINT64 Texture::CopyToUploadBuffer(ID3D12Resource* uploadBuffer, UINT64 uploadBu
 	return uploadBufferOffset;
 }
 
-void Texture::AddCommands(ID3D12GraphicsCommandList*& cmdList, UINT rootParameterIndex)
+void Texture::AddCommands(ID3D12GraphicsCommandList*& cmdList, uint32_t rootParameterIndex)
 {
 	cmdList->SetDescriptorHeaps(1, &m_srvHeap);
 	cmdList->SetGraphicsRootDescriptorTable(rootParameterIndex, m_srvHeap->GetGPUDescriptorHandleForHeapStart());

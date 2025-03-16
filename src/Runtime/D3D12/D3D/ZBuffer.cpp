@@ -7,9 +7,10 @@ ZBuffer::ZBuffer()
 	m_dsvHeap = nullptr;
 }
 
-ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, UINT width, UINT height)
+ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, std::string name, uint32_t width, uint32_t height, ID3D12DescriptorHeap* descriptorHeap , uint32_t heapIndex)
 {
 	m_defaultHeapProperties = defaultHeapProperties;
+	m_name = name;
 
 	//Buffer
 	D3D12_RESOURCE_DESC rdd{};
@@ -34,16 +35,34 @@ ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, UINT width, UINT 
 	
 	// Create Ressource
 	DXContext::Get().GetDevice()->CreateCommittedResource(defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdd, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValueDs, IID_PPV_ARGS(&m_depth));
-	m_depth->SetName(L"Z-Buffer");
+	m_depth->SetName(std::wstring(m_name.begin(), m_name.end()).c_str());
+	if (m_dsvHeap == nullptr && descriptorHeap == nullptr)
+	{
+		// Descriptor Heap
+		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescDepth{};
+		descriptorHeapDescDepth.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		descriptorHeapDescDepth.NumDescriptors = 1;
+		descriptorHeapDescDepth.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		descriptorHeapDescDepth.NodeMask = 0;
 
-	// Descriptor Heap
-	D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescDepth{};
-	descriptorHeapDescDepth.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-	descriptorHeapDescDepth.NumDescriptors = 1;
-	descriptorHeapDescDepth.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	descriptorHeapDescDepth.NodeMask = 0;
+		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescDepth, IID_PPV_ARGS(&m_dsvHeap));
+		std::string tempName = m_name + "_DescriptorHeap";
+		m_dsvHeap->SetName(std::wstring(tempName.begin(), tempName.end()).c_str());
+	}
+	else
+	{
+		m_dsvHeap = descriptorHeap;
+	}
 
-	DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescDepth, IID_PPV_ARGS(&m_dsvHeap));
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	dsvHandle = m_dsvHeap->GetCPUDescriptorHandleForHeapStart();
+
+	if (heapIndex > 0)
+	{
+		dsvHandle.Offset(heapIndex, descriptorSize);
+	}
 
 	// === DSV === //
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
@@ -52,5 +71,5 @@ ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, UINT width, UINT 
 	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
 	dsvDesc.Texture2D.MipSlice = 0;
 
-	DXContext::Get().GetDevice()->CreateDepthStencilView(m_depth, &dsvDesc, m_dsvHeap->GetCPUDescriptorHandleForHeapStart());
+	DXContext::Get().GetDevice()->CreateDepthStencilView(m_depth, &dsvDesc, dsvHandle);
 }

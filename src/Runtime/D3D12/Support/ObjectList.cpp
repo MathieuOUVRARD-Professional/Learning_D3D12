@@ -72,7 +72,7 @@ void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HE
 	bindlessDescriptorHeapDescText.NodeMask = 0;
 
 	DXContext::Get().GetDevice()->CreateDescriptorHeap(&bindlessDescriptorHeapDescText, IID_PPV_ARGS(&m_srvHeap));
-	std::string temp = m_list.front().m_name + " DescriptorHeap";
+	std::string temp = m_list.front().m_name + "_DescriptorHeap";
 	std::wstring wideHeapName = std::wstring(temp.begin(), temp.end());
 
 	m_srvHeap.Get()->SetName(wideHeapName.c_str());
