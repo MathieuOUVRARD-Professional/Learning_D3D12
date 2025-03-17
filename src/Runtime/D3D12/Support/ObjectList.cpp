@@ -211,7 +211,7 @@ void ObjectList::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Camera& came
 {
 	for (SceneObject& object : m_list)
 	{
-		object.m_mesh.Draw(cmdList, camera, object.m_transform);
+		object.m_mesh.ShadowPassDraw(cmdList, camera.m_viewProjMatrix, object.m_transform.m_matrix);
 	}
 }
 
@@ -219,6 +219,6 @@ void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
 {
 	for (SceneObject& object : m_list)
 	{
-		object.m_mesh.Draw(cmdList, camera, object.m_transform);
+		object.m_mesh.Draw(cmdList, camera.m_viewProjMatrix, object.m_transform.m_matrix, camera.m_position);
 	}
 }

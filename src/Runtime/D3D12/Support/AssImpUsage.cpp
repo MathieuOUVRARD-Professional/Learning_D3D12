@@ -52,7 +52,7 @@ void C_AssImp::ProcessMeshesNodes(ObjectList& objectList, const aiScene& scene, 
 
 		newObject.m_name = node.mName.C_Str();
 		newObject.m_parent = &targetParent;
-		newObject.m_transform = parentTransform * nodeTransform;
+		newObject.m_transform.m_matrix = parentTransform * nodeTransform;
 
 		SceneObject* tmp = &targetParent;
 

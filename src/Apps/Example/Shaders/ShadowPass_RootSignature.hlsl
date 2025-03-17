@@ -8,7 +8,6 @@
 
 #define SHADOWPASS_SIG \
 "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
-"RootConstants(num32BitConstants = 32, b0),"\
-"RootConstants(num32BitConstants = 8, b1)"
+"RootConstants(num32BitConstants = 32, b0),"
 
 

@@ -20,8 +20,8 @@ public:
 	uint32_t VerticesSize();
 	uint32_t IndicesSize();
 	Mesh& GetSubmesh(int index);
-	void ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Camera& camera, glm::mat4& transform);
-	void Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera, glm::mat4& transform);
+	void ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, glm::mat4& viewProjectionMatrix, glm::mat4& modelTransform);
+	void Draw(ID3D12GraphicsCommandList* cmdList, glm::mat4& viewProjectionMatrix, glm::mat4& modelTransform, glm::vec3& cameraPosition);
 
 	inline std::vector<Vertex>& GetVertices()
 	{
@@ -91,4 +91,10 @@ private:
 
 	D3D12_VERTEX_BUFFER_VIEW m_vbv{};
 	D3D12_INDEX_BUFFER_VIEW m_ibv{};
+};
+
+struct Matrices
+{
+	glm::mat4 viewProj = glm::mat4(1.0f);
+	glm::mat4 model = glm::mat4(1.0f);
 };

@@ -1,6 +1,9 @@
 #pragma once
 
 #include <D3D/Mesh.h>
+
+#include <Support/Transform.h>
+
 #include <string>
 
 class SceneObject
@@ -17,7 +20,7 @@ class SceneObject
 		}
 
 		std::string m_name;
-		glm::mat4 m_transform = glm::mat4(1.0f);
+		MyTransform m_transform = MyTransform();
 
 		SceneObject* m_parent = nullptr;
 		std::vector<SceneObject*> m_childrens;
