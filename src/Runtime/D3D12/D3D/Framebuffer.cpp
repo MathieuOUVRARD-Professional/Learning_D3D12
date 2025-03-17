@@ -30,8 +30,9 @@ void FrameBuffer::RenderTargetBuffer(D3D12_HEAP_PROPERTIES* defaultHeapPropertie
 
 	DXContext::Get().GetDevice()->CreateCommittedResource(defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &frameBufferDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, IID_PPV_ARGS(&m_RTV));
 
+	// RTV DESCRIPTOR HEAP
 	if (m_RTVHeap == nullptr && descriptorHeap == nullptr)
-	{// Descriptor Heap
+	{
 		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescRTV{};
 		descriptorHeapDescRTV.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 		descriptorHeapDescRTV.NumDescriptors = 1;
@@ -75,12 +76,13 @@ void FrameBuffer::DepthBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D
 
 void FrameBuffer::CreateRenderTargetSRV(ID3D12DescriptorHeap* descriptorHeap, uint32_t heapIndex)
 {
+	// RT SRV DESCRIPTOR HEAP
 	if (m_RT_SRVHeap == nullptr && descriptorHeap == nullptr)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescRT_SRV{};
-		descriptorHeapDescRT_SRV.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		descriptorHeapDescRT_SRV.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		descriptorHeapDescRT_SRV.NumDescriptors = 1;
-		descriptorHeapDescRT_SRV.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		descriptorHeapDescRT_SRV.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		descriptorHeapDescRT_SRV.NodeMask = 0;
 
 		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescRT_SRV, IID_PPV_ARGS(&m_RT_SRVHeap));
@@ -118,12 +120,13 @@ void FrameBuffer::CreateRenderTargetSRV(ID3D12DescriptorHeap* descriptorHeap, ui
 
 void FrameBuffer::CreateDepthBufferSRV(ID3D12DescriptorHeap* descriptorHeap, uint32_t heapIndex)
 {
+	// DEPTH SRV DESCRIPTOR HEAP
 	if (m_D_SRVHeap  == nullptr && descriptorHeap == nullptr)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescD_SRV{};
-		descriptorHeapDescD_SRV.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		descriptorHeapDescD_SRV.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		descriptorHeapDescD_SRV.NumDescriptors = 1;
-		descriptorHeapDescD_SRV.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		descriptorHeapDescD_SRV.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		descriptorHeapDescD_SRV.NodeMask = 0;
 
 		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescD_SRV, IID_PPV_ARGS(&m_D_SRVHeap));

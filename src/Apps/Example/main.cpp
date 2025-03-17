@@ -623,12 +623,12 @@ int main()
 			lightTransform.m_position = glm::vec3(lightModel[3]);
 					
 			// === SHADOW PASS === //
-			cmdList->SetPipelineState(shadowPassPso.Get());
-			cmdList->SetGraphicsRootSignature(shadowPassSignature);
-			shadowMap.BindDSV(cmdList);
+			//cmdList->SetPipelineState(shadowPassPso.Get());
+			//cmdList->SetGraphicsRootSignature(shadowPassSignature);
+			//shadowMap.BindDSV(cmdList);
 			//Set root constants
 			//Set vertex buffer
-			mainObjList.Draw(cmdList, camera);
+			//mainObjList.Draw(cmdList, camera);
 
 
 			// Pyramid
