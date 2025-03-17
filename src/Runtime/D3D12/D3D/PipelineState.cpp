@@ -1,6 +1,6 @@
 #include "PipelineState.h"
 
-void DXPipelineState::Init(LPCWSTR name, ComPointer<ID3D12RootSignature> &rootSignature, D3D12_INPUT_ELEMENT_DESC vertexLayout[], UINT vertexLayoutCount, Shader &vertexShader, Shader &pixelShader)
+void DXPipelineState::Init(LPCWSTR name, ComPointer<ID3D12RootSignature> &rootSignature, D3D12_INPUT_ELEMENT_DESC vertexLayout[], UINT vertexLayoutCount, Shader* vertexShader, Shader* pixelShader)
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC gfxPsod{};
 	// Root Signature
@@ -10,11 +10,27 @@ void DXPipelineState::Init(LPCWSTR name, ComPointer<ID3D12RootSignature> &rootSi
 	gfxPsod.InputLayout.pInputElementDescs = vertexLayout;
 	gfxPsod.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
 	// Vertex Shader
-	gfxPsod.VS.pShaderBytecode = vertexShader.GetBuffer();
-	gfxPsod.VS.BytecodeLength = vertexShader.GetSize();
+	if (vertexShader != nullptr)
+	{
+		gfxPsod.VS.pShaderBytecode = vertexShader->GetBuffer();
+		gfxPsod.VS.BytecodeLength = vertexShader->GetSize();
+	}
+	else
+	{
+		gfxPsod.VS.pShaderBytecode = nullptr;
+		gfxPsod.VS.BytecodeLength = 0;
+	}
 	// Pixel Shader
-	gfxPsod.PS.pShaderBytecode = pixelShader.GetBuffer();
-	gfxPsod.PS.BytecodeLength = pixelShader.GetSize();
+	if (pixelShader != nullptr)
+	{
+		gfxPsod.PS.pShaderBytecode = pixelShader->GetBuffer();
+		gfxPsod.PS.BytecodeLength = pixelShader->GetSize();
+	}
+	else
+	{
+		gfxPsod.PS.pShaderBytecode = nullptr;
+		gfxPsod.PS.BytecodeLength = 0;
+	}
 	// Other Shaders zeroing
 	gfxPsod.DS.BytecodeLength = 0;
 	gfxPsod.DS.pShaderBytecode = nullptr;

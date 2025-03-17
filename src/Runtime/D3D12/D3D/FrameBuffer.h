@@ -17,8 +17,8 @@ class FrameBuffer
 		FrameBuffer(uint32_t width, uint32_t height, std::string name);
 		void RenderTargetBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12DescriptorHeap* descriptorHeap = nullptr, uint32_t heapIndex = 0);
 		void DepthBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12DescriptorHeap* descriptorHeap = nullptr, uint32_t heapIndex = 0);
-		void CreateRenderTargetSRV(ID3D12DescriptorHeap* descriptorHeap, uint32_t heapIndex);
-		void CreateDepthBufferSRV(ID3D12DescriptorHeap* descriptorHeap, uint32_t heapIndex);
+		void CreateRenderTargetSRV(ID3D12DescriptorHeap* descriptorHeap = nullptr, uint32_t heapIndex = 0);
+		void CreateDepthBufferSRV(ID3D12DescriptorHeap* descriptorHeap = nullptr, uint32_t heapIndex = 0);
 		void BindRTV(ID3D12GraphicsCommandList*& cmdList);
 		void BindDSV(ID3D12GraphicsCommandList*& cmdList);
 		void Bind(ID3D12GraphicsCommandList*& cmdList);

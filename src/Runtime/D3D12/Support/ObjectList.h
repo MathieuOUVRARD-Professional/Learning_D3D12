@@ -22,8 +22,9 @@ class ObjectList
 		void CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destBufferOffset = 0, UINT64 destOffsetVertex = 0, UINT64 destOffsetIndex = 0);
 		void CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource* indexBuffer);
 		void BindDescriptorHeap(ID3D12GraphicsCommandList* cmdList, uint32_t rootParameterIndex);
+		void ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Camera& camera);
 		void Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera);
-
+		
 
 		inline std::list<SceneObject>& GetList()
 		{

@@ -27,7 +27,7 @@ void Camera::Matrix(float FOVdeg, float nearPlane, float farPlane)
 	m_viewProjMatrix = projection * view;
 }
 
-void Camera::UpdateMatrix(ID3D12GraphicsCommandList* cmdList, int bufferSlot, glm::mat4 modelMatrix)
+void Camera::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot, glm::mat4 modelMatrix)
 {
 	struct Matrices
 	{

@@ -60,6 +60,29 @@ Mesh& Mesh::GetSubmesh(int index)
 	return m_submeshes[index];
 }
 
+void Mesh::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Camera& camera, glm::mat4& transform)
+{
+	if (m_nSubmeshes > 0)
+	{
+		for (unsigned int i = 0; i < m_nSubmeshes; i++)
+		{
+			m_submeshes[i].Draw(cmdList, camera, transform);
+		}
+	}
+	else
+	{
+		// === IA === //
+		cmdList->IASetVertexBuffers(0, 1, &m_vbv);
+		cmdList->IASetIndexBuffer(&m_ibv);
+		// === ROOT === //
+		camera.SendShaderParams(cmdList, 0, transform);
+		cmdList->SetGraphicsRoot32BitConstants(1, 4, &camera.m_position, 0);
+		m_material->SendShaderParams(cmdList, 2);
+
+		cmdList->DrawIndexedInstanced(m_nIndex, 1, 0, 0, 0);
+	}
+}
+
 void Mesh::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera, glm::mat4& transform)
 {
 	if (m_nSubmeshes > 0)
@@ -75,10 +98,9 @@ void Mesh::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera, glm::mat4& t
 		cmdList->IASetVertexBuffers(0, 1, &m_vbv);
 		cmdList->IASetIndexBuffer(&m_ibv);
 		// === ROOT === //
-		camera.UpdateMatrix(cmdList, 0, transform);
+		camera.SendShaderParams(cmdList, 0, transform);
 		cmdList->SetGraphicsRoot32BitConstants(1, 4, &camera.m_position, 0);
 		m_material->SendShaderParams(cmdList, 2);
-		//cmdList->SetGraphicsRoot32BitConstants(1, 4, &DebugColorsVector[m_materialID], 0);
 
 		cmdList->DrawIndexedInstanced(m_nIndex, 1, 0, 0, 0);
 	}

@@ -9,7 +9,7 @@
 class DXPipelineState
 {
 	public:
-		void Init(LPCWSTR name, ComPointer<ID3D12RootSignature> &rootSignature, D3D12_INPUT_ELEMENT_DESC vertexLayout[], UINT vertexLayoutCount, Shader &vertexShader, Shader &pixelShader);
+		void Init(LPCWSTR name, ComPointer<ID3D12RootSignature> &rootSignature, D3D12_INPUT_ELEMENT_DESC vertexLayout[], UINT vertexLayoutCount, Shader* vertexShader = nullptr, Shader* pixelShader = nullptr);
 		void Create();
 		void SetWireframe();
 		void Release();

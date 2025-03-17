@@ -54,14 +54,6 @@ uint32_t ObjectList::TextureCount()
 	return count;
 }
 
-void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
-{
-	for (SceneObject& object : m_list)
-	{	
-		object.m_mesh.Draw(cmdList, camera, object.m_transform);
-	}
-}
-
 void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destOffsetTexture, UINT64 destOffsetVertex, UINT64 destOffsetIndex)
 {
 	// Bindless Textures Descriptor Heap
@@ -214,4 +206,20 @@ void ObjectList::BindDescriptorHeap(ID3D12GraphicsCommandList* cmdList, uint32_t
 {
 	cmdList->SetDescriptorHeaps(1, &m_srvHeap);
 	cmdList->SetGraphicsRootDescriptorTable(rootParameterIndex, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+}
+
+void ObjectList::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
+{
+	for (SceneObject& object : m_list)
+	{
+		object.m_mesh.Draw(cmdList, camera, object.m_transform);
+	}
+}
+
+void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
+{
+	for (SceneObject& object : m_list)
+	{
+		object.m_mesh.Draw(cmdList, camera, object.m_transform);
+	}
 }

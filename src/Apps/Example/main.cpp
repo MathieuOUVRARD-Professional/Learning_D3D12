@@ -32,6 +32,7 @@
 #include "ImGuizmo.h"
 
 #include<glm/gtx/matrix_decompose.hpp>
+#include <D3D/FrameBuffer.h>
 
 #define IMGUI
 
@@ -420,29 +421,40 @@ int main()
 		Shader lightVertexShader("LightVertexShader.cso");
 		Shader lightPixelShader("LightPixelShader.cso");
 
-		// === Create Root signature === //
-		ComPointer<ID3D12RootSignature> rootSignature, lightRootSignature, pbrRootSignature;
+		Shader shadowPassRootSignatureShader("ShadowPass_RootSignature.cso");
+		Shader shadowPassVertexShader("ShadowPass_Vertex.cso");
+
+		// === Create Root Signatures === //
+		ComPointer<ID3D12RootSignature> rootSignature, lightRootSignature, pbrRootSignature, shadowPassSignature;
+
 		DXContext::Get().GetDevice()->CreateRootSignature(0, rootSignatureShader.GetBuffer(), rootSignatureShader.GetSize(), IID_PPV_ARGS(&rootSignature));
 		DXContext::Get().GetDevice()->CreateRootSignature(0, lightRootSignatureShader.GetBuffer(), lightRootSignatureShader.GetSize(), IID_PPV_ARGS(&lightRootSignature));
 		DXContext::Get().GetDevice()->CreateRootSignature(0, pbrRootSignatureShader.GetBuffer(), pbrRootSignatureShader.GetSize(), IID_PPV_ARGS(&pbrRootSignature));
+		DXContext::Get().GetDevice()->CreateRootSignature(0, shadowPassRootSignatureShader.GetBuffer(), shadowPassRootSignatureShader.GetSize(), IID_PPV_ARGS(&shadowPassSignature));
+
 		rootSignature.Get()->SetName(L"Main_RootSignature");
 		lightRootSignature.Get()->SetName(L"Light_RootSignature");
 		pbrRootSignature.Get()->SetName(L"PBR_RootSignature");
+		shadowPassSignature.Get()->SetName(L"ShadowPass_RootSignature");
 
 		// === Pipeline states === //
-		DXPipelineState pso, lightPso, wireframePso, pbrPso;
-		pso.Init(L"Main_PSO", rootSignature, pyramidVertexLayout, _countof(pyramidVertexLayout), vertexShader, pixelShader);
+		DXPipelineState pso, lightPso, wireframePso, pbrPso, shadowPassPso;
+
+		pso.Init(L"Main_PSO", rootSignature, pyramidVertexLayout, _countof(pyramidVertexLayout), &vertexShader, &pixelShader);
 		pso.Create();
 
-		lightPso.Init(L"Light_PSO", lightRootSignature, cubeVertexLayout, _countof(cubeVertexLayout), lightVertexShader, lightPixelShader);
+		lightPso.Init(L"Light_PSO", lightRootSignature, cubeVertexLayout, _countof(cubeVertexLayout), &lightVertexShader, &lightPixelShader);
 		lightPso.Create();
 
-		wireframePso.Init(L"Wireframe_PSO", rootSignature, vertexLayout, _countof(vertexLayout), wireframeVertexShader, wireframePixelShader);
+		wireframePso.Init(L"Wireframe_PSO", rootSignature, vertexLayout, _countof(vertexLayout), &wireframeVertexShader, &wireframePixelShader);
 		wireframePso.SetWireframe();
 		wireframePso.Create();
 
-		pbrPso.Init(L"PBR_PSO", pbrRootSignature, vertexLayout, _countof(vertexLayout), pbrVertexShader, pbrPixelShader);
+		pbrPso.Init(L"PBR_PSO", pbrRootSignature, vertexLayout, _countof(vertexLayout), &pbrVertexShader, &pbrPixelShader);
 		pbrPso.Create();
+
+		shadowPassPso.Init(L"ShadowPass_PSO", shadowPassSignature, vertexLayout, _countof(vertexLayout), &shadowPassVertexShader);
+		shadowPassPso.Create();
 
 		// === Buffer Views === //
 		// Pyramid
@@ -467,13 +479,13 @@ int main()
 		cubeIbv.SizeInBytes = sizeof(DWORD) * _countof(cubeIndexes);
 		cubeIbv.Format = DXGI_FORMAT_R32_UINT;
 		
+		// Shadow pass
+		FrameBuffer shadowMap = FrameBuffer(2048, 2048, "ShadowMapping");
+		shadowMap.DepthBuffer(&defaultHeapProperties);
+		shadowMap.CreateDepthBufferSRV();
+
 		// Object list
 		mainObjList.CreateBufferViews(vertexBuffer, indexBuffer);
-
-		auto it = mainObjList.GetList().begin();
-		std::advance(it, 1);
-
-		SceneObject testObject = *it;
 
 		Camera camera(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth(), glm::vec3(0.0f, 0.0f, 2.0f));
 		DXWindow::Get().SetMainCamera(camera);
@@ -585,10 +597,7 @@ int main()
 			pyramidModel = glm::translate(glm::mat4(1.0f), pyramidPosition);
 			angle += 0.005f;			
 			pyramidModel = glm::rotate(pyramidModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-			static float color[] = { 0.0f, 1.0f, 0.0f , 1.0f };
-			ColorPuke(color);
 
-			//float lightColor[] = { 1.0f, 1.0f, 1.0f };
 			std::string colorPickerName = "Light color";
 			std::vector<float> lightColor = ImGuiColorPicker(&colorPickerName, true);
 			ImGuiPerfOverlay(true);			
@@ -613,6 +622,14 @@ int main()
 			
 			lightTransform.m_position = glm::vec3(lightModel[3]);
 					
+			// === SHADOW PASS === //
+			cmdList->SetPipelineState(shadowPassPso.Get());
+			cmdList->SetGraphicsRootSignature(shadowPassSignature);
+			shadowMap.BindDSV(cmdList);
+			//Set root constants
+			//Set vertex buffer
+			mainObjList.Draw(cmdList, camera);
+
 
 			// Pyramid
 			// === PSO === //
@@ -623,9 +640,8 @@ int main()
 			cmdList->IASetVertexBuffers(0, 1, &vbv);
 			cmdList->IASetIndexBuffer(&ibv);
 			// === ROOT === //
-			camera.UpdateMatrix(cmdList, 0, pyramidModel);
+			camera.SendShaderParams(cmdList, 0, pyramidModel);
 			cmdList->SetGraphicsRoot32BitConstants(1, 8, &cubeLight, 0);
-			cmdList->SetGraphicsRoot32BitConstants(2, 4, &color, 0);
 			cmdList->SetGraphicsRoot32BitConstants(3, 4, &camera.m_position, 0);
 			eyeTextures.AddCommands(cmdList, 4);
 			// === Draw === //
@@ -648,7 +664,7 @@ int main()
 			cmdList->IASetVertexBuffers(0, 1, &cubeVbv);
 			cmdList->IASetIndexBuffer(&cubeIbv);
 			// === ROOT === //
-			camera.UpdateMatrix(cmdList, 0, lightModel);
+			camera.SendShaderParams(cmdList, 0, lightModel);
 			cmdList->SetGraphicsRoot32BitConstants(1, 4, &cubeLight.lightcolor, 0);
 			// === Draw === //
 			cmdList->DrawIndexedInstanced(_countof(cubeIndexes), 1, 0, 0, 0);
