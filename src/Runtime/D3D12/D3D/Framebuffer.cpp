@@ -73,19 +73,6 @@ void FrameBuffer::DepthBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D
 	m_DSVHeapIndex = heapIndex;
 }
 
-void FrameBuffer::Clear(ID3D12GraphicsCommandList*& cmdList)
-{
-	if (m_RTVHeap != nullptr)
-	{
-		const float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-		cmdList->ClearRenderTargetView(m_RTVHeap->GetCPUDescriptorHandleForHeapStart(), clearColor, 0, nullptr);
-	}
-	if (m_ZBuffer.GetDescriptorHeap() != nullptr)
-	{
-		cmdList->ClearDepthStencilView(m_ZBuffer.GetDescriptorHeap()->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-	}
-}
-
 void FrameBuffer::CreateRenderTargetSRV(ID3D12DescriptorHeap* descriptorHeap, uint32_t heapIndex)
 {
 	if (m_RT_SRVHeap == nullptr && descriptorHeap == nullptr)
@@ -167,4 +154,111 @@ void FrameBuffer::CreateDepthBufferSRV(ID3D12DescriptorHeap* descriptorHeap, uin
 	dsrvDesc.Texture2D.MipLevels = 1;
 		
 	DXContext::Get().GetDevice()->CreateShaderResourceView(m_ZBuffer.GetTexture(), &dsrvDesc, depth_SRVHandle);
+}
+
+void FrameBuffer::BindRTV(ID3D12GraphicsCommandList*& cmdList)
+{
+	if (m_RTVHeap == nullptr)
+	{
+		D3EZ::EzException noDSVException = D3EZ::EzException(R"(FrameBuffer::BindRTV)", 163, R"(m_RTVHeap is nullptr)");
+		return;
+	}
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	rtvHandle = m_RTVHeap->GetCPUDescriptorHandleForHeapStart();
+	rtvHandle.Offset(m_RTVHeapIndex, descriptorSize);
+
+	float backgroundColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	cmdList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+	cmdList->ClearRenderTargetView(rtvHandle, backgroundColor, 0 , nullptr);
+}
+
+void FrameBuffer::BindDSV(ID3D12GraphicsCommandList*& cmdList)
+{
+	if (m_DSVHeap == nullptr)
+	{
+		D3EZ::EzException noDSVException = D3EZ::EzException(R"(FrameBuffer::BindDSV)", 182, R"(m_DSVHeap is nullptr)");
+		return;
+	}
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	dsvHandle = m_DSVHeap->GetCPUDescriptorHandleForHeapStart();
+	dsvHandle.Offset(m_DSVHeapIndex, descriptorSize);
+
+	cmdList->OMSetRenderTargets(0, nullptr, FALSE, &dsvHandle);
+	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+}
+
+void FrameBuffer::Bind(ID3D12GraphicsCommandList*& cmdList)
+{	
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	float backgroundColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	if (m_RTVHeap != nullptr)
+	{		
+		rtvHandle = m_RTVHeap->GetCPUDescriptorHandleForHeapStart();
+		rtvHandle.Offset(m_RTVHeapIndex, descriptorSize);
+	}
+	else
+	{
+		D3EZ::EzException noRTVException = D3EZ::EzException(R"(FrameBuffer::Bind)", 211, R"(m_RTVHeap is nullptr)");
+		return;
+	}
+
+	if (m_DSVHeap != nullptr)
+	{
+		dsvHandle = m_DSVHeap->GetCPUDescriptorHandleForHeapStart();
+		dsvHandle.Offset(m_DSVHeapIndex, descriptorSize);
+	}
+	else
+	{
+		D3EZ::EzException noDSVException = D3EZ::EzException(R"(FrameBuffer::Bind)", 222, R"(m_DSVHeap is nullptr)");
+		return;
+	}
+
+	cmdList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+	cmdList->ClearRenderTargetView(rtvHandle, backgroundColor, 0, nullptr);
+	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+}
+
+void FrameBuffer::Clear(ID3D12GraphicsCommandList*& cmdList)
+{
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	if (m_RTVHeap != nullptr)
+	{
+		const float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+		rtvHandle = m_RTVHeap->GetCPUDescriptorHandleForHeapStart();
+		rtvHandle.Offset(m_RTVHeapIndex, descriptorSize);
+
+		cmdList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	}
+	else
+	{
+		D3EZ::EzException noRTVException = D3EZ::EzException(R"(FrameBuffer::Clear)", 247, R"(m_RTVHeap is nullptr)");
+		return;
+	}
+
+	if (m_ZBuffer.GetDescriptorHeap() != nullptr)
+	{
+		CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
+		dsvHandle = m_DSVHeap->GetCPUDescriptorHandleForHeapStart();
+		dsvHandle.Offset(m_DSVHeapIndex, descriptorSize);
+
+		cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	}
+	else
+	{
+		D3EZ::EzException noDSVException = D3EZ::EzException(R"(FrameBuffer::Clear)", 261, R"(m_DSVHeap is nullptr)");
+		return;
+	}
 }
