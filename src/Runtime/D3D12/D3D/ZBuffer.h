@@ -24,6 +24,10 @@ class ZBuffer
 		{
 			return m_dsvHeap;
 		};
+		inline ID3D12Resource* GetTexture()
+		{
+			return m_depth;
+		}
 		inline void Release()
 		{
 			m_depth.Release();

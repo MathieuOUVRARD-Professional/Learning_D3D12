@@ -11,7 +11,9 @@
 - Multithreading for loading scene and copying to upload buffer
 - Loading screen
 - Mip maps
-- DS
+- DirectStorage
+- Packing
+- Sort transparency and use multiple pipeline for blending
 
 ## Done
 

@@ -70,6 +70,7 @@ void FrameBuffer::DepthBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D
 	m_ZBuffer = ZBuffer(defaultHeapProperties, m_name, m_width, m_height, descriptorHeap, heapIndex);
 
 	m_DSVHeap = m_ZBuffer.GetDescriptorHeap();
+	m_DSVHeapIndex = heapIndex;
 }
 
 void FrameBuffer::Clear(ID3D12GraphicsCommandList*& cmdList)
@@ -85,19 +86,85 @@ void FrameBuffer::Clear(ID3D12GraphicsCommandList*& cmdList)
 	}
 }
 
-void FrameBuffer::CreateRenderTargetSRV()
+void FrameBuffer::CreateRenderTargetSRV(ID3D12DescriptorHeap* descriptorHeap, uint32_t heapIndex)
 {
+	if (m_RT_SRVHeap == nullptr && descriptorHeap == nullptr)
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescRT_SRV{};
+		descriptorHeapDescRT_SRV.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		descriptorHeapDescRT_SRV.NumDescriptors = 1;
+		descriptorHeapDescRT_SRV.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		descriptorHeapDescRT_SRV.NodeMask = 0;
 
+		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescRT_SRV, IID_PPV_ARGS(&m_RT_SRVHeap));
+
+		std::string tempName = m_name + "_RT_SRV_DescriptorHeap";
+
+		m_RT_SRVHeap.Get()->SetName(std::wstring(tempName.begin(), tempName.end()).c_str());
+	}
+	else
+	{
+		m_RT_SRVHeap = descriptorHeap;
+		m_RT_SRVHeapIndex = heapIndex;
+	}
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rT_SRVHandle;
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	rT_SRVHandle = m_RT_SRVHeap->GetCPUDescriptorHandleForHeapStart();
+
+	if (m_RT_SRVHeapIndex > 0)
+	{
+		rT_SRVHandle.Offset(m_RT_SRVHeapIndex, descriptorSize);
+	}
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC rT_SRVDesc = {};
+	rT_SRVDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;  // Use R32 because it's a depth-only texture
+	rT_SRVDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	rT_SRVDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	rT_SRVDesc.Texture2D.MipLevels = 1;
+	rT_SRVDesc.Texture2D.MostDetailedMip = 0;
+	rT_SRVDesc.Texture2D.PlaneSlice = 0;
+	rT_SRVDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+	DXContext::Get().GetDevice()->CreateShaderResourceView(m_ZBuffer.GetTexture(), &rT_SRVDesc, rT_SRVHandle);
 }
 
-void FrameBuffer::CreateDepthBufferSRV()
+void FrameBuffer::CreateDepthBufferSRV(ID3D12DescriptorHeap* descriptorHeap, uint32_t heapIndex)
 {
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Format = DXGI_FORMAT_R32_FLOAT;  // Use R32 because it's a depth-only texture
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Texture2D.MipLevels = 1;
+	if (m_D_SRVHeap  == nullptr && descriptorHeap == nullptr)
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescD_SRV{};
+		descriptorHeapDescD_SRV.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		descriptorHeapDescD_SRV.NumDescriptors = 1;
+		descriptorHeapDescD_SRV.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		descriptorHeapDescD_SRV.NodeMask = 0;
 
-	//DXContext().Get().GetDevice()->CreateShaderResourceView(shadowMap.Get(), &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescD_SRV, IID_PPV_ARGS(&m_D_SRVHeap));
 
+		std::string tempName = m_name + "_Depth_SRV_DescriptorHeap";
+
+		m_D_SRVHeap.Get()->SetName(std::wstring(tempName.begin(), tempName.end()).c_str());
+	}
+	else
+	{
+		m_D_SRVHeap = descriptorHeap;
+		m_D_SRVHeapIndex = heapIndex;
+	}
+	
+	CD3DX12_CPU_DESCRIPTOR_HANDLE depth_SRVHandle;
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	depth_SRVHandle = m_D_SRVHeap->GetCPUDescriptorHandleForHeapStart();
+
+	if (m_D_SRVHeapIndex > 0)
+	{
+		depth_SRVHandle.Offset(m_D_SRVHeapIndex, descriptorSize);
+	}
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC dsrvDesc = {};
+	dsrvDesc.Format = DXGI_FORMAT_R32_FLOAT;  // Use R32 because it's a depth-only texture
+	dsrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	dsrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	dsrvDesc.Texture2D.MipLevels = 1;
+		
+	DXContext::Get().GetDevice()->CreateShaderResourceView(m_ZBuffer.GetTexture(), &dsrvDesc, depth_SRVHandle);
 }

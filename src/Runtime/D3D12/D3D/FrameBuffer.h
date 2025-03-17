@@ -17,18 +17,24 @@ class FrameBuffer
 		void RenderTargetBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12DescriptorHeap* descriptorHeap = nullptr, uint32_t heapIndex = 0);
 		void DepthBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12DescriptorHeap* descriptorHeap = nullptr, uint32_t heapIndex = 0);
 		void Clear(ID3D12GraphicsCommandList*& cmdList);
-		void CreateRenderTargetSRV();
-		void CreateDepthBufferSRV();
+		void CreateRenderTargetSRV(ID3D12DescriptorHeap* descriptorHeap, uint32_t heapIndex);
+		void CreateDepthBufferSRV(ID3D12DescriptorHeap* descriptorHeap, uint32_t heapIndex);
 
 	private:
 		uint32_t m_width = 0;
 		uint32_t m_height = 0;
-
+		
+		// RTV & DSV Heaps
 		ComPointer<ID3D12DescriptorHeap> m_RTVHeap = nullptr;
-		ComPointer<ID3D12DescriptorHeap> m_DSVHeap = nullptr;
-
 		uint32_t m_RTVHeapIndex = 0;
+		ComPointer<ID3D12DescriptorHeap> m_DSVHeap = nullptr;
 		uint32_t m_DSVHeapIndex = 0;
+
+		// SRV Heaps
+		ComPointer<ID3D12DescriptorHeap> m_RT_SRVHeap = nullptr;
+		uint32_t m_RT_SRVHeapIndex = 0;
+		ComPointer<ID3D12DescriptorHeap> m_D_SRVHeap = nullptr;
+		uint32_t m_D_SRVHeapIndex = 0;
 
 		ComPointer<ID3D12Resource> m_RTV = nullptr;
 
