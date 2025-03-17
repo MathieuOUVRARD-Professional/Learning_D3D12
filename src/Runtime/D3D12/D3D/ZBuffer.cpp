@@ -45,9 +45,8 @@ ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, std::string name,
 		descriptorHeapDescDepth.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 		descriptorHeapDescDepth.NodeMask = 0;
 
-		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescDepth, IID_PPV_ARGS(&m_dsvHeap));
-		std::string tempName = m_name + "_DescriptorHeap";
-		m_dsvHeap->SetName(std::wstring(tempName.begin(), tempName.end()).c_str());
+		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescDepth, IID_PPV_ARGS(&m_dsvHeap));		
+		m_dsvHeap->SetName(std::wstring(m_name.begin(), m_name.end()).c_str());
 	}
 	else
 	{

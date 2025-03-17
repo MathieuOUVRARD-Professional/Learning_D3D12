@@ -480,7 +480,7 @@ int main()
 		cubeIbv.Format = DXGI_FORMAT_R32_UINT;
 		
 		// Shadow pass
-		FrameBuffer shadowMap = FrameBuffer(2048, 2048, "ShadowMapping");
+		FrameBuffer shadowMap = FrameBuffer(2048, 2048, "ShadowMap");
 		shadowMap.DepthBuffer(&defaultHeapProperties);
 		shadowMap.CreateDepthBufferSRV();
 
@@ -534,7 +534,7 @@ int main()
 
 		DXContext::Get().GetDevice()->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap));
 		g_pd3dSrvDescHeapAlloc.Create(DXContext::Get().GetDevice(), g_pd3dSrvDescHeap);
-		g_pd3dSrvDescHeap.Get()->SetName(L"ImGui_DescriptorHeap");
+		g_pd3dSrvDescHeap.Get()->SetName(L"ImGui");
 
 		init_info.SrvDescriptorHeap = g_pd3dSrvDescHeap;
 		init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };

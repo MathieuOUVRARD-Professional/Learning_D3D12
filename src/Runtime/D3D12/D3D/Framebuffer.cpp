@@ -41,7 +41,7 @@ void FrameBuffer::RenderTargetBuffer(D3D12_HEAP_PROPERTIES* defaultHeapPropertie
 
 		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescRTV, IID_PPV_ARGS(&m_RTVHeap));
 		
-		std::string tempName = m_name + "_RTV_DescriptorHeap";
+		std::string tempName = m_name + "_RTV";
 
 		m_RTVHeap.Get()->SetName(std::wstring(tempName.begin(), tempName.end()).c_str());
 	}
@@ -87,7 +87,7 @@ void FrameBuffer::CreateRenderTargetSRV(ID3D12DescriptorHeap* descriptorHeap, ui
 
 		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescRT_SRV, IID_PPV_ARGS(&m_RT_SRVHeap));
 
-		std::string tempName = m_name + "_RT_SRV_DescriptorHeap";
+		std::string tempName = m_name + "_RT_SRV";
 
 		m_RT_SRVHeap.Get()->SetName(std::wstring(tempName.begin(), tempName.end()).c_str());
 	}
@@ -131,7 +131,7 @@ void FrameBuffer::CreateDepthBufferSRV(ID3D12DescriptorHeap* descriptorHeap, uin
 
 		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescD_SRV, IID_PPV_ARGS(&m_D_SRVHeap));
 
-		std::string tempName = m_name + "_Depth_SRV_DescriptorHeap";
+		std::string tempName = m_name + "_Depth_SRV";
 
 		m_D_SRVHeap.Get()->SetName(std::wstring(tempName.begin(), tempName.end()).c_str());
 	}

@@ -96,7 +96,8 @@ bool DXWindow::Init()
 	{
 		return false;
 	}
-	
+	m_rtvDescHeap.Get()->SetName(L"Main_Swapchain");
+
 	//Create handles to view
 	auto firstHandle = m_rtvDescHeap->GetCPUDescriptorHandleForHeapStart();
 	auto handleIncrement = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
