@@ -13,6 +13,8 @@
 #include <Debug/DebugLayer.h>
 
 #include <D3D/DXContext.h>
+#include <D3D/FrameBuffer.h>
+#include <D3D/Light.h>
 #include <D3D/PipelineState.h>
 #include <D3D/Texture.h>
 #include <D3D/ZBuffer.h>
@@ -32,7 +34,6 @@
 #include "ImGuizmo.h"
 
 #include<glm/gtx/matrix_decompose.hpp>
-#include <D3D/FrameBuffer.h>
 
 #define IMGUI
 
@@ -599,20 +600,11 @@ int main()
 			pyramidModel = glm::rotate(pyramidModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 
 			std::string colorPickerName = "Light color";
-			std::vector<float> lightColor = ImGuiColorPicker(&colorPickerName, true);
+			glm::vec3 lightColor = ImGuiColorPicker(&colorPickerName, true);
 			ImGuiPerfOverlay(true);			
 
-			struct Light
-			{
-				glm::vec3 lightcolor = glm::vec3(1.0f, 1.0f, 1.0);
-				float padding = 0;
-				glm::vec3 lightPosition = glm::vec3(0.0f, 0.0f, 0.0);
-				float pading2 = 0;
-			};
-			Light cubeLight;
+			Light cubeLight = Light().Directional(glm::normalize(lightTransform.m_position), 1.0f, lightColor);
 			//cubeLight.lightcolor = glm::vec4(color[0], color[1], color[2], 1.0f);
-			cubeLight.lightcolor = glm::vec4(lightColor[0], lightColor[1], lightColor[2], lightColor[3]);
-			cubeLight.lightPosition = glm::vec4(lightTransform.m_position, 1.0f);
 
 			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
 			camera.Matrix(45.0f, 0.01f, 100.0f);
@@ -652,7 +644,7 @@ int main()
 			cmdList->SetPipelineState(pbrPso.Get());
 			cmdList->SetGraphicsRootSignature(pbrRootSignature);
 			mainObjList.BindDescriptorHeap(cmdList, 4);
-			cmdList->SetGraphicsRoot32BitConstants(3, 8, &cubeLight, 0);
+			cubeLight.SendShaderParams(cmdList, 3);
 			mainObjList.Draw(cmdList, camera);
 
 			// Cube
@@ -665,7 +657,7 @@ int main()
 			cmdList->IASetIndexBuffer(&cubeIbv);
 			// === ROOT === //
 			camera.SendShaderParams(cmdList, 0, lightModel);
-			cmdList->SetGraphicsRoot32BitConstants(1, 4, &cubeLight.lightcolor, 0);
+			cmdList->SetGraphicsRoot32BitConstants(1, 4, &cubeLight.m_color, 0);
 			// === Draw === //
 			cmdList->DrawIndexedInstanced(_countof(cubeIndexes), 1, 0, 0, 0);
 

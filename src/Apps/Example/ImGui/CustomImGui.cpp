@@ -49,7 +49,7 @@ void ImGuiPerfOverlay(bool open)
     ImGui::End();
 }
 
-std::vector<float> ImGuiColorPicker(std::string* colorName, bool open)
+glm::vec3 ImGuiColorPicker(std::string* colorName, bool open)
 {
     static ImVec4 color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
     
@@ -65,7 +65,7 @@ std::vector<float> ImGuiColorPicker(std::string* colorName, bool open)
     }
     ImGui::End();
     
-    std::vector<float> toReturn = { color.x, color.y, color.z, color.w };
+    glm::vec3 toReturn = glm::vec3(color.x, color.y, color.z);
     return toReturn;
 }
 

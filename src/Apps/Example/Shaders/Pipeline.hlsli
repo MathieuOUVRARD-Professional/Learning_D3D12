@@ -25,9 +25,16 @@ struct MaterialData
 };
 
 struct Light
-{
-    float3 color;
-    float padding1;
+{    
     float3 position;
-    float padding2;
+    float type;
+    
+    float3 direction;
+    float intensity;
+    
+    float3 color;
+    float radius;
+    
+    float innerAngle;
+    float outerAngle;
 };

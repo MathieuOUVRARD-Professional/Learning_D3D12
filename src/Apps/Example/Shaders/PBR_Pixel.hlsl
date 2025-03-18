@@ -67,6 +67,66 @@ float3 FresnelSchlick(float cosTheta, float3 F0)
 	return F0 + (1.0f - F0) * pow(1.0f - cosTheta, 5.0f);
 }
 
+float3 ComputeLighting(Light light, float3 normalWorldSpace, float3 viewDirection, float3 worldPos, float3 albedo, float roughness, float metallic)
+{	
+	// Default fo Point & Spot lights
+    float3 L = normalize(light.direction - worldPos);
+    float attenuation = 1.0f;
+	
+	// Handle Directional light (Set attenuation to 1 and use predefined direction)
+    float3 lightDirection = lerp(L, -light.direction, light.type == 0);
+    attenuation = lerp(attenuation, 1.0f, light.type == 0);
+	
+	// Handle Point Light Attenuation
+    float dist = length(light.position - worldPos);
+    float pointAttenuation = saturate(1.0f - (dist * dist) / (light.radius * light.radius));
+    attenuation *= lerp(1.0f, pointAttenuation, light.type = 1);
+	
+	// Handle Spot light (Smooth attenuation)
+    float spotFactor = saturate(dot(-L, light.direction));
+    float spotAttenuation = smoothstep(light.outerAngle, light.innerAngle, spotFactor);
+    attenuation *= lerp(1.0f, spotAttenuation, light.type == 2);
+	
+	// Halfway vector
+    float3 halfwayVec = normalize(viewDirection + lightDirection);
+	
+	// Compute BRDF components
+    float NdotV = max(dot(normalWorldSpace, viewDirection), 0.0);
+    float NdotL = max(dot(normalWorldSpace, lightDirection), 0.0);
+    float NdotH = max(dot(normalWorldSpace, halfwayVec), 0.0);
+    float HdotV = max(dot(halfwayVec, viewDirection), 0.0);
+	
+	// Compute Fresnel Reflectance at Normal Incidence (F0)	
+    float3 F0 = float3(0.04f, 0.04f, 0.04f);	// Default dielectric reflectance
+    F0 = lerp(F0, albedo, metallic);			// Metals use albedo as F0
+	
+	// Compute Cook-Torrance BRDF Components
+    float k = (roughness + 1.0f) * (roughness + 1.0f) / 8.0f;
+    float NDF = NormalDistributionGGX(normalWorldSpace, halfwayVec, roughness);
+    float G = GeometrySmith(normalWorldSpace, viewDirection, halfwayVec, k);
+    float3 F = FresnelSchlick(max(dot(halfwayVec, viewDirection), 0.0f), F0);
+	
+	// Specular BRDF
+    float3 numerator = (NDF * F * G);
+    float denominator = 4.0f * NdotV * NdotL + 0.0001f;
+    float3 specular = numerator / max(denominator, 0.0001f);
+	
+	// Diffuse Reflection (Lambertian)
+    float3 kD = 1.0f - F; // Energy conservation
+    kD *= (1.0f - metallic); // Metals have no diffuse component
+    float3 Lambertian = albedo / PI;
+	
+	// Final color computation
+    float3 diffuse = kD * Lambertian;
+	
+    return (diffuse + specular) * light.color * light.intensity * NdotL * attenuation;
+}
+
+
+
+
+
+
 [RootSignature(PBR_SIG)]
 void main(
 // === IN === //
@@ -80,7 +140,6 @@ void main(
 	out float4 pixel : SV_Target
 )
 {
-	float3 normal = normalize(i_normal);
 
 	// Texture sampling
 	float3 albedoTexel = materialData.baseColor * bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv).rgb;
@@ -90,44 +149,26 @@ void main(
 	float roughness = materialData.roughness *  ormTexel.g;
 	float metalness = materialData.metalness *  ormTexel.b;
 	
+	// AlphaClipping
     float alpha = bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv).a;
     clip(alpha - 0.25f); // Discards the pixel if alpha <= 0
 	
+	//Ambient
     float3 ambient = 0.05f * albedoTexel;
 	
-	// Convert normal map to world space
+	// Convert normal map to world space	
+    float3 normal = normalize(i_normal);
 	float3 normalWorldSpace = ApplyNormalMap(normal, i_tangent, i_bitangent, normalTexel);
+		
+	// View Direction
+    float3 viewDirection = normalize(cameraPosition - i_currentPos.xyz);
 	
-	// View & Light vectors
-	float3 viewDirection = normalize(cameraPosition - i_currentPos.xyz);
-    float3 lightDirection = normalize(light.position.xyz - i_currentPos.xyz);
-	float3 halfwayVec = normalize(viewDirection + lightDirection);
+    float3 lighting = 0.0f;
+    lighting = ComputeLighting(light, normalWorldSpace, viewDirection, i_currentPos.xyz, albedoTexel, roughness, metalness);
 	
-	// Compute Fresnel Reflectance at Normal Incidence (F0)	
-	float3 F0 = float3(0.04f, 0.04f, 0.04f);	// Default dielectric reflectance
-	F0 = lerp(F0, albedoTexel, metalness);		// Metals use albedo as F0
-
-	// Compute Cook-Torrance BRDF Components
-	float k = (roughness + 1.0f) * (roughness + 1.0f) / 8.0f;
-	float NDF = NormalDistributionGGX(normalWorldSpace, halfwayVec, roughness);
-	float G = GeometrySmith(normalWorldSpace, viewDirection, halfwayVec, k);
-	float3 F = FresnelSchlick(max(dot(halfwayVec, viewDirection), 0.0f), F0);
-
-	// Specular BRDF
-	float3 numerator = (NDF * F * G);
-	float denominator = 4.0f * max(dot(normalWorldSpace, viewDirection), 0.0f) * max(dot(normalWorldSpace, lightDirection ), 0.0f) + 0.0001f;
-	float3 specular = numerator / max(denominator, 0.0001f);
-
-	 // Diffuse Reflection (Lambertian)
-	float3 kD = 1.0f - F;						// Energy conservation
-	kD *= (1.0f - metalness);					// Metals have no diffuse component
-	float3 Lambertian = albedoTexel / PI;
-
-	// Final color computation
-	float NdotL = max(dot(normalWorldSpace, lightDirection), 0.0f);
-	float3 diffuse = kD * Lambertian;
-    float3 finalColor = (diffuse + specular) * NdotL * light.color.rgb + emmisive + ambient;
+    float3 finalColor = lighting + emmisive + ambient;
 	
+	//Gamma correction
     float gamma = 2.2;
     finalColor.rgb = pow(finalColor.rgb, float3(1.0f / gamma, 1.0f / gamma, 1.0f / gamma));
 	
