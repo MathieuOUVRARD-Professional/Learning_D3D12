@@ -55,10 +55,11 @@ class ObjectList
 		std::list<SceneObject> m_list;
 		std::vector<Material> m_materials;
 
-		ComPointer<ID3D12DescriptorHeap> m_DescriptorHeap;
+		ComPointer<ID3D12DescriptorHeap> m_srvHeap;
+		ComPointer<ID3D12DescriptorHeap> m_cbvHeap;
 
 		void CopyTextures(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destBufferOffset = 0);
 		void CopyMeshes(ID3D12Resource* uploadBuffer, UINT64 destOffsetVertex = 0, UINT64 destOffsetIndex = 0);
-		void CopyMaterialData(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer);
+		void CopyMaterialData();
 
 };

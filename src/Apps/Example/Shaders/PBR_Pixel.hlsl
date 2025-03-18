@@ -14,15 +14,14 @@ cbuffer LightConstants : register(b2)
 	Light light;
 };
 
-cbuffer Material : register(b3)
+cbuffer MaterialData : register(b3)
 {
-	int materialIndex;
-};
+    MaterialData materialData;
+}
 
 Texture2D<float4> bindlessTextures[] : register(t0, space0);
 sampler textureSampler : register(s0);
 
-StructuredBuffer<MaterialData> materialsData : register(t1);
 
 float3 ApplyNormalMap(float3 normal, float3 tangent, float3 bitangent, float3 sampledNormal)
 {
@@ -124,11 +123,6 @@ float3 ComputeLighting(Light light, float3 normalWorldSpace, float3 viewDirectio
     return (diffuse + specular) * light.color * light.intensity * NdotL * attenuation;
 }
 
-
-
-
-
-
 [RootSignature(PBR_SIG)]
 void main(
 // === IN === //
@@ -142,8 +136,6 @@ void main(
 	out float4 pixel : SV_Target
 )
 {	
-	MaterialData materialData = materialsData[materialIndex];
-
 	// Texture sampling
 	float3 albedoTexel = materialData.baseColor * bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv).rgb;
 	float3 normalTexel = bindlessTextures[NonUniformResourceIndex(materialData.normalID)].Sample(textureSampler, i_uv).rgb;

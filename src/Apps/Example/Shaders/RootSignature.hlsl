@@ -19,7 +19,7 @@
 #define ROOTSIG \
 "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
 "RootConstants(num32BitConstants = 32, b0),"\
-"RootConstants(num32BitConstants = 8, b1),"\
+"RootConstants(num32BitConstants = 16, b1),"\
 "RootConstants(num32BitConstants = 4, b2),"\
 "RootConstants(num32BitConstants = 4, b3),"\
 "DescriptorTable(" \

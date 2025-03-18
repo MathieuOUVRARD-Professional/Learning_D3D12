@@ -603,7 +603,7 @@ int main()
 			glm::vec3 lightColor = ImGuiColorPicker(&colorPickerName, true);
 			ImGuiPerfOverlay(true);			
 
-			Light cubeLight = Light().Directional(glm::normalize(lightTransform.m_position), 1.0f, lightColor);
+			Light cubeLight = Light().Directional(glm::normalize(-lightTransform.m_position), 1.0f, lightColor);
 			//cubeLight.lightcolor = glm::vec4(color[0], color[1], color[2], 1.0f);
 
 			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
@@ -633,7 +633,7 @@ int main()
 			cmdList->IASetIndexBuffer(&ibv);
 			// === ROOT === //
 			camera.SendShaderParams(cmdList, 0, pyramidModel);
-			cmdList->SetGraphicsRoot32BitConstants(1, 8, &cubeLight, 0);
+			cubeLight.SendShaderParams(cmdList, 1);
 			cmdList->SetGraphicsRoot32BitConstants(3, 4, &camera.m_position, 0);
 			eyeTextures.AddCommands(cmdList, 4);
 			// === Draw === //

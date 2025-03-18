@@ -57,5 +57,5 @@ void Light::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
 
 	data.color = m_color;
 
-	cmdList->SetGraphicsRoot32BitConstants(bufferSlot, 16, &m_color, 0);
+	cmdList->SetGraphicsRoot32BitConstants(bufferSlot, 16, &data, 0);
 }

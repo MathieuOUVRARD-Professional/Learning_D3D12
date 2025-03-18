@@ -55,7 +55,7 @@ class Material
 		float m_metallicFactor			= 0.0f;
 		float m_roughnessFactor			= 1.0f;
 
-		ComPointer<ID3D12Resource> m_dataResource = nullptr;
+		ComPointer<ID3D12Resource> m_dataBuffer = nullptr;
 
 	private:
 		Texture m_Textures;
