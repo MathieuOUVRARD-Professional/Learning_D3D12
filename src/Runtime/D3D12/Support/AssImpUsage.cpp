@@ -22,8 +22,13 @@ void C_AssImp::Import(const std::string& filePath, ObjectList& objectList)
 	}
 	else
 	{
+		size_t it = filePath.find_first_of('/', 0);
+		std::string name = filePath.substr(0, it);
+
+		objectList.m_name = name;
+
 		SceneObject mainObject = SceneObject();
-		mainObject.m_name = "Sponza";
+		mainObject.m_name = "OriginObject";
 
 		objectList.GetList().emplace_back(mainObject);
 
@@ -182,9 +187,9 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 		aiColor3D emissive;
 		float opacity = 1.0f;
 
-		if (i == 0 && !objectList.hasDefaultTexture)
+		if (i == 0 && !objectList.m_hasDefaultTexture)
 		{
-			objectList.hasDefaultTexture = true;
+			objectList.m_hasDefaultTexture = true;
 
 			texturesPaths.emplace_back("Textures/White.png");
 
@@ -193,10 +198,10 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 			textureID++;
 		}
 
-		if (i == 0 && !objectList.hasDefaultNormalTexture)
+		if (i == 0 && !objectList.m_hasDefaultNormalTexture)
 		{
 
-			objectList.hasDefaultNormalTexture = true;
+			objectList.m_hasDefaultNormalTexture = true;
 
 			texturesPaths.emplace_back("Textures/Normal.png");
 
@@ -205,6 +210,7 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 			textureID++;
 		}
 
+		material.m_ID = i;
 		material.m_name = materialNode->GetName().C_Str();
 		std::cout << "Material name: " << material.m_name << std::endl;
 		

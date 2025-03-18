@@ -643,8 +643,8 @@ int main()
 			// === PSO === //
 			cmdList->SetPipelineState(pbrPso.Get());
 			cmdList->SetGraphicsRootSignature(pbrRootSignature);
-			mainObjList.BindDescriptorHeap(cmdList, 4);
-			cubeLight.SendShaderParams(cmdList, 3);
+			cubeLight.SendShaderParams(cmdList, 2);
+			mainObjList.BindDescriptorHeaps(cmdList, 4);
 			mainObjList.Draw(cmdList, camera);
 
 			// Cube

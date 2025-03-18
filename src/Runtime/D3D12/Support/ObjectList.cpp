@@ -30,6 +30,11 @@ UINT64 ObjectList::TotalIndicesSize()
 	return size;
 }
 
+UINT64 ObjectList::TotalMatDataSize()
+{
+	return sizeof(MaterialData) * MaterialsCount();
+}
+
 UINT64 ObjectList::TotalSize()
 {
 	UINT64 size = 0;
@@ -54,48 +59,116 @@ uint32_t ObjectList::TextureCount()
 	return count;
 }
 
-void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destOffsetTexture, UINT64 destOffsetVertex, UINT64 destOffsetIndex)
+void ObjectList::BindDescriptorHeaps(ID3D12GraphicsCommandList* cmdList, uint32_t rootParameterIndex)
 {
-	// Bindless Textures Descriptor Heap
-	D3D12_DESCRIPTOR_HEAP_DESC bindlessDescriptorHeapDescText{};
-	bindlessDescriptorHeapDescText.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	bindlessDescriptorHeapDescText.NumDescriptors = TextureCount();
-	bindlessDescriptorHeapDescText.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	bindlessDescriptorHeapDescText.NodeMask = 0;
+	cmdList->SetDescriptorHeaps(1, &m_DescriptorHeap);
+	cmdList->SetGraphicsRootDescriptorTable(rootParameterIndex, m_DescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+}
 
-	DXContext::Get().GetDevice()->CreateDescriptorHeap(&bindlessDescriptorHeapDescText, IID_PPV_ARGS(&m_srvHeap));
-	std::wstring wideHeapName = std::wstring(m_list.front().m_name.begin(), m_list.front().m_name.end());
+void ObjectList::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
+{
+	for (SceneObject& object : m_list)
+	{
+		object.m_mesh.ShadowPassDraw(cmdList, camera.m_viewProjMatrix, object.m_transform.m_matrix);
+	}
+}
 
-	m_srvHeap.Get()->SetName(wideHeapName.c_str());
+void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
+{
+	for (SceneObject& object : m_list)
+	{
+		object.m_mesh.Draw(cmdList, camera.m_viewProjMatrix, object.m_transform.m_matrix, camera.m_position);
+	}
+}
 
-	// Textures copy
-	uint32_t srvIndex = 0;
+void ObjectList::CopyTextures(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destBufferOffset)
+{
+	uint32_t srvIndex = MaterialsCount();
 	for (Material& material : m_materials)
 	{
-		material.GetTextures().Init(defaultHeapProperties, m_srvHeap, srvIndex);
+		material.GetTextures().Init(defaultHeapProperties, m_DescriptorHeap, srvIndex);
 
-		if (destOffsetTexture + material.TextureSize() > uploadBuffer->GetDesc().Width)
+		if (destBufferOffset + material.TextureSize() > uploadBuffer->GetDesc().Width)
 		{
 			//Not enough space for next material in the upload buffer
 			DXContext::Get().ExecuteCommandList();	// Fence synchronization
 			cmdList = DXContext::Get().InitCommandList();
-			destOffsetTexture = 0;
+			destBufferOffset = 0;
 		}
-		material.GetTextures().CopyToUploadBuffer(uploadBuffer, destOffsetTexture, cmdList);
+		material.GetTextures().CopyToUploadBuffer(uploadBuffer, destBufferOffset, cmdList);
 		srvIndex += material.GetTextures().m_count;
-		destOffsetTexture += material.TextureSize();
+		destBufferOffset += material.TextureSize();
 	}
 
 	// Waiting for the buffer to get back before writing meshes
 	DXContext::Get().ExecuteCommandList();
 	cmdList = DXContext::Get().InitCommandList();
-	destOffsetTexture = 0;
+}
 
-	// Meshes copy 
+void ObjectList::CopyMaterialData(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer)
+{
 	char* uploadBufferAdress;
 	D3D12_RANGE uploadRange;
 	uploadRange.Begin = 0;
-	uploadRange.End = TotalVerticesSize() + TotalIndicesSize(); 
+	uploadRange.End = sizeof(m_materials[0]) * m_materials.size();
+	uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
+
+	uint32_t offset = 0;
+
+	for (uint32_t i = 0; i < MaterialsCount(); i++)
+	{		
+		MaterialData data = m_materials[i].GetData();
+
+		//Copy data to Upload Buffer
+		memcpy
+		(
+			&uploadBufferAdress[offset],
+			&data,
+			sizeof(data)
+		);
+		offset += sizeof(data);
+
+		// Create Constant Buffer
+		D3D12_RESOURCE_DESC materialCBVDesc = {};
+		materialCBVDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		materialCBVDesc.Alignment = 0;
+		materialCBVDesc.Width = sizeof(data);
+		materialCBVDesc.Height = 1;
+		materialCBVDesc.DepthOrArraySize = 1;
+		materialCBVDesc.MipLevels = 1;
+		materialCBVDesc.Format = DXGI_FORMAT_UNKNOWN;
+		materialCBVDesc.SampleDesc.Count = 1;
+		materialCBVDesc.SampleDesc.Quality = 0;
+		materialCBVDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+		materialCBVDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+		DXContext::Get().GetDevice()->CreateCommittedResource(defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &materialCBVDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m_materials[i].m_dataResource));
+		std::string name = m_materials[i].m_name + "_Data";
+		m_materials[i].m_dataResource->SetName(std::wstring(name.begin(), name.end()).c_str());
+
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+		cbvDesc.BufferLocation = m_materials[i].m_dataResource->GetGPUVirtualAddress();
+		cbvDesc.SizeInBytes = (sizeof(m_materials[i].GetData()) + 255) & ~255;  // 256-byte aligned size
+
+		// Get CPU handle of the descriptor heap
+		CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle;
+		uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		cbvHandle = m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+		cbvHandle.Offset(i, descriptorSize);
+
+		DXContext::Get().GetDevice()->CreateConstantBufferView(&cbvDesc, cbvHandle);
+	}
+	uploadBuffer->Unmap(0, &uploadRange);
+}
+
+void ObjectList::CopyMeshes(ID3D12Resource* uploadBuffer, UINT64 destOffsetVertex, UINT64 destOffsetIndex)
+{
+	char* uploadBufferAdress;
+	D3D12_RANGE uploadRange;
+	uploadRange.Begin = 0;
+	uploadRange.End = TotalVerticesSize() + TotalIndicesSize();
 	uploadBuffer->Map(0, &uploadRange, (void**)&uploadBufferAdress);
 
 	destOffsetIndex = destOffsetVertex + TotalVerticesSize() + destOffsetIndex;
@@ -112,7 +185,7 @@ void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HE
 			{
 				memcpy(&uploadBufferAdress
 					[destOffsetVertex + objectVertexOffset + submeshVertexOffset],
-					object.m_mesh.GetSubmesh(i).GetVertices().data(), 
+					object.m_mesh.GetSubmesh(i).GetVertices().data(),
 					object.m_mesh.GetSubmesh(i).VerticesSize());
 				object.m_mesh.GetSubmesh(i).m_vertexBufferOffset = destOffsetVertex + objectVertexOffset + submeshVertexOffset;
 
@@ -149,6 +222,41 @@ void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HE
 	uploadBuffer->Unmap(0, &uploadRange);
 }
 
+void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destOffsetTexture, UINT64 destOffsetVertex, UINT64 destOffsetIndex)
+{
+	// Bindless Textures Descriptor Heap
+	D3D12_DESCRIPTOR_HEAP_DESC bindlessHeapDesc{};
+	bindlessHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	bindlessHeapDesc.NumDescriptors = TextureCount() + MaterialsCount();
+	bindlessHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	bindlessHeapDesc.NodeMask = 0;
+
+	DXContext::Get().GetDevice()->CreateDescriptorHeap(&bindlessHeapDesc, IID_PPV_ARGS(&m_DescriptorHeap));
+	std::string srvHeapName = m_name + "_SRV";
+	m_DescriptorHeap.Get()->SetName(std::wstring(srvHeapName.begin(), srvHeapName.end()).c_str());
+
+	// MaterialsData copy
+	CopyMaterialData(defaultHeapProperties, uploadBuffer);
+
+	// Textures copy
+	CopyTextures(cmdList, defaultHeapProperties, uploadBuffer, destOffsetTexture);
+
+	//// Bindless MaterialData Descriptor Heap
+	//D3D12_DESCRIPTOR_HEAP_DESC bindlessMaterialDataHeapDesc = {};
+	//bindlessMaterialDataHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	//bindlessMaterialDataHeapDesc.NumDescriptors = MaterialsCount();  
+	//bindlessMaterialDataHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+	//DXContext::Get().GetDevice()->CreateDescriptorHeap(&bindlessMaterialDataHeapDesc, IID_PPV_ARGS(&m_cbvHeap));
+	//std::string cbvHeapName = m_name + "_CBV";
+	//m_cbvHeap.Get()->SetName(std::wstring(cbvHeapName.begin(), cbvHeapName.end()).c_str());
+
+	// Meshes copy 
+	CopyMeshes(uploadBuffer, destOffsetVertex, destOffsetIndex);
+
+
+}
+
 void ObjectList::CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource* indexBuffer)
 {
 	for (SceneObject& object : m_list)
@@ -161,7 +269,7 @@ void ObjectList::CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource*
 				D3D12_VERTEX_BUFFER_VIEW vbv{};
 				vbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress() + object.m_mesh.GetSubmesh(i).m_vertexBufferOffset;
 				vbv.SizeInBytes = object.m_mesh.GetSubmesh(i).VerticesSize();
-				vbv.StrideInBytes = sizeof(Vertex);			
+				vbv.StrideInBytes = sizeof(Vertex);
 
 				object.m_mesh.GetSubmesh(i).SetVBV(vbv);
 
@@ -172,12 +280,12 @@ void ObjectList::CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource*
 				ibv.Format = DXGI_FORMAT_R32_UINT;
 
 				object.m_mesh.GetSubmesh(i).SetIBV(ibv);
-				
+
 				// Cleaning
 				object.m_mesh.GetSubmesh(i).ClearVectors();
 			}
 		}
-		else 
+		else
 		{
 			// === Vertex buffer view === //
 			D3D12_VERTEX_BUFFER_VIEW vbv{};
@@ -197,28 +305,6 @@ void ObjectList::CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource*
 
 			// Cleaning
 			object.m_mesh.ClearVectors();
-		}
-	}
-}
-
-void ObjectList::BindDescriptorHeap(ID3D12GraphicsCommandList* cmdList, uint32_t rootParameterIndex)
-{
-	cmdList->SetDescriptorHeaps(1, &m_srvHeap);
-	cmdList->SetGraphicsRootDescriptorTable(rootParameterIndex, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
-}
-
-void ObjectList::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
-{
-	for (SceneObject& object : m_list)
-	{
-		object.m_mesh.ShadowPassDraw(cmdList, camera.m_viewProjMatrix, object.m_transform.m_matrix);
-	}
-}
-
-void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
-{
-	for (SceneObject& object : m_list)
-	{
-		object.m_mesh.Draw(cmdList, camera.m_viewProjMatrix, object.m_transform.m_matrix, camera.m_position);
+		}	
 	}
 }

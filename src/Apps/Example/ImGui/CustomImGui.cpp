@@ -75,7 +75,7 @@ void InitGuizmo()
 
     ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
 
-    ImGuizmo::SetRect(0.0f, 0.0f, DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
+    ImGuizmo::SetRect(0.0f, 0.0f, (float)DXWindow::Get().GetWidth(), (float)DXWindow::Get().GetHeigth());
 
     // Allow interaction only if ImGuizmo is being hovered
     if (ImGuizmo::IsOver())
@@ -193,12 +193,12 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
             if (mousePos.x <= 0)
             {
                 cursorWarping = true;
-                SetCursorPos(DXWindow::Get().GetWidth() - 2, mousePos.y);
+                SetCursorPos(DXWindow::Get().GetWidth() - 2, (int)mousePos.y);
             }
-            else if (mousePos.x >= DXWindow::Get().GetWidth() - 1)
+            else if (mousePos.x >= DXWindow::Get().GetWidth() - 1.0f)
             {
                 cursorWarping = true;
-                SetCursorPos(1, mousePos.y);
+                SetCursorPos(1, (int)mousePos.y);
             }
         }
         else
@@ -209,7 +209,7 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
             {
                 if (activeAxis == i)
                 {
-                    modelRotation[i] -= warpOffsetX * 0.5; // Counteract the warp movement
+                    modelRotation[i] -= warpOffsetX * 0.5f; // Counteract the warp movement
                 }            
             }
             

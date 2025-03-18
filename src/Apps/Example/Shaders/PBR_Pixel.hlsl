@@ -4,23 +4,25 @@
 // PBR Lighting Constants
 static const float PI = 3.14159265359;
 
-Texture2D<float4> bindlessTextures[] : register(t0, space0);
-sampler textureSampler : register(s0);
-
 cbuffer Camera : register(b1)
 {
 	float3 cameraPosition;
 };
 
-cbuffer Material : register(b2)
-{
-	MaterialData materialData;
-};
-
-cbuffer LightConstants : register(b3)
+cbuffer LightConstants : register(b2)
 {
 	Light light;
 };
+
+cbuffer Material : register(b3)
+{
+	int materialIndex;
+};
+
+Texture2D<float4> bindlessTextures[] : register(t0, space0);
+sampler textureSampler : register(s0);
+
+StructuredBuffer<MaterialData> materialsData : register(t1);
 
 float3 ApplyNormalMap(float3 normal, float3 tangent, float3 bitangent, float3 sampledNormal)
 {
@@ -139,7 +141,8 @@ void main(
 // === OUT === //
 	out float4 pixel : SV_Target
 )
-{
+{	
+	MaterialData materialData = materialsData[materialIndex];
 
 	// Texture sampling
 	float3 albedoTexel = materialData.baseColor * bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv).rgb;

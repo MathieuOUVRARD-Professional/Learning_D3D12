@@ -11,17 +11,20 @@
 class ObjectList
 {
 	public:
-		bool hasDefaultTexture = false;
-		bool hasDefaultNormalTexture = false;
+		std::string m_name = "UnnamedList";
+
+		bool m_hasDefaultTexture = false;
+		bool m_hasDefaultNormalTexture = false;
 
 		UINT64 TotalTexturesSize();
 		UINT64 TotalVerticesSize();
 		UINT64 TotalIndicesSize();
+		UINT64 TotalMatDataSize();
 		UINT64 TotalSize();
 		uint32_t TextureCount();
 		void CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destBufferOffset = 0, UINT64 destOffsetVertex = 0, UINT64 destOffsetIndex = 0);
 		void CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource* indexBuffer);
-		void BindDescriptorHeap(ID3D12GraphicsCommandList* cmdList, uint32_t rootParameterIndex);
+		void BindDescriptorHeaps(ID3D12GraphicsCommandList* cmdList, uint32_t rootParameterIndex);
 		void ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Camera& camera);
 		void Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera);
 		
@@ -51,5 +54,11 @@ class ObjectList
 	private:
 		std::list<SceneObject> m_list;
 		std::vector<Material> m_materials;
-		ComPointer<ID3D12DescriptorHeap> m_srvHeap;
+
+		ComPointer<ID3D12DescriptorHeap> m_DescriptorHeap;
+
+		void CopyTextures(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destBufferOffset = 0);
+		void CopyMeshes(ID3D12Resource* uploadBuffer, UINT64 destOffsetVertex = 0, UINT64 destOffsetIndex = 0);
+		void CopyMaterialData(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer);
+
 };
