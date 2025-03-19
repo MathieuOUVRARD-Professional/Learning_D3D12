@@ -599,10 +599,10 @@ int main()
 			cubeLight.ComputeViewProjMatrix(100.0f);
 					
 			// === SHADOW PASS === //
+			shadowMap.BindDSV(cmdList);
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			cmdList->SetPipelineState(shadowPassPso.Get());
-			cmdList->SetGraphicsRootSignature(shadowPassSignature);
-			shadowMap.BindDSV(cmdList);
+			cmdList->SetGraphicsRootSignature(shadowPassSignature);			
 			mainObjList.ShadowPassDraw(cmdList, cubeLight);
 
 			DXWindow::Get().BindMainRenderTarget(cmdList);

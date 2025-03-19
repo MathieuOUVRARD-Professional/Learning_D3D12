@@ -43,4 +43,7 @@ class FrameBuffer
 		ComPointer<ID3D12Resource> m_RTV = nullptr;
 
 		ZBuffer m_ZBuffer;
+
+		D3D12_VIEWPORT m_viewPort;
+		RECT m_rect;
 };

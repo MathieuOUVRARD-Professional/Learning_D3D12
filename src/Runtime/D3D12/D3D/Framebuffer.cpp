@@ -187,14 +187,32 @@ void FrameBuffer::BindDSV(ID3D12GraphicsCommandList*& cmdList)
 	}
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
-	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 	dsvHandle = m_DSVHeap->GetCPUDescriptorHandleForHeapStart();
 	dsvHandle.Offset(m_DSVHeapIndex, descriptorSize);
 
 	cmdList->OMSetRenderTargets(0, nullptr, FALSE, &dsvHandle);
 	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr)
+	
 
-		//NEED TO CHANGE VIEW PORT
+	//ViewPort
+	
+	
+	m_viewPort.TopLeftX = 0;
+	m_viewPort.TopLeftY = 0;
+	m_viewPort.Width = m_width;
+	m_viewPort.Height = m_height;
+	m_viewPort.MinDepth = 0.0f;
+	m_viewPort.MaxDepth = 1.0f;
+
+	// Screeen Rect	
+	
+	m_rect.left = m_rect.top = 0;
+	m_rect.right = m_width;
+	m_rect.bottom = m_height;
+
+	cmdList->RSSetViewports(1, &m_viewPort);
+	cmdList->RSSetScissorRects(1, &m_rect);
 }
 
 void FrameBuffer::Bind(ID3D12GraphicsCommandList*& cmdList)
