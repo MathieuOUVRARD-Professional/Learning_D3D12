@@ -15,6 +15,7 @@
 - Packing
 - Sort transparency and use multiple pipeline for blending:  
 <https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/AlphaBlendModeTest>
+- Fix view setting cursor at the midle of the main screen and not nearest
 
 ## Done
 

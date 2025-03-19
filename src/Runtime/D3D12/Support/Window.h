@@ -17,6 +17,8 @@ class DXWindow
 {
 public:
 	bool Init();
+	void BindMainRenderTarget(ID3D12GraphicsCommandList*& cmdList);
+	void SetViewPort();
 	void Update();
 	void Present();
 	void Resize();
@@ -116,7 +118,8 @@ private:
 
 	ComPointer<ID3D12DescriptorHeap> m_rtvDescHeap = nullptr;
 	D3D12_CPU_DESCRIPTOR_HANDLE m_rtvHandles[FrameCount];
-
+	D3D12_VIEWPORT m_mainViewport;
+	RECT m_mainScissorRect;
 	ZBuffer* m_ZBuffer = nullptr;
 
 	//Singleton 

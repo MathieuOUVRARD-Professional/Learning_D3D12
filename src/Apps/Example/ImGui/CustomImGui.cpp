@@ -80,7 +80,7 @@ void InitGuizmo()
     // Allow interaction only if ImGuizmo is being hovered
     if (ImGuizmo::IsOver())
     {
-        spdlog::info("Gizmo is being hovered!\n");
+
     }    
 }
 

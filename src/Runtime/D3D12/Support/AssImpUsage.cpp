@@ -34,10 +34,10 @@ void C_AssImp::Import(const std::string& filePath, ObjectList& objectList)
 
 		std::string folderPath = filePath.substr(0, filePath.find('/')) + "/"; 
 		
-		std::cout << "LOADING MATERIALS" << std::endl << std::endl;
+		spdlog::info("LOADING MATERIALS\n");
 		ProcessMaterials(objectList, *scene, folderPath);
 
-		std::cout << "LOADING MESHES" << std::endl << std::endl;
+		spdlog::info("LOADING MESHES\n");
 		ProcessMeshesNodes(objectList, *scene, *scene->mRootNode, objectList.GetList().back());
 
 		objectList.GetList().remove(mainObject);

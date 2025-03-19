@@ -65,11 +65,11 @@ void ObjectList::BindDescriptorHeaps(ID3D12GraphicsCommandList* cmdList, uint32_
 	cmdList->SetGraphicsRootDescriptorTable(rootParameterIndex, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
 }
 
-void ObjectList::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
+void ObjectList::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Light& light)
 {
 	for (SceneObject& object : m_list)
 	{
-		object.m_mesh.ShadowPassDraw(cmdList, camera.m_viewProjMatrix, object.m_transform.m_matrix);
+		object.m_mesh.ShadowPassDraw(cmdList, light.m_viewProjMatrix, object.m_transform.m_matrix);
 	}
 }
 

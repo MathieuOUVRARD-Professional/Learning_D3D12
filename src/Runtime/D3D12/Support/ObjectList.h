@@ -2,6 +2,7 @@
 
 #include <D3D/SceneObject.h>
 #include <D3D/Material.h>
+#include <D3D/Light.h>
 
 #include <d3d12.h>
 
@@ -25,7 +26,7 @@ class ObjectList
 		void CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destBufferOffset = 0, UINT64 destOffsetVertex = 0, UINT64 destOffsetIndex = 0);
 		void CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource* indexBuffer);
 		void BindDescriptorHeaps(ID3D12GraphicsCommandList* cmdList, uint32_t rootParameterIndex);
-		void ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Camera& camera);
+		void ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Light& light);
 		void Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera);
 		
 

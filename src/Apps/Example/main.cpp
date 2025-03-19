@@ -575,24 +575,7 @@ int main()
 			// Begin drawing
 			cmdList = DXContext::Get().InitCommandList();
 
-			DXWindow::Get().BeginFrame(cmdList);						
-
-			// === RS == //
-			// View Port
-			D3D12_VIEWPORT vp;
-			vp.TopLeftX = 0;
-			vp.TopLeftY = 0;
-			vp.Width = (FLOAT)DXWindow::Get().GetWidth();
-			vp.Height = (FLOAT)DXWindow::Get().GetHeigth();
-			vp.MinDepth = 0.0f;
-			vp.MaxDepth = 1.0f;
-			cmdList->RSSetViewports(1, &vp);
-			// Screeen Rect
-			RECT scRect;
-			scRect.left = scRect.top = 0;
-			scRect.right = DXWindow::Get().GetWidth();
-			scRect.bottom = DXWindow::Get().GetHeigth();
-			cmdList->RSSetScissorRects(1, &scRect);
+			DXWindow::Get().BeginFrame(cmdList);			
 
 			// === UPDATE === //			
 			pyramidModel = glm::translate(glm::mat4(1.0f), pyramidPosition);
@@ -603,7 +586,7 @@ int main()
 			glm::vec3 lightColor = ImGuiColorPicker(&colorPickerName, true);
 			ImGuiPerfOverlay(true);			
 
-			Light cubeLight = Light().Directional(glm::normalize(-lightTransform.m_position), 1.0f, lightColor);
+			Light cubeLight = Light().Directional(glm::normalize(lightTransform.m_position), 1.0f, lightColor);
 			//cubeLight.lightcolor = glm::vec4(color[0], color[1], color[2], 1.0f);
 
 			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
@@ -612,16 +595,17 @@ int main()
 
 			TransformUI(camera, lightModel, lightTransform);
 			
-			lightTransform.m_position = glm::vec3(lightModel[3]);
+			cubeLight.m_position = lightTransform.m_position = glm::vec3(lightModel[3]);			
+			cubeLight.ComputeViewProjMatrix(100.0f);
 					
 			// === SHADOW PASS === //
-			//cmdList->SetPipelineState(shadowPassPso.Get());
-			//cmdList->SetGraphicsRootSignature(shadowPassSignature);
-			//shadowMap.BindDSV(cmdList);
-			//Set root constants
-			//Set vertex buffer
-			//mainObjList.Draw(cmdList, camera);
+			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			cmdList->SetPipelineState(shadowPassPso.Get());
+			cmdList->SetGraphicsRootSignature(shadowPassSignature);
+			shadowMap.BindDSV(cmdList);
+			mainObjList.ShadowPassDraw(cmdList, cubeLight);
 
+			DXWindow::Get().BindMainRenderTarget(cmdList);
 
 			// Pyramid
 			// === PSO === //

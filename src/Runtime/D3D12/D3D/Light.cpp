@@ -4,7 +4,7 @@ Light Light::Directional(glm::vec3 direction, float intensity, glm::vec3 color)
 {
 	Light directional = Light();
 
-	directional.m_type = 0.0f;
+	directional.m_type = 0;
 	directional.m_direction = direction;
 	directional.m_intensity = intensity;
 	directional.m_color = color;
@@ -16,7 +16,7 @@ Light Light::Point(glm::vec3 position, float intensity, float radius, glm::vec3 
 {
 	Light point = Light();
 
-	point.m_type = 1.0f;
+	point.m_type = 1;
 	point.m_position = position;
 	point.m_intensity = intensity;
 	point.m_radius = radius;
@@ -29,7 +29,7 @@ Light Light::Spot(glm::vec3 position, glm::vec3 direction, float intensity, floa
 {
 	Light spot = Light();
 
-	spot.m_type = 2.0f;
+	spot.m_type = 2;
 	spot.m_position = position;
 	spot.m_direction = direction;
 	spot.m_intensity = intensity;
@@ -41,6 +41,26 @@ Light Light::Spot(glm::vec3 position, glm::vec3 direction, float intensity, floa
 	return spot;
 }
 
+void Light::ComputeViewProjMatrix(float ortoSize)
+{
+
+	glm::mat4 view = glm::mat4(1.0f);
+	glm::mat4 projection = glm::mat4(1.0f);
+
+	if (m_type == 0)
+	{
+		view = glm::lookAt(m_position, m_position + m_direction, glm::vec3(0.0f, 1.0f, 0.0f));
+		projection = glm::ortho
+		(
+			-ortoSize, ortoSize, 
+			-ortoSize, ortoSize, 
+			0.01f, m_radius
+		);
+
+		m_viewProjMatrix = view * projection;
+	}
+}
+
 void Light::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
 {
 	LightData data;
@@ -48,7 +68,7 @@ void Light::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
 	data.type = m_type;
 
 	data.position = m_position;
-	data.direction = m_direction;
+	data.direction = -m_direction;					//Reversing direction as it's based on position
 
 	data.intensity = m_intensity;
 	data.radius = m_radius;

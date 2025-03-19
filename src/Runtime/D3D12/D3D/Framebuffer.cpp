@@ -192,7 +192,9 @@ void FrameBuffer::BindDSV(ID3D12GraphicsCommandList*& cmdList)
 	dsvHandle.Offset(m_DSVHeapIndex, descriptorSize);
 
 	cmdList->OMSetRenderTargets(0, nullptr, FALSE, &dsvHandle);
-	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr)
+
+		//NEED TO CHANGE VIEW PORT
 }
 
 void FrameBuffer::Bind(ID3D12GraphicsCommandList*& cmdList)

@@ -111,9 +111,44 @@ bool DXWindow::Init()
 	if (!GetBuffers())
 	{
 		return false;
-	}
-
+	}	
 	return true;
+}
+
+void DXWindow::BindMainRenderTarget(ID3D12GraphicsCommandList*& cmdList)
+{
+	//CD3DX12_RESOURCE_BARRIER barrierToRenderTarget = 
+	//	CD3DX12_RESOURCE_BARRIER::Transition
+	//	(
+	//		m_buffers[m_currentBufferIndex],
+	//		D3D12_RESOURCE_STATE_RENDER_TARGET, // Assumes it was in present state
+	//		D3D12_RESOURCE_STATE_RENDER_TARGET
+	//	);
+	//cmdList->ResourceBarrier(1, &barrierToRenderTarget);
+
+	// Bind the main backbuffer
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_ZBuffer->GetDescriptorHeap()->GetCPUDescriptorHandleForHeapStart();
+	cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, &dsvHandle);
+
+	// Restore main viewport & scissor rects
+	cmdList->RSSetViewports(1, &m_mainViewport);
+	cmdList->RSSetScissorRects(1, &m_mainScissorRect);	
+}
+
+void DXWindow::SetViewPort()
+{
+	//ViewPort
+	m_mainViewport.TopLeftX = 0;
+	m_mainViewport.TopLeftY = 0;
+	m_mainViewport.Width = (FLOAT)DXWindow::Get().GetWidth();
+	m_mainViewport.Height = (FLOAT)DXWindow::Get().GetHeigth();
+	m_mainViewport.MinDepth = 0.0f;
+	m_mainViewport.MaxDepth = 1.0f;
+
+	// Screeen Rect	
+	m_mainScissorRect.left = m_mainScissorRect.top = 0;
+	m_mainScissorRect.right = DXWindow::Get().GetWidth();
+	m_mainScissorRect.bottom = DXWindow::Get().GetHeigth();
 }
 
 void DXWindow::Update()
@@ -167,6 +202,7 @@ void DXWindow::Resize()
 
 	D3EZ_CHECK_HR_D(m_swapChain->ResizeBuffers((UINT)GetFrameCount(), m_width, m_height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING), "m_swapChain->ResizeBuffers() FAILED");
 	m_ZBuffer->Resize(m_width, m_height);
+	SetViewPort();
 
 	m_shouldResize = false;	
 	GetBuffers();
@@ -269,11 +305,13 @@ void DXWindow::BeginFrame(ID3D12GraphicsCommandList*& cmdList)
 
 	cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, &dsvHandle);
 
-	cmdList->ClearRenderTargetView(m_rtvHandles[m_currentBufferIndex], m_backGroundColor, 0, nullptr);
-	
+	cmdList->ClearRenderTargetView(m_rtvHandles[m_currentBufferIndex], m_backGroundColor, 0, nullptr);	
 
 	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
+	cmdList->RSSetViewports(1, &m_mainViewport);
+
+	cmdList->RSSetScissorRects(1, &m_mainScissorRect);
 }
 
 void DXWindow::EndFrame(ID3D12GraphicsCommandList*& cmdList)
