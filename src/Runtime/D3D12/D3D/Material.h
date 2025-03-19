@@ -5,21 +5,18 @@
 
 struct MaterialData
 {
-	uint32_t diffuseID;
-	uint32_t normalID;
-	uint32_t ormID;
-	uint32_t emissiveID;
-
 	glm::vec3 baseColor;
-	float padding1;
+	uint32_t diffuseID;
 
 	glm::vec3 emissiveColor;
-	float padding2;
+	uint32_t normalID;
+
+	uint32_t ormID;
+	uint32_t emissiveID;
 
 	float opacity;
 	float roughness;
 	float metalness;
-	float padding3;
 };
 
 class Material

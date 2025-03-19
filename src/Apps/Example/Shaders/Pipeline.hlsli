@@ -7,21 +7,18 @@ struct Matrices
 
 struct MaterialData
 {
+    float3 baseColor;
     uint diffuseID;
+    
+    float3 emissiveColor;
     uint normalID;
+    
     uint ormID;
     uint emissiveID;
     
-    float3 baseColor;
-    float padding1;
-    
-    float3 emissiveColor;
-    float padding2;
-    
     float opacity;
     float roughness;
-    float metalness;
-    float padding3;    
+    float metalness; 
 };
 
 struct Light

@@ -4,21 +4,17 @@ void Material::SendShaderRootParams(ID3D12GraphicsCommandList* cmdList, UINT buf
 {
 	MaterialData materialData
 	{
-		m_diffuseTextureID,
-		m_normalTextureID,
-		m_ormTextureID,
-		m_emissiveTextureID,
-
 		m_baseColor,
-		0.0f,
+		m_diffuseTextureID,
 
 		m_emissiveColor,
-		0.0f,
+		m_normalTextureID,
 
+		m_ormTextureID,
+		m_emissiveTextureID,
 		m_opacity,
 		m_roughnessFactor,
-		m_metallicFactor,		
-		0.0f
+		m_metallicFactor,
 	};
 
 	cmdList->SetGraphicsRoot32BitConstants(bufferSlot, 16, &materialData, 0);
@@ -30,21 +26,17 @@ MaterialData& Material::GetData()
 	{
 		MaterialData materialData
 		{
-			m_diffuseTextureID,
-			m_normalTextureID,
-			m_ormTextureID,
-			m_emissiveTextureID,
-
 			m_baseColor,
-			0.0f,
+			m_diffuseTextureID,
 
 			m_emissiveColor,
-			0.0f,
+			m_normalTextureID,
 
+			m_ormTextureID,
+			m_emissiveTextureID,
 			m_opacity,
 			m_roughnessFactor,
 			m_metallicFactor,
-			0.0f
 		};
 
 		m_data = materialData;
