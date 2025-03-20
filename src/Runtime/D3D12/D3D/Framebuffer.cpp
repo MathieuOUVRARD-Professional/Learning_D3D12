@@ -64,14 +64,14 @@ void FrameBuffer::RenderTargetBuffer(D3D12_HEAP_PROPERTIES* defaultHeapPropertie
 	DXContext::Get().GetDevice()->CreateRenderTargetView(m_RTV, nullptr, rtvHandle);
 }
 
-void FrameBuffer::DepthBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12DescriptorHeap* descriptorHeap, uint32_t heapIndex)
+void FrameBuffer::DepthBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, DescriptorHeapAllocator* srvHeapAllocator)
 {
 	std::string name = m_name + "_DSV";
 
-	m_ZBuffer = ZBuffer(defaultHeapProperties, m_name, m_width, m_height, descriptorHeap, heapIndex);
+	m_ZBuffer = ZBuffer(defaultHeapProperties, name, m_width, m_height, srvHeapAllocator);
 
 	m_DSVHeap = m_ZBuffer.GetDescriptorHeap();
-	m_DSVHeapIndex = heapIndex;
+	m_DSVHeapIndex = m_ZBuffer.m_heapIndex;
 }
 
 void FrameBuffer::CreateRenderTargetSRV(ID3D12DescriptorHeap* descriptorHeap, uint32_t heapIndex)
@@ -118,10 +118,12 @@ void FrameBuffer::CreateRenderTargetSRV(ID3D12DescriptorHeap* descriptorHeap, ui
 	DXContext::Get().GetDevice()->CreateShaderResourceView(m_ZBuffer.GetTexture(), &rT_SRVDesc, rT_SRVHandle);
 }
 
-void FrameBuffer::CreateDepthBufferSRV(ID3D12DescriptorHeap* descriptorHeap, uint32_t heapIndex)
+void FrameBuffer::CreateDepthBufferSRV(DescriptorHeapAllocator* heapAllocator)
 {
 	// DEPTH SRV DESCRIPTOR HEAP
-	if (m_D_SRVHeap  == nullptr && descriptorHeap == nullptr)
+	CD3DX12_CPU_DESCRIPTOR_HANDLE depth_SRVHandle;
+
+	if (heapAllocator == nullptr)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescD_SRV{};
 		descriptorHeapDescD_SRV.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -129,26 +131,27 @@ void FrameBuffer::CreateDepthBufferSRV(ID3D12DescriptorHeap* descriptorHeap, uin
 		descriptorHeapDescD_SRV.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		descriptorHeapDescD_SRV.NodeMask = 0;
 
-		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescD_SRV, IID_PPV_ARGS(&m_D_SRVHeap));
+		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescD_SRV, IID_PPV_ARGS(&m_SRVHeap));
 
 		std::string tempName = m_name + "_Depth_SRV";
 
-		m_D_SRVHeap.Get()->SetName(std::wstring(tempName.begin(), tempName.end()).c_str());
+		m_SRVHeap.Get()->SetName(std::wstring(tempName.begin(), tempName.end()).c_str());
+
+		depth_SRVHandle = m_SRVHeap->GetCPUDescriptorHandleForHeapStart();
 	}
+	else if(m_SRVHeap == nullptr)
+	{
+		m_SRVHeap = heapAllocator->GetHeap();
+
+		m_SRVHeapIndex = heapAllocator->Allocate();
+		depth_SRVHandle = heapAllocator->GetCPUHandle(m_SRVHeapIndex);
+	}	
 	else
 	{
-		m_D_SRVHeap = descriptorHeap;
-		m_D_SRVHeapIndex = heapIndex;
+		depth_SRVHandle = heapAllocator->GetCPUHandle(m_SRVHeapIndex);
 	}
 	
-	CD3DX12_CPU_DESCRIPTOR_HANDLE depth_SRVHandle;
-	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	depth_SRVHandle = m_D_SRVHeap->GetCPUDescriptorHandleForHeapStart();
-
-	if (m_D_SRVHeapIndex > 0)
-	{
-		depth_SRVHandle.Offset(m_D_SRVHeapIndex, descriptorSize);
-	}
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);	
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC dsrvDesc = {};
 	dsrvDesc.Format = DXGI_FORMAT_R32_FLOAT;  // Use R32 because it's a depth-only texture

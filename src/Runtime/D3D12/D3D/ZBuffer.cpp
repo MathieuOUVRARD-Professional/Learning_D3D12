@@ -7,7 +7,7 @@ ZBuffer::ZBuffer()
 	m_dsvHeap = nullptr;
 }
 
-ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, std::string name, uint32_t width, uint32_t height, ID3D12DescriptorHeap* descriptorHeap , uint32_t heapIndex)
+ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, std::string name, uint32_t width, uint32_t height, DescriptorHeapAllocator* srvHeapAllocator)
 {
 	m_defaultHeapProperties = defaultHeapProperties;
 	m_name = name;
@@ -36,7 +36,10 @@ ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, std::string name,
 	// Create Ressource
 	DXContext::Get().GetDevice()->CreateCommittedResource(defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &rdd, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValueDs, IID_PPV_ARGS(&m_depth));
 	m_depth->SetName(std::wstring(m_name.begin(), m_name.end()).c_str());
-	if (m_dsvHeap == nullptr && descriptorHeap == nullptr)
+
+	// Heap
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
+	if (srvHeapAllocator == nullptr)
 	{
 		// Descriptor Heap
 		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescDepth{};
@@ -47,21 +50,18 @@ ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, std::string name,
 
 		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescDepth, IID_PPV_ARGS(&m_dsvHeap));		
 		m_dsvHeap->SetName(std::wstring(m_name.begin(), m_name.end()).c_str());
+
+		dsvHandle = m_dsvHeap->GetCPUDescriptorHandleForHeapStart();
 	}
 	else
 	{
-		m_dsvHeap = descriptorHeap;
+		m_dsvHeap = srvHeapAllocator->GetHeap();
+
+		m_heapIndex = srvHeapAllocator->Allocate();
+		dsvHandle = srvHeapAllocator->GetCPUHandle(m_heapIndex);
 	}
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
 	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	dsvHandle = m_dsvHeap->GetCPUDescriptorHandleForHeapStart();
-
-	if (heapIndex > 0)
-	{
-		dsvHandle.Offset(heapIndex, descriptorSize);
-	}
 
 	// === DSV === //
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};

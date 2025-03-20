@@ -13,6 +13,8 @@ DescriptorHeapAllocator::DescriptorHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE type
     HRESULT hr = DXContext::Get().GetDevice()->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_DescriptorHeap));
     D3EZ::HRException("DescriptorHeapAllocator Constructor", 13, hr);
 
+    m_DescriptorHeap.Get()->SetName(L"Bindless_SRV");
+
     // Get descriptor size
     m_DescriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(type);
 

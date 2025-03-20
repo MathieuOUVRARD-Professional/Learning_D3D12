@@ -444,7 +444,6 @@ int main()
 		// Shadow pass
 		FrameBuffer shadowMap = FrameBuffer(2048, 2048, "ShadowMap");
 		shadowMap.DepthBuffer(&defaultHeapProperties);
-		shadowMap.CreateDepthBufferSRV();
 
 		// Object list
 		mainObjList.CreateBufferViews(vertexBuffer, indexBuffer);
@@ -567,10 +566,11 @@ int main()
 			cmdList->SetGraphicsRootSignature(shadowPassSignature);			
 			mainObjList.ShadowPassDraw(cmdList, cubeLight);
 
+			shadowMap.CreateDepthBufferSRV(&bindlessHeapAllocator);
+
 			ImGui::Begin("Shadow Map Debug");
 			ImGui::Text("Depth Buffer (Shadow Map):");
 			ImageFromResource(shadowMap.m_ZBuffer.GetTexture(), g_pd3dSrvDescHeapAlloc);
-			//ImGui::Image((ImTextureID)imgui_gpu_handle.ptr, ImVec2(512, 512));
 			ImGui::End();
 
 			DXWindow::Get().BindMainRenderTarget(cmdList);

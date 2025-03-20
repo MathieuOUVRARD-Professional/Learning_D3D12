@@ -5,6 +5,7 @@
 #include <Support/WinInclude.h>
 #include <Support/ComPointer.h>
 
+#include <D3D/DescriptorHeapAllocator.h>
 #include <D3D/DXContext.h>
 
 #include <string>
@@ -13,9 +14,10 @@ class ZBuffer
 {
 	public:
 		std::string m_name ="";
+		UINT m_heapIndex = 0;
 
 		ZBuffer();
-		ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, std::string name, uint32_t width, uint32_t height, ID3D12DescriptorHeap* bindlessSRVHeap = nullptr, uint32_t bindlessSRVIndex = 0);
+		ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, std::string name, uint32_t width, uint32_t height, DescriptorHeapAllocator* = nullptr);
 		inline void Resize(uint32_t width, uint32_t height)
 		{
 			*this = ZBuffer::ZBuffer(m_defaultHeapProperties, m_name, width, height);
