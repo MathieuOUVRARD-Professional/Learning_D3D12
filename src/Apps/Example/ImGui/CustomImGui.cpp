@@ -1,5 +1,7 @@
 #include <ImGui/CustomImGui.h>
 
+
+
 void ImGuiPerfOverlay(bool open)
 {
     static int location = 0;
@@ -291,16 +293,35 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
     ImGui::End();
 }
 
-void ImageFromResource(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE* imGuiCPUHandle, D3D12_GPU_DESCRIPTOR_HANDLE* imGuiGPUHandle, ImVec2 size)
+void ImageFromResource(ID3D12Resource* resource, ExampleDescriptorHeapAllocator& heapAllocator, ImVec2 size)
 {
-    D3D12_SHADER_RESOURCE_VIEW_DESC rvd = {};
 
-    rvd.Format = resource->GetDesc().Format == DXGI_FORMAT_D32_FLOAT ? DXGI_FORMAT_R32_FLOAT : resource->GetDesc().Format;
-    rvd.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-    rvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    rvd.Texture2D.MipLevels = 1;
+    D3D12_CPU_DESCRIPTOR_HANDLE imgui_cpu_handle;
+    D3D12_GPU_DESCRIPTOR_HANDLE imgui_gpu_handle;
 
-    DXContext::Get().GetDevice()->CreateShaderResourceView(resource, &rvd, *imGuiCPUHandle);
+    std::map<ID3D12Resource*, UINT64>::iterator it;
+    it = imguiTexturesHandleMap.find(resource);
+
+    if (it == imguiTexturesHandleMap.end())
+    {
+        heapAllocator.Alloc(&imgui_cpu_handle, &imgui_gpu_handle); // Allocate a descriptor
+
+        imguiTexturesHandleMap.emplace(resource, imgui_gpu_handle.ptr);
+
+        D3D12_SHADER_RESOURCE_VIEW_DESC rvd = {};
+
+        rvd.Format = resource->GetDesc().Format == DXGI_FORMAT_D32_FLOAT ? DXGI_FORMAT_R32_FLOAT : resource->GetDesc().Format;
+        rvd.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        rvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        rvd.Texture2D.MipLevels = 1;
+
+        DXContext::Get().GetDevice()->CreateShaderResourceView(resource, &rvd, imgui_cpu_handle);
+
+    }
+    else
+    {
+        imgui_gpu_handle.ptr = it->second;
+    }  
 
     if (size.x == 0.0f && size.y == 0.0f)
     {
@@ -308,6 +329,6 @@ void ImageFromResource(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE* im
         size.y = ImGui::GetWindowWidth() - 15.0f;
     }
 
-    ImGui::Image((ImTextureID)imGuiGPUHandle->ptr, size);
+    ImGui::Image((ImTextureID)imgui_gpu_handle.ptr, size);
 }
 
