@@ -11,7 +11,10 @@ DescriptorHeapAllocator::DescriptorHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE type
 
     // Create descriptor heap
     HRESULT hr = DXContext::Get().GetDevice()->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_DescriptorHeap));
-    D3EZ::HRException("DescriptorHeapAllocator Constructor", 13, hr);
+    if (FAILED(hr))
+    {
+        D3EZ::HRException("DescriptorHeapAllocator Constructor", 13, hr);
+    }
 
     m_DescriptorHeap.Get()->SetName(L"Bindless_SRV");
 

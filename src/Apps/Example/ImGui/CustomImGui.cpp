@@ -106,9 +106,13 @@ static bool rotate = false;
 static bool scale = false;
 static bool rotating = false;
 static bool cursorWarping = false;
-static ImVec2 lastMousePos = ImVec2(0.0f, 0.0f);
+static bool counterWrap = false;
+static POINT lastMousePos = POINT(0.0f, 0.0f);
+static float lastPosition[3] = { 0.0f, 0.0f, 0.0f };
 static float lastRotation[3] = { 0.0f, 0.0f, 0.0f };
+static float lastScale[3] = { 0.0f, 0.0f, 0.0f };
 static float activeAxis = -1;
+static float warpOffsetX = 0;;
 
 void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
 {
@@ -157,17 +161,74 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
     ImGui::PushItemWidth(ImGui::GetWindowWidth() - 15.0f);
     if (ImGui::DragFloat3("##Position", modelPosition, 0.01f))
     {
+        // Detect which axis is being modified by comparing old and new values
+        if (modelPosition[0] != lastPosition[0])
+        {
+            activeAxis = 0;
+        }
+        else if (modelPosition[1] != lastPosition[1])
+        {
+            activeAxis = 1;
+        }
+        else if (modelPosition[2] != lastPosition[2])
+        {
+            activeAxis = 2;
+        }
+
+        POINT pt = POINT();
+        GetCursorPos(&pt);
+        if (counterWrap)
+        {
+            // Compute the movement offset caused by warping and subtract it only on the active axis
+            for (int i = 0; i < 3; i++)
+            {
+                if (activeAxis == i)
+                {
+                    modelPosition[i] -= warpOffsetX * 0.01f; // Counteract the warp movement
+                }
+            }
+            counterWrap = false;
+        }
+
+        if (cursorWarping)
+        {
+            cursorWarping = false; // Reset warp flag
+            counterWrap = true;
+            warpOffsetX = pt.x - lastMousePos.x;
+        }
+        else
+        {
+            if (pt.x <= 1.0f)
+            {
+                cursorWarping = true;
+                SetCursorPos(DXWindow::Get().GetWidth() - 1, (int)pt.y);
+            }
+            else if (pt.x >= DXWindow::Get().GetWidth() - 1.0f)
+            {
+                cursorWarping = true;
+                SetCursorPos(1, (int)pt.y);
+            }
+        }
+
+        lastMousePos = pt;
+        for (int i = 0; i < 3; i++)
+        {
+            lastPosition[i] = modelPosition[i];
+        }
+
         transform.m_position = glm::vec3(modelPosition[0], modelPosition[1], modelPosition[2]);
 
         model = glm::translate(glm::mat4(1.0f), transform.m_position);
         model *= transform.m_rotationMat;
         model = glm::scale(model, transform.m_scale);
     }
+
     if (rotating)
     {
         transform.m_rotationEuler = glm::degrees(glm::eulerAngles(glm::quat_cast(glm::mat3(model))));
         rotating = false;
     }
+
     // Rotation sliders
     float modelRotation[] = { transform.m_rotationEuler.x, transform.m_rotationEuler.y, transform.m_rotationEuler.z };
     ImGui::Text("Rotation: ");
@@ -188,37 +249,42 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
             activeAxis = 2;
         }        
 
-        ImGuiIO& io = ImGui::GetIO();
-        ImVec2 mousePos = io.MousePos;
-        if (!cursorWarping)
+        POINT pt = POINT();
+        GetCursorPos(&pt);
+        if (counterWrap)
         {
-            if (mousePos.x <= 0)
-            {
-                cursorWarping = true;
-                SetCursorPos(DXWindow::Get().GetWidth() - 2, (int)mousePos.y);
-            }
-            else if (mousePos.x >= DXWindow::Get().GetWidth() - 1.0f)
-            {
-                cursorWarping = true;
-                SetCursorPos(1, (int)mousePos.y);
-            }
-        }
-        else
-        {
-            // Compute the movement offset caused by warping and subtract it **only on the active axis**
-            float warpOffsetX = mousePos.x - lastMousePos.x;
+            // Compute the movement offset caused by warping and subtract it only on the active axis
             for (int i = 0; i < 3; i++)
             {
                 if (activeAxis == i)
                 {
                     modelRotation[i] -= warpOffsetX * 0.5f; // Counteract the warp movement
-                }            
+                }
             }
-            
-            cursorWarping = false; // Reset warp flag
+            counterWrap = false;
         }
 
-        lastMousePos = io.MousePos;
+        if (cursorWarping)
+        {
+            cursorWarping = false; // Reset warp flag
+            counterWrap = true;
+            warpOffsetX = pt.x - lastMousePos.x;
+        }
+        else
+        {
+            if (pt.x <= 1.0f)
+            {
+                cursorWarping = true;
+                SetCursorPos(DXWindow::Get().GetWidth() - 1, (int)pt.y);
+            }
+            else if (pt.x >= DXWindow::Get().GetWidth() - 1.0f)
+            {
+                cursorWarping = true;
+                SetCursorPos(1, (int)pt.y);
+            }
+        }
+
+        lastMousePos = pt;
         for (int i = 0; i < 3; i++)
         {
             lastRotation[i] = modelRotation[i];
@@ -253,6 +319,61 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
     ImGui::PushItemWidth(ImGui::GetWindowWidth() - 15.0f);
     if (ImGui::DragFloat3("##Scale", modelScale, 0.01f))
     {
+        // Detect which axis is being modified by comparing old and new values
+        if (modelScale[0] != lastScale[0])
+        {
+            activeAxis = 0;
+        }
+        else if (modelScale[1] != lastScale[1])
+        {
+            activeAxis = 1;
+        }
+        else if (modelScale[2] != lastScale[2])
+        {
+            activeAxis = 2;
+        }
+
+        POINT pt = POINT();
+        GetCursorPos(&pt);
+        if (counterWrap)
+        {           
+            // Compute the movement offset caused by warping and subtract it only on the active axis
+            for (int i = 0; i < 3; i++)
+            {
+                if (activeAxis == i)
+                {
+                    modelScale[i] -= warpOffsetX * 0.01f; // Counteract the warp movement
+                }
+            }
+            counterWrap = false;
+        }
+
+        if (cursorWarping)
+        {
+            cursorWarping = false; // Reset warp flag
+            counterWrap = true;
+            warpOffsetX = pt.x - lastMousePos.x;
+        }
+        else
+        {
+            if (pt.x <= 1.0f)
+            {
+                cursorWarping = true;
+                SetCursorPos(DXWindow::Get().GetWidth() - 1, (int)pt.y);
+            }
+            else if (pt.x >= DXWindow::Get().GetWidth() - 1.0f)
+            {
+                cursorWarping = true;
+                SetCursorPos(1, (int)pt.y);
+            }
+        }
+
+        lastMousePos = pt;
+        for (int i = 0; i < 3; i++)
+        {
+            lastScale[i] = modelScale[i];
+        }
+
         transform.m_scale = glm::vec3(modelScale[0], modelScale[1], modelScale[2]);
 
         model = glm::translate(glm::mat4(1.0f), transform.m_position);
