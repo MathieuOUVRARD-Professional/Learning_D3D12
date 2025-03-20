@@ -3,10 +3,8 @@
 ## TODO
 
 - Copy texutre by rows and properly handle padding for textures rowPitch < 256
-- Light casters
 - Multiple lights handling
-- Frame buffer
-- Shadow Mapping
+- Shadow Mapping for spot and point
 - Frustum culling
 - Multithreading for loading scene and copying to upload buffer
 - Loading screen
@@ -52,3 +50,13 @@
 - Add tangents and bitangents to vertex
 - Create PBR pipeline
 - Draw textured Sponza using PBR
+- Depth buffer resizing
+- Gamma correction
+- Add Transform Guizmo
+- Transform UI with cursor wrapping
+- Frambuffer
+- Light casters
+- Use CBV to transfer Material Data
+- Shadow Mapping for direct light
+- Properly display image with Imgui
+- Heap Allocator for bindless

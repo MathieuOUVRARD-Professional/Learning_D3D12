@@ -44,41 +44,41 @@ void Camera::Inputs()
 {
 	if (m_controlable)
 	{
-		if (GetAsyncKeyState(0x5A)) // Z
-		{
-			m_position += m_speed * m_orientation;
-		}
-		if (GetAsyncKeyState(0x51)) // Q
-		{
-			m_position += m_speed * -glm::normalize(glm::cross(m_orientation, m_up));
-		}
-		if (GetAsyncKeyState(0x53)) // S
-		{
-			m_position += m_speed * -m_orientation;
-		}
-		if (GetAsyncKeyState(0x44)) // D
-		{
-			m_position += m_speed * glm::normalize(glm::cross(m_orientation, m_up));
-		}
-		if (GetAsyncKeyState(VK_SPACE)) // SPACE
-		{
-			m_position += m_speed * m_up;
-		}
-		if (GetAsyncKeyState(VK_LCONTROL)) // LSHIFT
-		{
-			m_position += m_speed * -m_up;
-		}
-		if (GetAsyncKeyState(VK_LSHIFT)) // LSHIFT
-		{
-			m_speed = m_defaultSpeed * 2.5f;
-		}
-		else // !LSHIFT
-		{
-			m_speed = m_defaultSpeed;
-		}
-
 		if (GetAsyncKeyState(VK_RBUTTON)) // RCLICK
 		{
+			if (GetAsyncKeyState(0x5A)) // Z
+			{
+				m_position += m_speed * m_orientation;
+			}
+			if (GetAsyncKeyState(0x51)) // Q
+			{
+				m_position += m_speed * -glm::normalize(glm::cross(m_orientation, m_up));
+			}
+			if (GetAsyncKeyState(0x53)) // S
+			{
+				m_position += m_speed * -m_orientation;
+			}
+			if (GetAsyncKeyState(0x44)) // D
+			{
+				m_position += m_speed * glm::normalize(glm::cross(m_orientation, m_up));
+			}
+			if (GetAsyncKeyState(VK_SPACE)) // SPACE
+			{
+				m_position += m_speed * m_up;
+			}
+			if (GetAsyncKeyState(VK_LCONTROL)) // LSHIFT
+			{
+				m_position += m_speed * -m_up;
+			}
+			if (GetAsyncKeyState(VK_LSHIFT)) // LSHIFT
+			{
+				m_speed = m_defaultSpeed * 2.5f;
+			}
+			else // !LSHIFT
+			{
+				m_speed = m_defaultSpeed;
+			}
+
 			BOOL ret = ShowCursor(false);
 			while (ret > 0)
 			{
