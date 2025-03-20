@@ -229,7 +229,7 @@ void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HE
 	// Bindless Textures Descriptor Heap
 	D3D12_DESCRIPTOR_HEAP_DESC bindlessHeapDesc{};
 	bindlessHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	bindlessHeapDesc.NumDescriptors = TextureCount();
+	bindlessHeapDesc.NumDescriptors = 1024;
 	bindlessHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	bindlessHeapDesc.NodeMask = 0;
 

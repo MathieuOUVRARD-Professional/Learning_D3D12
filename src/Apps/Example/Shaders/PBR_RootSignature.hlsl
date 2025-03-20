@@ -23,6 +23,6 @@
 "RootConstants(num32BitConstants = 16, b2),"\
 "CBV(b3),"\
 "DescriptorTable(" \
-    "SRV(t0, numDescriptors = 75, flags=DATA_VOLATILE)"\
+    "SRV(t0, numDescriptors = 1024, flags=DATA_VOLATILE | DESCRIPTORS_VOLATILE)"\
 "),"\
 "StaticSampler(s0)"
