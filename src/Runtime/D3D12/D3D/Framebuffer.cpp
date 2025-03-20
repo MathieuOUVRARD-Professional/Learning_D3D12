@@ -192,12 +192,10 @@ void FrameBuffer::BindDSV(ID3D12GraphicsCommandList*& cmdList)
 	dsvHandle.Offset(m_DSVHeapIndex, descriptorSize);
 
 	cmdList->OMSetRenderTargets(0, nullptr, FALSE, &dsvHandle);
-	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr)
+	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	
 
 	//ViewPort
-	
-	
 	m_viewPort.TopLeftX = 0;
 	m_viewPort.TopLeftY = 0;
 	m_viewPort.Width = m_width;
@@ -205,8 +203,7 @@ void FrameBuffer::BindDSV(ID3D12GraphicsCommandList*& cmdList)
 	m_viewPort.MinDepth = 0.0f;
 	m_viewPort.MaxDepth = 1.0f;
 
-	// Screeen Rect	
-	
+	// Screeen Rect		
 	m_rect.left = m_rect.top = 0;
 	m_rect.right = m_width;
 	m_rect.bottom = m_height;

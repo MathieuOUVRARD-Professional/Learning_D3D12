@@ -1,11 +1,12 @@
 #include <D3D/Light.h>
 
-Light Light::Directional(glm::vec3 direction, float intensity, glm::vec3 color)
+Light Light::Directional(glm::vec3 position, float intensity, glm::vec3 color)
 {
 	Light directional = Light();
 
 	directional.m_type = 0;
-	directional.m_direction = direction;
+	directional.m_position = position;
+	directional.m_direction = glm::normalize(-position);
 	directional.m_intensity = intensity;
 	directional.m_color = color;
 
@@ -49,15 +50,15 @@ void Light::ComputeViewProjMatrix(float ortoSize)
 
 	if (m_type == 0)
 	{
-		view = glm::lookAt(m_position, m_position + m_direction, glm::vec3(0.0f, 1.0f, 0.0f));
+		view = glm::lookAt(m_position, glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		projection = glm::ortho
 		(
 			-ortoSize, ortoSize, 
 			-ortoSize, ortoSize, 
-			0.01f, m_radius
+			-m_radius, m_radius
 		);
 
-		m_viewProjMatrix = view * projection;
+		m_viewProjMatrix = projection * view;
 	}
 }
 
@@ -68,7 +69,7 @@ void Light::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
 	data.type = m_type;
 
 	data.position = m_position;
-	data.direction = -m_direction;					//Reversing direction as it's based on position
+	data.direction = m_direction;					//Reversing direction as it's based on position
 
 	data.intensity = m_intensity;
 	data.radius = m_radius;

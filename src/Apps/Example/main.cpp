@@ -586,7 +586,7 @@ int main()
 			glm::vec3 lightColor = ImGuiColorPicker(&colorPickerName, true);
 			ImGuiPerfOverlay(true);			
 
-			Light cubeLight = Light().Directional(glm::normalize(lightTransform.m_position), 1.0f, lightColor);
+			Light cubeLight = Light().Directional(lightTransform.m_position, 1.0f, lightColor);
 			//cubeLight.lightcolor = glm::vec4(color[0], color[1], color[2], 1.0f);
 
 			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
@@ -596,7 +596,7 @@ int main()
 			TransformUI(camera, lightModel, lightTransform);
 			
 			cubeLight.m_position = lightTransform.m_position = glm::vec3(lightModel[3]);			
-			cubeLight.ComputeViewProjMatrix(100.0f);
+			cubeLight.ComputeViewProjMatrix(50.0f);
 					
 			// === SHADOW PASS === //
 			shadowMap.BindDSV(cmdList);
