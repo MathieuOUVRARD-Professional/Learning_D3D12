@@ -291,3 +291,23 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
     ImGui::End();
 }
 
+void ImageFromResource(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE* imGuiCPUHandle, D3D12_GPU_DESCRIPTOR_HANDLE* imGuiGPUHandle, ImVec2 size)
+{
+    D3D12_SHADER_RESOURCE_VIEW_DESC rvd = {};
+
+    rvd.Format = resource->GetDesc().Format == DXGI_FORMAT_D32_FLOAT ? DXGI_FORMAT_R32_FLOAT : resource->GetDesc().Format;
+    rvd.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+    rvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    rvd.Texture2D.MipLevels = 1;
+
+    DXContext::Get().GetDevice()->CreateShaderResourceView(resource, &rvd, *imGuiCPUHandle);
+
+    if (size.x == 0.0f && size.y == 0.0f)
+    {
+        size.x = ImGui::GetWindowWidth() - 15.0f;
+        size.y = ImGui::GetWindowWidth() - 15.0f;
+    }
+
+    ImGui::Image((ImTextureID)imGuiGPUHandle->ptr, size);
+}
+

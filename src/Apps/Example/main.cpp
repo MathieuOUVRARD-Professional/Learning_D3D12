@@ -524,6 +524,7 @@ int main()
 		init_info.CommandQueue = DXContext::Get().GetCommandQueue();
 		init_info.NumFramesInFlight = 1;
 		init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM; // Or your render target format.
+
 		// Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
 		// The example_win32_directx12/main.cpp application include a simple free-list based allocator.
 		D3D12_DESCRIPTOR_HEAP_DESC desc = {};
@@ -546,6 +547,11 @@ int main()
 		bool rotate = false;
 		bool scale = false;
 #endif // IMGUI
+
+
+		D3D12_CPU_DESCRIPTOR_HANDLE imgui_cpu_handle;
+		D3D12_GPU_DESCRIPTOR_HANDLE imgui_gpu_handle;
+		g_pd3dSrvDescHeapAlloc.Alloc(&imgui_cpu_handle, &imgui_gpu_handle); // Allocate a descriptor
 
 		float angle = 0.0f;
 
@@ -604,6 +610,12 @@ int main()
 			cmdList->SetPipelineState(shadowPassPso.Get());
 			cmdList->SetGraphicsRootSignature(shadowPassSignature);			
 			mainObjList.ShadowPassDraw(cmdList, cubeLight);
+
+			ImGui::Begin("Shadow Map Debug");
+			ImGui::Text("Depth Buffer (Shadow Map):");
+			ImageFromResource(shadowMap.m_ZBuffer.GetTexture(), &imgui_cpu_handle, &imgui_gpu_handle);
+			//ImGui::Image((ImTextureID)imgui_gpu_handle.ptr, ImVec2(512, 512));
+			ImGui::End();
 
 			DXWindow::Get().BindMainRenderTarget(cmdList);
 

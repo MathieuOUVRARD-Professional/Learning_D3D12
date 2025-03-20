@@ -155,7 +155,7 @@ void FrameBuffer::CreateDepthBufferSRV(ID3D12DescriptorHeap* descriptorHeap, uin
 	dsrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	dsrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	dsrvDesc.Texture2D.MipLevels = 1;
-		
+
 	DXContext::Get().GetDevice()->CreateShaderResourceView(m_ZBuffer.GetTexture(), &dsrvDesc, depth_SRVHandle);
 }
 

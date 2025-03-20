@@ -19,3 +19,4 @@ void TranslateGuizmo(Camera& camera, glm::mat4& model);
 void RotateGuizmo(Camera& camera, glm::mat4& model);
 void ScaleGuizmo(Camera& camera, glm::mat4& model);
 void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform);
+void ImageFromResource(ID3D12Resource* resource, D3D12_CPU_DESCRIPTOR_HANDLE* imGuiCPUHandle, D3D12_GPU_DESCRIPTOR_HANDLE* imGuiGPUHandle, ImVec2 size = ImVec2(0.0f, 0.0f));

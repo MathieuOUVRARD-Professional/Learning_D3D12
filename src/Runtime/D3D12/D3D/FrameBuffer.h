@@ -24,6 +24,14 @@ class FrameBuffer
 		void Bind(ID3D12GraphicsCommandList*& cmdList);
 		void Clear(ID3D12GraphicsCommandList*& cmdList);
 
+		ZBuffer m_ZBuffer;
+
+		// Heaps
+		ComPointer<ID3D12DescriptorHeap> m_RT_SRVHeap = nullptr;
+		uint32_t m_RT_SRVHeapIndex = 0;
+		ComPointer<ID3D12DescriptorHeap> m_D_SRVHeap = nullptr;
+		uint32_t m_D_SRVHeapIndex = 0;
+
 	private:
 		uint32_t m_width = 0;
 		uint32_t m_height = 0;
@@ -34,15 +42,8 @@ class FrameBuffer
 		ComPointer<ID3D12DescriptorHeap> m_DSVHeap = nullptr;
 		uint32_t m_DSVHeapIndex = 0;
 
-		// SRV Heaps
-		ComPointer<ID3D12DescriptorHeap> m_RT_SRVHeap = nullptr;
-		uint32_t m_RT_SRVHeapIndex = 0;
-		ComPointer<ID3D12DescriptorHeap> m_D_SRVHeap = nullptr;
-		uint32_t m_D_SRVHeapIndex = 0;
-
 		ComPointer<ID3D12Resource> m_RTV = nullptr;
 
-		ZBuffer m_ZBuffer;
 
 		D3D12_VIEWPORT m_viewPort;
 		RECT m_rect;
