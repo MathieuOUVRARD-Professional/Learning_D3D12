@@ -1,8 +1,9 @@
 #pragma once
 
-#include <D3D/SceneObject.h>
-#include <D3D/Material.h>
+#include <D3D/DescriptorHeapAllocator.h>
 #include <D3D/Light.h>
+#include <D3D/Material.h>
+#include <D3D/SceneObject.h>
 
 #include <d3d12.h>
 
@@ -23,6 +24,10 @@ class ObjectList
 		UINT64 TotalMatDataSize();
 		UINT64 TotalSize();
 		uint32_t TextureCount();
+		inline void SetHeapAllocator(DescriptorHeapAllocator& allocator)
+		{
+			m_bindlessHeapAllocator = &allocator;
+		}
 		void CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destBufferOffset = 0, UINT64 destOffsetVertex = 0, UINT64 destOffsetIndex = 0);
 		void CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource* indexBuffer);
 		void BindDescriptorHeaps(ID3D12GraphicsCommandList* cmdList, uint32_t rootParameterIndex);
@@ -56,7 +61,7 @@ class ObjectList
 		std::list<SceneObject> m_list;
 		std::vector<Material> m_materials;
 
-		ComPointer<ID3D12DescriptorHeap> m_srvHeap;
+		DescriptorHeapAllocator* m_bindlessHeapAllocator = nullptr;
 		ComPointer<ID3D12DescriptorHeap> m_cbvHeap;
 
 		void CopyTextures(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destBufferOffset = 0);

@@ -28,7 +28,7 @@ Texture::Texture()
 {
 }
 
-void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12DescriptorHeap* bindlessDescriptorHeap, uint32_t bindlessHeapIndex)
+void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, DescriptorHeapAllocator* srvHeapAllocator)
 {
 	// Create D3D12 resource for each texture
 	for (unsigned int i = 0; i < m_count; i++)
@@ -54,7 +54,10 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Descripto
 	}	
 
 	// === SRV === //
-	if (m_srvHeap == nullptr && bindlessDescriptorHeap == nullptr)
+	CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle;
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	if (srvHeapAllocator == nullptr)
 	{
 		//Textures Descriptor Heap
 		D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDescText{};
@@ -64,27 +67,27 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Descripto
 		descriptorHeapDescText.NodeMask = 0;
 
 		DXContext::Get().GetDevice()->CreateDescriptorHeap(&descriptorHeapDescText, IID_PPV_ARGS(&m_srvHeap));
+
+		srvHandle = m_srvHeap->GetCPUDescriptorHandleForHeapStart();
+
 		std::string temp = m_names[0] + " DescriptorHeap";
 		std::wstring wideHeapName = std::wstring(temp.begin(), temp.end());
 
-		m_srvHeap.Get()->SetName(wideHeapName.c_str());
+		m_srvHeap.Get()->SetName(wideHeapName.c_str());		
 	}
 	else
 	{
-		m_srvHeap = bindlessDescriptorHeap;
+		m_srvHeap = srvHeapAllocator->GetHeap();
 	}	
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE srvHandle;
-	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	srvHandle = m_srvHeap->GetCPUDescriptorHandleForHeapStart();
-	if (bindlessHeapIndex >  0)
-	{
-		srvHandle.Offset(bindlessHeapIndex, descriptorSize);
-	}
 
 	for (unsigned int i = 0; i < m_count; i++)
 	{
+		if (srvHeapAllocator != nullptr)
+		{
+			UINT heapIndex = srvHeapAllocator->Allocate();
+			srvHandle = srvHeapAllocator->GetCPUHandle(heapIndex);
+		}
+
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
 		srvDesc.Format = m_textureDatas[i].giPixelFormat;
 		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
@@ -95,7 +98,10 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Descripto
 		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
 		DXContext::Get().GetDevice()->CreateShaderResourceView(m_textures[i], &srvDesc, srvHandle);
-		srvHandle.Offset(1, descriptorSize);		
+		if (srvHeapAllocator == nullptr)
+		{
+			srvHandle.Offset(1, descriptorSize);
+		}		
 	}
 	// =========================== //
 }

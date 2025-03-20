@@ -61,8 +61,11 @@ uint32_t ObjectList::TextureCount()
 
 void ObjectList::BindDescriptorHeaps(ID3D12GraphicsCommandList* cmdList, uint32_t rootParameterIndex)
 {
-	cmdList->SetDescriptorHeaps(1, &m_srvHeap);
-	cmdList->SetGraphicsRootDescriptorTable(rootParameterIndex, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+	ID3D12DescriptorHeap* myHeap = m_bindlessHeapAllocator->GetHeap();
+	ID3D12DescriptorHeap* const* heapPtr = &myHeap;
+
+	cmdList->SetDescriptorHeaps(1, heapPtr);
+	cmdList->SetGraphicsRootDescriptorTable(rootParameterIndex, m_bindlessHeapAllocator->GetGPUHandle(0));
 }
 
 void ObjectList::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Light& light)
@@ -83,10 +86,9 @@ void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
 
 void ObjectList::CopyTextures(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destBufferOffset)
 {
-	uint32_t srvIndex = 0;
 	for (Material& material : m_materials)
 	{
-		material.GetTextures().Init(defaultHeapProperties, m_srvHeap, srvIndex);
+		material.GetTextures().Init(defaultHeapProperties, m_bindlessHeapAllocator);
 
 		if (destBufferOffset + material.TextureSize() > uploadBuffer->GetDesc().Width)
 		{
@@ -96,7 +98,6 @@ void ObjectList::CopyTextures(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PRO
 			destBufferOffset = 0;
 		}
 		material.GetTextures().CopyToUploadBuffer(uploadBuffer, destBufferOffset, cmdList);
-		srvIndex += material.GetTextures().m_count;
 		destBufferOffset += material.TextureSize();
 	}
 
@@ -226,16 +227,10 @@ void ObjectList::CopyMaterialData()
 
 void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destOffsetTexture, UINT64 destOffsetVertex, UINT64 destOffsetIndex)
 {
-	// Bindless Textures Descriptor Heap
-	D3D12_DESCRIPTOR_HEAP_DESC bindlessHeapDesc{};
-	bindlessHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	bindlessHeapDesc.NumDescriptors = 1024;
-	bindlessHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	bindlessHeapDesc.NodeMask = 0;
-
-	DXContext::Get().GetDevice()->CreateDescriptorHeap(&bindlessHeapDesc, IID_PPV_ARGS(&m_srvHeap));
-	std::string srvHeapName = m_name + "_SRV";
-	m_srvHeap.Get()->SetName(std::wstring(srvHeapName.begin(), srvHeapName.end()).c_str());
+	if (m_bindlessHeapAllocator == nullptr)
+	{
+		D3EZ::EzException("ObjectList::CopyToUploadBuffer", 231, "No SRV Heap allocator !");
+	}
 
 	// Bindless MaterialData Descriptor Heap
 	D3D12_DESCRIPTOR_HEAP_DESC bindlessMaterialDataHeapDesc = {};

@@ -8,6 +8,7 @@
 
 #include <Util/EzException.h>
 
+#include <D3D/DescriptorHeapAllocator.h>
 #include <D3D/DXContext.h>
 
 #include <string>
@@ -15,7 +16,7 @@
 class Texture
 {
 	public:
-		void Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12DescriptorHeap* bindlessSRVHeap = nullptr, uint32_t bindlessSRVIndex = 0);
+		void Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, DescriptorHeapAllocator* srvHeapAllocator = nullptr);
 		UINT64 CopyToUploadBuffer(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffset, ID3D12GraphicsCommandList* cmdList);
 		void AddCommands(ID3D12GraphicsCommandList*& cmdList, uint32_t rootParameterIndex);
 

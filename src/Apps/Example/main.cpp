@@ -1,5 +1,17 @@
 #include <iostream>
 
+#include <Debug/DebugLayer.h>
+
+#include <D3D/DescriptorHeapAllocator.h>
+#include <D3D/DXContext.h>
+#include <D3D/FrameBuffer.h>
+#include <D3D/Light.h>
+#include <D3D/PipelineState.h>
+#include <D3D/Texture.h>
+#include <D3D/ZBuffer.h>
+
+#include <ImGui/CustomImGui.h>
+
 #include <Support/WinInclude.h>
 #include <Support/ComPointer.h>
 #include <Support/Window.h>
@@ -10,30 +22,19 @@
 #include <Support/ObjectList.h>
 #include <Support/Transform.h>
 
-#include <Debug/DebugLayer.h>
-
-#include <D3D/DXContext.h>
-#include <D3D/FrameBuffer.h>
-#include <D3D/Light.h>
-#include <D3D/PipelineState.h>
-#include <D3D/Texture.h>
-#include <D3D/ZBuffer.h>
-
 #include <Util/LoggingProvider.h>
 #include <Util/EzException.h>
 #include <Util/HRException.h>
 
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 #include <dxcapi.h>
 
 #include <directx/d3dx12.h>
 
-#include <ImGui/CustomImGui.h>
-
 #include "ImGuizmo.h"
 
-#include<glm/gtx/matrix_decompose.hpp>
 
 #define IMGUI
 
@@ -301,6 +302,9 @@ int main()
 		UINT64 offset = 0;
 		eyeTextures.CopyToUploadBuffer(uploadBuffer, offset, cmdList);
 		offset = eyeTextures.GetTotalTextureSize();
+
+		DescriptorHeapAllocator bindlessHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024);
+		mainObjList.SetHeapAllocator(bindlessHeapAllocator);
 
 		// Object list
 		mainObjList.CopyToUploadBuffer
