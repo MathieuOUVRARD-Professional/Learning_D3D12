@@ -19,7 +19,7 @@ class Light
 
         std::string m_name = "";
 
-        uint32_t m_type = 0;                                                        // 0 = Directional, 1 = Point, 2 = Spot
+        int m_type = 0;                                                             // 0 = Directional, 1 = Point, 2 = Spot
 
         glm::vec3 m_position = glm::vec3(0.0f);                                     // World-space position (for point/spot lights)
         glm::vec3 m_direction = glm::normalize(glm::vec3(-0.5f, -1.0f, -0.5f));     // Normalized direction (for directional/spot lights)
@@ -27,7 +27,7 @@ class Light
         float m_intensity = 1.0f;                                                   // Light intensity (common for all types)        
         float m_radius = 100.0f;                                                    // For point/spot lights (max distance)
         float m_innerAngle = 25.0f;                                                 // Spot light cutoff (cosine of inner angle)
-        float m_outerAngle = 30.0f;                                                  // Spot light outer cutoff (cosine of outer angle)
+        float m_outerAngle = 30.0f;                                                 // Spot light outer cutoff (cosine of outer angle)
 
         glm::vec3 m_color = glm::vec3(1.0f);                                        // RGB light color              
 
@@ -37,7 +37,7 @@ class Light
         struct LightData
         {
             glm::vec3 position = glm::vec3(0.0f);
-            uint32_t type = 0;
+            float type;
 
 
             glm::vec3 direction = glm::normalize(glm::vec3(-0.5f, -1.0f, -0.5f));

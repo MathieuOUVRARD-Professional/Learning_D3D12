@@ -59,16 +59,20 @@ void Light::ComputeViewProjMatrix(float ortoSize)
 			-ortoSize, ortoSize, 
 			-m_radius, m_radius
 		);
-
-		m_viewProjMatrix = projection * view;
 	}
+	else if (m_type == 2)
+	{
+		view = glm::lookAt(m_position, m_position + m_direction, glm::vec3(0.0f, 0.0f, 1.0f));
+		projection = glm::perspective(m_outerAngle, 1.0f, 0.1f, m_radius);	
+	}
+	m_viewProjMatrix = projection * view;
 }
 
 void Light::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
 {
 	LightData data;
 
-	data.type = m_type;
+	data.type = (float)m_type;
 
 	data.position = m_position;
 	data.direction = m_direction;					//Reversing direction as it's based on position

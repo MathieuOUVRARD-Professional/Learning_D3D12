@@ -107,7 +107,7 @@ static bool scale = false;
 static bool rotating = false;
 static bool cursorWarping = false;
 static bool counterWrap = false;
-static POINT lastMousePos = POINT(0.0f, 0.0f);
+static POINT lastMousePos = POINT();
 static float lastPosition[3] = { 0.0f, 0.0f, 0.0f };
 static float lastRotation[3] = { 0.0f, 0.0f, 0.0f };
 static float lastScale[3] = { 0.0f, 0.0f, 0.0f };
@@ -194,7 +194,7 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         {
             cursorWarping = false; // Reset warp flag
             counterWrap = true;
-            warpOffsetX = pt.x - lastMousePos.x;
+            warpOffsetX =(float) (pt.x - lastMousePos.x);
         }
         else
         {
@@ -268,7 +268,7 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         {
             cursorWarping = false; // Reset warp flag
             counterWrap = true;
-            warpOffsetX = pt.x - lastMousePos.x;
+            warpOffsetX = (float)(pt.x - lastMousePos.x);
         }
         else
         {
@@ -352,7 +352,7 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         {
             cursorWarping = false; // Reset warp flag
             counterWrap = true;
-            warpOffsetX = pt.x - lastMousePos.x;
+            warpOffsetX = (float)(pt.x - lastMousePos.x);
         }
         else
         {
@@ -498,7 +498,13 @@ void LightInterface(std::vector<Light*>& lights)
                     if (ImGui::Selectable(((std::string)lightTypes[i] + "##" + light->m_name).c_str(), is_selected))
                     {
                         item_selected_idx = i;
+
                         light->m_type = i;
+                        light->m_direction = glm::normalize(-light->m_position);
+                        light->m_radius = i == 0 ? 100.0f : 20.0f;
+                        light->m_intensity = 1.0f;
+                        light->m_innerAngle = 25.0f;
+                        light->m_outerAngle = 30.0f;
                     }
 
                     if (is_selected)

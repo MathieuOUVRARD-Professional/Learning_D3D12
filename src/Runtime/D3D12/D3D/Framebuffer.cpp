@@ -201,8 +201,8 @@ void FrameBuffer::BindDSV(ID3D12GraphicsCommandList*& cmdList)
 	//ViewPort
 	m_viewPort.TopLeftX = 0;
 	m_viewPort.TopLeftY = 0;
-	m_viewPort.Width = m_width;
-	m_viewPort.Height = m_height;
+	m_viewPort.Width = (float)m_width;
+	m_viewPort.Height = (float)m_height;
 	m_viewPort.MinDepth = 0.0f;
 	m_viewPort.MaxDepth = 1.0f;
 
