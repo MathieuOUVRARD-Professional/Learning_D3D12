@@ -475,7 +475,7 @@ void ImageFromResource(ID3D12Resource* resource, ExampleDescriptorHeapAllocator&
 static int item_selected_idx = 0;
 void LightInterface(std::vector<Light*>& lights)
 {
-    ImGui::Begin("Lights", nullptr);
+    ImGui::Begin("Lights", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
     ImGui::SetWindowSize(ImVec2(350.0f, ImGui::GetWindowSize().y));
     ImGui::SetWindowPos(ImVec2(DXWindow::Get().GetWidth() - ImGui::GetWindowSize().x, 225.0f));
 
@@ -486,7 +486,6 @@ void LightInterface(std::vector<Light*>& lights)
         if(ImGui::CollapsingHeader(light->m_name.c_str()))
         {
             ImGui::Indent(10.0f);
-            ImGui::Text("Test");
 
 
             std::string type = lightTypes[light->m_type];
@@ -495,7 +494,7 @@ void LightInterface(std::vector<Light*>& lights)
                 for (int i = 0; i < 3; i++)
                 {
                     const bool is_selected = item_selected_idx == i;
-                    if (ImGui::Selectable(((std::string)lightTypes[i] + "##" + light->m_name).c_str(), is_selected))
+                    if (ImGui::Selectable(((std::string)lightTypes[i] + "##" + light->m_name + "_TYPE").c_str(), is_selected))
                     {
                         item_selected_idx = i;
 
@@ -514,6 +513,40 @@ void LightInterface(std::vector<Light*>& lights)
                 }
                 ImGui::EndCombo();
             }
+
+			ImGui::Text("Intensity:");
+			float intensity = light->m_intensity;
+			if (ImGui::DragFloat(("##" + light->m_name + "_INTENSITY").c_str(), &intensity, 0.001f, 0, 2.0f, "%.3f"))
+			{
+				light->m_intensity = intensity;
+			}
+
+            bool isDirect = light->m_type == 0;
+            ImGui::BeginDisabled(isDirect);
+			ImGui::Text("Range:");
+			float radius = light->m_radius;
+			if (ImGui::DragFloat(("##" + light->m_name + "_RADIUS").c_str(), &radius, 0.1f, 0, 1000.0f, "%.2f"))
+			{
+				light->m_radius = radius;
+			}
+            ImGui::EndDisabled();
+
+            bool isSpot = light->m_type == 2;
+            ImGui::BeginDisabled(!isSpot);
+			ImGui::Text("Spot inner angle:");
+			float innerAngle = light->m_innerAngle;
+			if (ImGui::DragFloat(("##" + light->m_name + "_INNER_ANGLE").c_str(), &innerAngle, 0.1f, 0, 180.0f, "%.2f"))
+			{
+				light->m_innerAngle = innerAngle;
+			}
+
+			ImGui::Text("Spot outer angle:");
+			float m_outerAngle = light->m_outerAngle;
+			if (ImGui::DragFloat(("##" + light->m_name + "_OUTER_ANGLE").c_str(), &m_outerAngle, 0.1f, 0, 180.0f, "%.2f"))
+			{
+				light->m_outerAngle = m_outerAngle;
+			}
+			ImGui::EndDisabled();            
         }
     }
 
