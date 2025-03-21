@@ -468,7 +468,7 @@ void ImageFromResource(ID3D12Resource* resource, ExampleDescriptorHeapAllocator&
         //ImGui::Text("Max: (%.2f, %.2f)", region_x + region_sz, region_y + region_sz);
         ImVec2 uv0 = ImVec2((region_x) / size.x, (region_y) / size.y);
         ImVec2 uv1 = ImVec2((region_x + region_sz) / size.x, (region_y + region_sz) / size.y);
-        ImGui::Image((ImTextureID)imgui_gpu_handle.ptr, ImVec2(region_sz * zoom, region_sz * zoom), uv0, uv1);
+        ImGui::Image((ImTextureID)imgui_gpu_handle.ptr, ImVec2(region_sz * zoom * 1.5f, region_sz * zoom * 1.5f), uv0, uv1);
         ImGui::EndTooltip();
     }
 }
