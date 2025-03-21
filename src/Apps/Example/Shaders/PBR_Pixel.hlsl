@@ -70,7 +70,7 @@ float3 FresnelSchlick(float cosTheta, float3 F0)
 
 float3 ComputeLighting(Light light, float3 normalWorldSpace, float3 viewDirection, float3 worldPos, float3 albedo, float roughness, float metallic)
 {	
-	// Default fo Point & Spot lights
+	// Default for Point & Spot lights
     float3 L = normalize(light.position - worldPos);
     float attenuation = 1.0f;
 	
@@ -84,7 +84,7 @@ float3 ComputeLighting(Light light, float3 normalWorldSpace, float3 viewDirectio
     attenuation *= lerp(1.0f, pointAttenuation, light.type == 1);
 	
 	// Handle Spot light (Smooth attenuation)
-    float spotFactor = saturate(dot(-L, light.direction));
+    float spotFactor = saturate(dot(L, -light.direction));
     float spotAttenuation = smoothstep(light.outerAngle, light.innerAngle, spotFactor);
     attenuation *= lerp(1.0f, spotAttenuation, light.type == 2);
 	

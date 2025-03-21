@@ -62,7 +62,7 @@ void Light::ComputeViewProjMatrix(float ortoSize)
 	}
 	else if (m_type == 2)
 	{
-		view = glm::lookAt(m_position, m_position + m_direction, glm::vec3(0.0f, 0.0f, 1.0f));
+		view = glm::lookAt(m_position, m_position + m_direction, glm::vec3(0.0f, -1.0f, 0.0f));
 		projection = glm::perspective(m_outerAngle, 1.0f, 0.1f, m_radius);	
 	}
 	m_viewProjMatrix = projection * view;
@@ -79,8 +79,8 @@ void Light::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
 
 	data.intensity = m_intensity;
 	data.radius = m_radius;
-	data.innerAngle = m_innerAngle;
-	data.outerAngle = m_outerAngle;
+	data.innerAngle = glm::cos(glm::radians(m_innerAngle));
+	data.outerAngle = glm::cos(glm::radians(m_outerAngle));
 
 	data.color = m_color;
 
