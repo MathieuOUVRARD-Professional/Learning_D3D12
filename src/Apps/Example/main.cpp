@@ -456,9 +456,13 @@ int main()
 		glm::mat4 pyramidModel = glm::translate(glm::mat4(1.0f), pyramidPosition);
 		
 		
-		MyTransform lightTransform = MyTransform(glm::vec3(10.0f, 25.0f, 10.0f));		
-		
-		glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), lightTransform.m_position);
+		MyTransform cubeLightTransform = MyTransform(glm::vec3(10.0f, 25.0f, 10.0f));				
+		glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), cubeLightTransform.m_position);
+		glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+
+		Light cubeLight = Light().Directional("Cube", cubeLightTransform.m_position, 1.0f, lightColor);
+		std::vector<Light*> lights;
+		lights.emplace_back(&cubeLight);
 
 		if (glm::determinant(lightModel) < 0.0001f)
 		{
@@ -544,19 +548,19 @@ int main()
 			pyramidModel = glm::rotate(pyramidModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 
 			std::string colorPickerName = "Light color";
-			glm::vec3 lightColor = ImGuiColorPicker(&colorPickerName, true);
-			ImGuiPerfOverlay(true);			
+			lightColor = ImGuiColorPicker(&colorPickerName, true);
+			ImGuiPerfOverlay(true);
 
-			Light cubeLight = Light().Directional(lightTransform.m_position, 1.0f, lightColor);
-			//cubeLight.lightcolor = glm::vec4(color[0], color[1], color[2], 1.0f);
+			cubeLight.m_position = cubeLightTransform.m_position;
+			cubeLight.m_direction = glm::normalize(-cubeLightTransform.m_position);
 
 			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
 			camera.Matrix(45.0f, 0.01f, 100.0f);
 			camera.Inputs();						
 
-			TransformUI(camera, lightModel, lightTransform);
+			TransformUI(camera, lightModel, cubeLightTransform);
 			
-			cubeLight.m_position = lightTransform.m_position = glm::vec3(lightModel[3]);			
+			cubeLight.m_position = cubeLightTransform.m_position = glm::vec3(lightModel[3]);			
 			cubeLight.ComputeViewProjMatrix(50.0f);
 					
 			// === SHADOW PASS === //
@@ -567,6 +571,8 @@ int main()
 			mainObjList.ShadowPassDraw(cmdList, cubeLight);
 
 			shadowMap.CreateDepthBufferSRV(&bindlessHeapAllocator);
+
+			LightInterface(lights);
 
 			ImGui::Begin("Shadow Map Debug");
 			ImGui::Text("Depth Buffer (Shadow Map):");

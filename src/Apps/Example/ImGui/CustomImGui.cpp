@@ -450,6 +450,67 @@ void ImageFromResource(ID3D12Resource* resource, ExampleDescriptorHeapAllocator&
         size.y = ImGui::GetWindowWidth() - 15.0f;
     }
 
+    ImGuiIO& io = ImGui::GetIO();
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+
     ImGui::Image((ImTextureID)imgui_gpu_handle.ptr, size);
+    if (ImGui::BeginItemTooltip())
+    {
+        float region_sz = 32.0f;
+        float region_x = io.MousePos.x - pos.x - region_sz * 0.5f;
+        float region_y = io.MousePos.y - pos.y - region_sz * 0.5f;
+        float zoom = 4.0f;
+        if (region_x < 0.0f) { region_x = 0.0f; }
+        else if (region_x > size.x - region_sz) { region_x = size.y - region_sz; }
+        if (region_y < 0.0f) { region_y = 0.0f; }
+        else if (region_y > size.x - region_sz) { region_y = size.y - region_sz; }
+        //ImGui::Text("Min: (%.2f, %.2f)", region_x, region_y);
+        //ImGui::Text("Max: (%.2f, %.2f)", region_x + region_sz, region_y + region_sz);
+        ImVec2 uv0 = ImVec2((region_x) / size.x, (region_y) / size.y);
+        ImVec2 uv1 = ImVec2((region_x + region_sz) / size.x, (region_y + region_sz) / size.y);
+        ImGui::Image((ImTextureID)imgui_gpu_handle.ptr, ImVec2(region_sz * zoom, region_sz * zoom), uv0, uv1);
+        ImGui::EndTooltip();
+    }
+}
+static int item_selected_idx = 0;
+void LightInterface(std::vector<Light*>& lights)
+{
+    ImGui::Begin("Lights", nullptr);
+    ImGui::SetWindowSize(ImVec2(350.0f, ImGui::GetWindowSize().y));
+    ImGui::SetWindowPos(ImVec2(DXWindow::Get().GetWidth() - ImGui::GetWindowSize().x, 225.0f));
+
+    const char* lightTypes[] = { "Directional", "Point", "Spot" };
+
+    for (Light*& light : lights)
+    {
+        if(ImGui::CollapsingHeader(light->m_name.c_str()))
+        {
+            ImGui::Indent(10.0f);
+            ImGui::Text("Test");
+
+
+            std::string type = lightTypes[light->m_type];
+            if (ImGui::BeginCombo("Type", type.c_str()))
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    const bool is_selected = item_selected_idx == i;
+                    if (ImGui::Selectable(((std::string)lightTypes[i] + "##" + light->m_name).c_str(), is_selected))
+                    {
+                        item_selected_idx = i;
+                        light->m_type = i;
+                    }
+
+                    if (is_selected)
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+        }
+    }
+
+    ImGui::End();
 }
 

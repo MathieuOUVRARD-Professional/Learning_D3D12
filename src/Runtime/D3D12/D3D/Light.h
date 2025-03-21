@@ -1,21 +1,23 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include<glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
 
-#include <string>
-#include <d3d12.h>
+#include<string>
+#include<d3d12.h>
 
 class Light
 {
 	public:
-        Light Directional(glm::vec3 position = glm::normalize(glm::vec3(-0.5f, -1.0f, -0.5f)), float intensity = 1.0f, glm::vec3 color = glm::vec3(1.0f));
-        Light Point(glm::vec3 position = glm::vec3(0.0f), float intensity = 1.0f, float radius = 100.0f, glm::vec3 color = glm::vec3(1.0f));
-        Light Spot(glm::vec3 position = glm::vec3(0.0f), glm::vec3 direction = glm::vec3(0.0f, -1.0f, 0.0f), float intensity = 1.0f, float radius = 100.0f, float innerAngle = 25.0f, float outerAngle = 30.0f, glm::vec3 colo = glm::vec3(1.0f));
+        Light Directional(std::string name, glm::vec3 position = glm::normalize(glm::vec3(-0.5f, -1.0f, -0.5f)), float intensity = 1.0f, glm::vec3 color = glm::vec3(1.0f));
+        Light Point(std::string name, glm::vec3 position = glm::vec3(0.0f), float intensity = 1.0f, float radius = 100.0f, glm::vec3 color = glm::vec3(1.0f));
+        Light Spot(std::string name, glm::vec3 position = glm::vec3(0.0f), glm::vec3 direction = glm::vec3(0.0f, -1.0f, 0.0f), float intensity = 1.0f, float radius = 100.0f, float innerAngle = 25.0f, float outerAngle = 30.0f, glm::vec3 colo = glm::vec3(1.0f));
 
         void ComputeViewProjMatrix(float ortoSize);
 
         void SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot);
+
+        std::string m_name = "";
 
         uint32_t m_type = 0;                                                        // 0 = Directional, 1 = Point, 2 = Spot
 

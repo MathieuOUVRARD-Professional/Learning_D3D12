@@ -1,17 +1,18 @@
+#pragma once
+
 #include"imgui.h"
 #include"ImGuizmo.h"
 
 #include<Support/Window.h>
 #include<Support/Camera.h>
 #include<Support/Transform.h>
+#include<D3D/Light.h>
 
 #include<list>
-#include<string>
-#include<glm/glm.hpp>
-#include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
 #include<glm/gtx/rotate_vector.hpp>
 #include<glm/gtx/vector_angle.hpp>
+#include <vector>
 #include <map>
 
 
@@ -68,5 +69,6 @@ void RotateGuizmo(Camera& camera, glm::mat4& model);
 void ScaleGuizmo(Camera& camera, glm::mat4& model);
 void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform);
 void ImageFromResource(ID3D12Resource* resource, ExampleDescriptorHeapAllocator& heapAllocator, ImVec2 size = ImVec2(0.0f, 0.0f));
+void LightInterface(std::vector<Light*>& lights);
 
 static std::map<ID3D12Resource*, UINT64> imguiTexturesHandleMap;

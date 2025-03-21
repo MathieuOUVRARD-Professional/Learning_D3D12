@@ -1,9 +1,10 @@
 #include <D3D/Light.h>
 
-Light Light::Directional(glm::vec3 position, float intensity, glm::vec3 color)
+Light Light::Directional(std::string name, glm::vec3 position, float intensity, glm::vec3 color)
 {
 	Light directional = Light();
 
+	directional.m_name = name;
 	directional.m_type = 0;
 	directional.m_position = position;
 	directional.m_direction = glm::normalize(-position);
@@ -13,7 +14,7 @@ Light Light::Directional(glm::vec3 position, float intensity, glm::vec3 color)
 	return directional;
 }
 
-Light Light::Point(glm::vec3 position, float intensity, float radius, glm::vec3 color)
+Light Light::Point(std::string name, glm::vec3 position, float intensity, float radius, glm::vec3 color)
 {
 	Light point = Light();
 
@@ -26,10 +27,11 @@ Light Light::Point(glm::vec3 position, float intensity, float radius, glm::vec3 
 	return point;
 }
 
-Light Light::Spot(glm::vec3 position, glm::vec3 direction, float intensity, float radius, float innerAngle, float outerAngle, glm::vec3 color)
+Light Light::Spot(std::string name, glm::vec3 position, glm::vec3 direction, float intensity, float radius, float innerAngle, float outerAngle, glm::vec3 color)
 {
 	Light spot = Light();
 
+	spot.m_name = name;
 	spot.m_type = 2;
 	spot.m_position = position;
 	spot.m_direction = direction;
