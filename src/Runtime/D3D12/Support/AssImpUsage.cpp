@@ -105,8 +105,6 @@ void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, ObjectList& object
 		node.mNumMeshes > 1 ? std::cout << "Submesh: " : std::cout << "Mesh: ";
 		std::cout << meshNode->mName.C_Str() << " | " << meshNode->mNumFaces << " faces\r\n";
 
-
-
 		for (unsigned int j = 0; j < meshNode->mNumVertices; j++)
 		{
 			Vertex vertex{};
@@ -210,7 +208,6 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 			textureID++;
 		}
 
-		material.m_ID = i;
 		material.m_name = materialNode->GetName().C_Str();
 		std::cout << "Material name: " << material.m_name << std::endl;
 		

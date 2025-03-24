@@ -14,6 +14,7 @@ void main(
 	in float3 i_normal : Normal,
 	in float3 i_tangent : Tangent0,
 	in float3 i_bitangent : Tangent1,
+	in uint i_index : SV_InstanceID,
 
 // === OUT === //
 	out float2 o_uv : Texcoord,
@@ -21,6 +22,7 @@ void main(
 	out float3 o_tangent : Tangent0,
 	out float3 o_bitangent : Tangent1,
 	out float4 o_currentPos : PositionT,
+	out uint   o_materialID : TEST,
 	out float4 o_pos : SV_Position
 )
 {	
@@ -35,5 +37,7 @@ void main(
 	o_currentPos = mul(matrices.model, float4(i_pos, 1.0f));
 
 	o_pos = mul(matrices.viewProj, o_currentPos);
+
+	o_materialID = i_index;
 
 }

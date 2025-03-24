@@ -131,6 +131,7 @@ void main(
 	in float3 i_tangent : Tangent0,
 	in float3 i_bitangent : Tangent1,
 	in float4 i_currentPos : PositionT,
+	in uint	  i_materialID : TEST,
 
 // === OUT === //
 	out float4 pixel : SV_Target

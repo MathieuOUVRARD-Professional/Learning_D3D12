@@ -105,8 +105,7 @@ void Mesh::Draw(ID3D12GraphicsCommandList* cmdList, glm::mat4& viewProjectionMat
 		cmdList->IASetIndexBuffer(&m_ibv);
 		// === ROOT === //
 		cmdList->SetGraphicsRoot32BitConstants(0, 32, &matrices, 0);
-		cmdList->SetGraphicsRootConstantBufferView(3, m_material->m_dataBuffer->GetGPUVirtualAddress());
 
-		cmdList->DrawIndexedInstanced(m_nIndex, 1, 0, 0, 0);
+		cmdList->DrawIndexedInstanced(m_nIndex, 1, 0, 0, m_material->m_ID);
 	}
 }

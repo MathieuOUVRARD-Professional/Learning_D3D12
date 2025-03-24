@@ -15,6 +15,7 @@
 <https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/AlphaBlendModeTest>
 - Fix view setting cursor at the midle of the main screen and not nearest
 - C++ side root signature
+- Add RTV to ShadowMap Framebuffer to linearize it for debuging view
 
 ## Done
 

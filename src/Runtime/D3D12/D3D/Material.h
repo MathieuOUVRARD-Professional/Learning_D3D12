@@ -17,6 +17,9 @@ struct MaterialData
 	float opacity;
 	float roughness;
 	float metalness;
+	float padding1;
+	float padding2;
+	float padding3;
 };
 
 class Material
@@ -51,8 +54,6 @@ class Material
 		float m_opacity					= 1.0f;
 		float m_metallicFactor			= 0.0f;
 		float m_roughnessFactor			= 1.0f;
-
-		ComPointer<ID3D12Resource> m_dataBuffer = nullptr;
 
 	private:
 		Texture m_Textures;

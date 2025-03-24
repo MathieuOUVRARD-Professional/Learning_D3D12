@@ -15,6 +15,8 @@ class ObjectList
 	public:
 		std::string m_name = "UnnamedList";
 
+		ComPointer<ID3D12Resource> m_materialDatas = nullptr;
+
 		bool m_hasDefaultTexture = false;
 		bool m_hasDefaultNormalTexture = false;
 
@@ -62,7 +64,6 @@ class ObjectList
 		std::vector<Material> m_materials;
 
 		DescriptorHeapAllocator* m_bindlessHeapAllocator = nullptr;
-		ComPointer<ID3D12DescriptorHeap> m_cbvHeap;
 
 		void CopyTextures(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destBufferOffset = 0);
 		void CopyMeshes(ID3D12Resource* uploadBuffer, UINT64 destOffsetVertex = 0, UINT64 destOffsetIndex = 0);

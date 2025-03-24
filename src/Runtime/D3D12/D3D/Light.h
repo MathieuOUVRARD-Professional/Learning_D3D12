@@ -50,6 +50,6 @@ class Light
 
             float innerAngle = 25.0f;
             float outerAngle = 30.0f;
-            float shadowmapID;
+            float shadowmapID = -1;
         };
 };
