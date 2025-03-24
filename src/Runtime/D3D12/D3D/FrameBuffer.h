@@ -27,22 +27,21 @@ class FrameBuffer
 
 		ZBuffer m_ZBuffer;
 
-		// Heaps
-		ComPointer<ID3D12DescriptorHeap> m_RT_SRVHeap = nullptr;
-		uint32_t m_RT_SRVHeapIndex = 0;
-		ComPointer<ID3D12DescriptorHeap> m_D_SRVHeap = nullptr;
+		uint32_t m_SRVHeapIndex = 0;
 
 	private:
 		uint32_t m_width = 0;
 		uint32_t m_height = 0;
 		
-		// RTV & DSV Heaps
+		// Heaps
+		ComPointer<ID3D12DescriptorHeap> m_RT_SRVHeap = nullptr;
+		uint32_t m_RT_SRVHeapIndex = 0;
+		ComPointer<ID3D12DescriptorHeap> m_D_SRVHeap = nullptr;
 		ComPointer<ID3D12DescriptorHeap> m_RTVHeap = nullptr;
 		uint32_t m_RTVHeapIndex = 0;
 		ComPointer<ID3D12DescriptorHeap> m_DSVHeap = nullptr;
 		uint32_t m_DSVHeapIndex = 0;
 		ComPointer<ID3D12DescriptorHeap> m_SRVHeap = nullptr;
-		uint32_t m_SRVHeapIndex = 0;
 
 		ComPointer<ID3D12Resource> m_RTV = nullptr;
 

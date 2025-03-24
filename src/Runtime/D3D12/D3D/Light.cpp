@@ -83,6 +83,7 @@ void Light::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
 	data.outerAngle = glm::cos(glm::radians(m_outerAngle));
 
 	data.color = m_color;
+	data.shadowmapID = m_shadowmapID;
 
 	cmdList->SetGraphicsRoot32BitConstants(bufferSlot, 16, &data, 0);
 }

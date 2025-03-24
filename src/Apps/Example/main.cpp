@@ -571,6 +571,7 @@ int main()
 			mainObjList.ShadowPassDraw(cmdList, cubeLight);
 
 			shadowMap.CreateDepthBufferSRV(&bindlessHeapAllocator);
+			cubeLight.m_shadowmapID = shadowMap.m_SRVHeapIndex;
 
 			LightInterface(lights);
 

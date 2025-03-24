@@ -32,6 +32,8 @@ class Light
         glm::vec3 m_color = glm::vec3(1.0f);                                        // RGB light color              
 
         glm::mat4 m_viewProjMatrix = glm::mat4(1.0f);
+        
+        UINT m_shadowmapID = 0;
 
 	private:
         struct LightData
@@ -48,5 +50,6 @@ class Light
 
             float innerAngle = 25.0f;
             float outerAngle = 30.0f;
+            float shadowmapID;
         };
 };
