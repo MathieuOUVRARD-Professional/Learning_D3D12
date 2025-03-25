@@ -6,38 +6,34 @@ cbuffer MatricesConstants : register(b0)
 	Matrices matrices;
 };
 
+
+struct PBR_V_In
+{
+	float3 pos : Position;
+	float2 uv : Texcoord;
+	float3 normal : Normal;
+	float3 tangent : Tangent0;
+	float3 bitangent : Tangent1;
+};
+
 [RootSignature(PBR_SIG)]
-void main(
-// === IN === //
-	in float3 i_pos : Position,
-	in float2 i_uv : Texcoord,
-	in float3 i_normal : Normal,
-	in float3 i_tangent : Tangent0,
-	in float3 i_bitangent : Tangent1,
-	in uint i_index : SV_InstanceID,
-
-// === OUT === //
-	out float2 o_uv : Texcoord,
-	out float3 o_normal : Normal,
-	out float3 o_tangent : Tangent0,
-	out float3 o_bitangent : Tangent1,
-	out float4 o_currentPos : PositionT,
-	out uint o_materialID : TEXCOORD5,
-	out float4 o_pos : SV_Position
-)
+PBR_V_Out main(PBR_V_In vInput)
 {	
-	o_uv = i_uv;
+	PBR_V_Out vOutput;
 
-    o_normal = (float3) mul((float3x3) matrices.model, i_normal);
+	vOutput.uv = vInput.uv;
 
-    o_tangent = (float3) mul((float3x3) matrices.model, i_tangent);
+    vOutput.normal = (float3) mul((float3x3) matrices.model, vInput.normal);
 
-    o_bitangent = (float3) mul((float3x3) matrices.model, i_bitangent);
+    vOutput.tangent = (float3) mul((float3x3) matrices.model, vInput.tangent);
 
-	o_currentPos = mul(matrices.model, float4(i_pos, 1.0f));
+    vOutput.bitangent = (float3) mul((float3x3) matrices.model, vInput.bitangent);
 
-	o_pos = mul(matrices.viewProj, o_currentPos);
+	vOutput.currentPos = mul(matrices.model, float4(vInput.pos, 1.0f));
 
-	o_materialID = i_index;
+	vOutput.pos = mul(matrices.viewProj, vOutput.currentPos);
 
+	vOutput.materialID = 5;
+
+	return vOutput;
 }

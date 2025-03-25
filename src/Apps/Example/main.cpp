@@ -566,8 +566,8 @@ int main()
 			// === SHADOW PASS === //
 			shadowMap.BindDSV(cmdList);
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			cmdList->SetPipelineState(shadowPassPso.Get());
-			cmdList->SetGraphicsRootSignature(shadowPassSignature);			
+			cmdList->SetGraphicsRootSignature(shadowPassSignature);
+			cmdList->SetPipelineState(shadowPassPso.Get());	
 			mainObjList.ShadowPassDraw(cmdList, cubeLight);
 
 			shadowMap.CreateDepthBufferSRV(&bindlessHeapAllocator);
@@ -584,8 +584,8 @@ int main()
 
 			// Pyramid
 			// === PSO === //
-			cmdList->SetPipelineState(pso.Get());
 			cmdList->SetGraphicsRootSignature(rootSignature);
+			cmdList->SetPipelineState(pso.Get());
 			// === IA === //
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			cmdList->IASetVertexBuffers(0, 1, &vbv);
@@ -605,7 +605,7 @@ int main()
 			cmdList->SetGraphicsRoot32BitConstants(1, 4, &camera.m_position, 0);
 			cubeLight.SendShaderParams(cmdList, 2);
 			cmdList->SetGraphicsRootConstantBufferView(3, mainObjList.m_materialDatas->GetGPUVirtualAddress());
-			mainObjList.BindDescriptorHeaps(cmdList, 4);
+			mainObjList.BindDescriptorHeaps(cmdList, 5);
 			mainObjList.Draw(cmdList, camera);
 
 			// Cube

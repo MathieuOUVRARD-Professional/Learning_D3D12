@@ -35,3 +35,24 @@ struct Light
     float innerAngle;
     float outerAngle;
 };
+
+struct PBR_V_Out
+{
+    float2 uv           : Texcoord;
+    float3 normal       : Normal;
+    float3 tangent      : Tangent0;
+    float3 bitangent    : Tangent1;
+    float4 currentPos   : PositionT;
+    nointerpolation uint materialID : TEXCOORD5;
+    float4 pos          : SV_Position;    
+};
+
+struct PBR_P_in
+{
+    nointerpolation int materialID : TEXCOORD5;
+    float2 uv           : Texcoord;
+    float3 normal       : Normal;
+    float3 tangent      : Tangent0;
+    float3 bitangent    : Tangent1;
+    float4 currentPos   : PositionT;    
+};

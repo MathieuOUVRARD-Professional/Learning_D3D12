@@ -19,6 +19,11 @@ cbuffer MaterialData : register(b3)
     MaterialData materialsData[100];
 }
 
+cbuffer Camera : register(b4)
+{
+	uint materialID;
+};
+
 Texture2D<float4> bindlessTextures[] : register(t0, space0);
 sampler textureSampler : register(s0);
 
@@ -126,43 +131,38 @@ float3 ComputeLighting(Light light, float3 normalWorldSpace, float3 viewDirectio
 [RootSignature(PBR_SIG)]
 void main(
 // === IN === //
-	in float2 i_uv : Texcoord,
-	in float3 i_normal : Normal,
-	in float3 i_tangent : Tangent0,
-	in float3 i_bitangent : Tangent1,
-	in float4 i_currentPos : PositionT,
-	in uint i_materialID : TEXCOORD5,
+	PBR_V_Out pInput,
 
 // === OUT === //
 	out float4 pixel : SV_Target
 )
 {	
-    MaterialData materialData = materialsData[i_materialID];
+    MaterialData materialData = materialsData[materialID];
 	
 	// Texture sampling
-	float3 albedoTexel = materialData.baseColor * bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv).rgb;
-	float3 normalTexel = bindlessTextures[NonUniformResourceIndex(materialData.normalID)].Sample(textureSampler, i_uv).rgb;
-	float3 ormTexel	 = bindlessTextures[NonUniformResourceIndex(materialData.ormID)].Sample(textureSampler, i_uv).rgb;
-    float3 emmisive = materialData.emissiveColor * bindlessTextures[NonUniformResourceIndex(materialData.emissiveID)].Sample(textureSampler, i_uv).rgb;
+	float3 albedoTexel = materialData.baseColor * bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, pInput.uv).rgb;
+	float3 normalTexel = bindlessTextures[NonUniformResourceIndex(materialData.normalID)].Sample(textureSampler, pInput.uv).rgb;
+	float3 ormTexel	 = bindlessTextures[NonUniformResourceIndex(materialData.ormID)].Sample(textureSampler, pInput.uv).rgb;
+    float3 emmisive = materialData.emissiveColor * bindlessTextures[NonUniformResourceIndex(materialData.emissiveID)].Sample(textureSampler, pInput.uv).rgb;
 	float roughness = materialData.roughness *  ormTexel.g;
 	float metalness = materialData.metalness *  ormTexel.b;
 	
 	// AlphaClipping
-    float alpha = bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv).a;
+    float alpha = bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, pInput.uv).a;
     clip(alpha - 0.25f); // Discards the pixel if alpha <= 0
 	
 	//Ambient
     float3 ambient = 0.05f * albedoTexel;
 	
 	// Convert normal map to world space	
-    float3 normal = normalize(i_normal);
-	float3 normalWorldSpace = ApplyNormalMap(normal, i_tangent, i_bitangent, normalTexel);
+    float3 normal = normalize(pInput.normal);
+	float3 normalWorldSpace = ApplyNormalMap(normal, pInput.tangent, pInput.bitangent, normalTexel);
 		
 	// View Direction
-    float3 viewDirection = normalize(cameraPosition - i_currentPos.xyz);
+    float3 viewDirection = normalize(cameraPosition - pInput.currentPos.xyz);
 	
     float3 lighting = 0.0f;
-    lighting = ComputeLighting(light, normalWorldSpace, viewDirection, i_currentPos.xyz, albedoTexel, roughness, metalness);
+    lighting = ComputeLighting(light, normalWorldSpace, viewDirection, pInput.currentPos.xyz, albedoTexel, roughness, metalness);
 	
     float3 finalColor = lighting + emmisive + ambient;
 	

@@ -22,6 +22,7 @@
 "RootConstants(num32BitConstants = 4, b1),"\
 "RootConstants(num32BitConstants = 16, b2),"\
 "CBV(b3),"\
+"RootConstants(num32BitConstants = 4, b4),"\
 "DescriptorTable(" \
     "SRV(t0, numDescriptors = 1024, flags = DATA_VOLATILE | DESCRIPTORS_VOLATILE)"\
 "),"\
