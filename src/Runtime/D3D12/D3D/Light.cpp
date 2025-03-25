@@ -72,6 +72,8 @@ void Light::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
 {
 	LightData data;
 
+	data.viewProjMatrix = m_viewProjMatrix;
+
 	data.type = (float)m_type;
 
 	data.position = m_position;
@@ -85,5 +87,5 @@ void Light::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
 	data.color = m_color;
 	data.shadowmapID = (float)m_shadowmapID;
 
-	cmdList->SetGraphicsRoot32BitConstants(bufferSlot, 16, &data, 0);
+	cmdList->SetGraphicsRoot32BitConstants(bufferSlot, 32, &data, 0);
 }

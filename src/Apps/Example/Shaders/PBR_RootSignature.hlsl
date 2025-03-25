@@ -21,7 +21,7 @@
 "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
 "RootConstants(num32BitConstants = 20, b0),"\
 "RootConstants(num32BitConstants = 4, b1),"\
-"RootConstants(num32BitConstants = 16, b2),"\
+"RootConstants(num32BitConstants = 32, b2),"\
 "CBV(b3),"\
 "CBV(b4),"\
 "DescriptorTable(" \

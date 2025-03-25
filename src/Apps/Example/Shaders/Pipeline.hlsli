@@ -35,6 +35,8 @@ struct MaterialData
 
 struct Light
 {    
+    float4x4 viewProjMatrix;
+
     float3 position;
     float type;
     

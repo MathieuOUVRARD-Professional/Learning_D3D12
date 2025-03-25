@@ -38,9 +38,10 @@ class Light
 	private:
         struct LightData
         {
+            glm::mat4 viewProjMatrix = glm::mat4(1.0f);
+
             glm::vec3 position = glm::vec3(0.0f);
             float type;
-
 
             glm::vec3 direction = glm::normalize(glm::vec3(-0.5f, -1.0f, -0.5f));
             float intensity = 1.0f;
