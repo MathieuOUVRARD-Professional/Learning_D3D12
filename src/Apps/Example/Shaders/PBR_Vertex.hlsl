@@ -33,7 +33,5 @@ PBR_V_Out main(PBR_V_In vInput)
 
 	vOutput.pos = mul(matrices.viewProj, vOutput.currentPos);
 
-	vOutput.materialID = 5;
-
 	return vOutput;
 }

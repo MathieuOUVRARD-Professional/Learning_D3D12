@@ -17,9 +17,10 @@ struct MaterialData
 	float opacity;
 	float roughness;
 	float metalness;
+
+	float padding0;
 	float padding1;
 	float padding2;
-	float padding3;
 };
 
 class Material

@@ -34,6 +34,7 @@ MaterialData& Material::GetData()
 
 			m_ormTextureID,
 			m_emissiveTextureID,
+
 			m_opacity,
 			m_roughnessFactor,
 			m_metallicFactor,
