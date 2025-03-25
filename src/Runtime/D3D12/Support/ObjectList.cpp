@@ -35,6 +35,23 @@ UINT64 ObjectList::TotalMatDataSize()
 	return sizeof(MaterialData) * MaterialsCount();
 }
 
+UINT64 ObjectList::TotalMeshes()
+{
+	UINT64 nMeshes = 0;
+	for (SceneObject& object : m_list)
+	{
+		if (object.m_mesh.m_nSubmeshes > 0)
+		{
+			nMeshes += object.m_mesh.m_nSubmeshes;
+		}
+		else
+		{
+			nMeshes++;
+		}
+	}
+	return nMeshes;
+}
+
 UINT64 ObjectList::TotalSize()
 {
 	UINT64 size = 0;
@@ -76,11 +93,11 @@ void ObjectList::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Light& light
 	}
 }
 
-void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera)
+void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList)
 {
 	for (SceneObject& object : m_list)
 	{
-		object.m_mesh.Draw(cmdList, camera.m_viewProjMatrix, object.m_transform.m_matrix, camera.m_position);
+		object.m_mesh.Draw(cmdList, object.m_transform.m_matrix);
 	}
 }
 
@@ -166,7 +183,7 @@ void ObjectList::CopyMeshes(ID3D12Resource* uploadBuffer, UINT64 destOffsetVerte
 }
 
 
-void ObjectList::CopyMaterialData()
+void ObjectList::CopyMaterialsData()
 {
 	UINT cbSize = ((sizeof(MaterialData) * MaterialsCount())+ 255) & ~255;
 
@@ -234,6 +251,92 @@ void ObjectList::CopyMaterialData()
 	DXContext::Get().GetDevice()->CreateConstantBufferView(&cbvDesc, cbvHandle);
 }
 
+void ObjectList::CopyModelsData()
+{
+	UINT cbSize = ((sizeof(ModelData) * TotalMeshes())+ 255) & ~255;
+
+	// Describe the constant buffer
+	D3D12_HEAP_PROPERTIES heapProps = {};
+	heapProps.Type = D3D12_HEAP_TYPE_UPLOAD; // Upload heap (CPU -> GPU)
+
+	D3D12_RESOURCE_DESC bufferDesc = {};
+	bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	bufferDesc.Width = cbSize;
+	bufferDesc.Height = 1;
+	bufferDesc.DepthOrArraySize = 1;
+	bufferDesc.MipLevels = 1;
+	bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+	bufferDesc.SampleDesc.Count = 1;
+	bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	// Create the buffer resource
+	DXContext::Get().GetDevice()->CreateCommittedResource(
+		&heapProps,
+		D3D12_HEAP_FLAG_NONE,
+		&bufferDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&m_modelData)
+	);
+
+	std::string name = "MeshesTransforms";
+	m_modelData.Get()->SetName(std::wstring(name.begin(), name.end()).c_str());
+
+	// Map the constant buffer
+	char* mappedData;
+	D3D12_RANGE uploadRange;
+	uploadRange.Begin = 0;
+	uploadRange.End = cbSize;
+	m_modelData->Map(0, &uploadRange, (void**)&mappedData);
+
+	std::vector<ModelData> meshesTransforms;
+	uint32_t modelID = 0;
+
+	for (SceneObject& object : m_list)
+	{
+		ModelData meshData;
+		meshData.modelMatrix = object.m_transform.m_matrix;
+		if (object.m_mesh.m_nSubmeshes > 0)
+		{
+			for (unsigned int i = 0; i < object.m_mesh.m_nSubmeshes; i++)
+			{
+				meshData.materialID = object.m_mesh.GetSubmesh(i).GetMaterial().m_ID;
+				meshesTransforms.emplace_back(meshData);
+
+				object.m_mesh.GetSubmesh(i).m_ID = modelID;
+				modelID++;
+			}
+		}
+		else
+		{
+			meshData.materialID = object.m_mesh.GetMaterial().m_ID;
+			meshesTransforms.emplace_back(meshData);
+
+			object.m_mesh.m_ID = modelID;
+			modelID++;
+		}
+	}
+
+	// Copy
+	memcpy(&mappedData[0], meshesTransforms.data(), TotalMeshes() * sizeof(ModelData));
+
+	//Unmap
+	m_modelData->Unmap(0, &uploadRange);
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+	cbvDesc.BufferLocation = m_modelData->GetGPUVirtualAddress(); // GPU address of buffer
+	cbvDesc.SizeInBytes = cbSize; // Must be 256-byte aligned
+
+	// Get CPU handle of the descriptor heap
+	CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle;
+	UINT cbvIndex = m_bindlessHeapAllocator->Allocate();
+	cbvHandle = m_bindlessHeapAllocator->GetCPUHandle(cbvIndex);
+
+	// Create the CBV in the descriptor heap
+	DXContext::Get().GetDevice()->CreateConstantBufferView(&cbvDesc, cbvHandle);
+}
+
 void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destOffsetTexture, UINT64 destOffsetVertex, UINT64 destOffsetIndex)
 {
 	if (m_bindlessHeapAllocator == nullptr)
@@ -257,7 +360,9 @@ void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HE
 	// Meshes copy 
 	CopyMeshes(uploadBuffer, destOffsetVertex, destOffsetIndex);
 
-	CopyMaterialData();
+	CopyMaterialsData();
+
+	CopyModelsData();
 }
 
 void ObjectList::CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource* indexBuffer)

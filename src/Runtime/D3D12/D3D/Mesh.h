@@ -12,7 +12,11 @@
 class Mesh
 {
 public:
+	uint32_t m_ID = 0;
+
 	uint32_t m_nSubmeshes = 0;
+	std::vector<Mesh> m_submeshes;
+
 	UINT64 m_vertexBufferOffset = 0;
 	UINT64 m_indexBufferOffset = 0;
 
@@ -21,7 +25,7 @@ public:
 	uint32_t IndicesSize();
 	Mesh& GetSubmesh(int index);
 	void ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, glm::mat4& viewProjectionMatrix, glm::mat4& modelTransform);
-	void Draw(ID3D12GraphicsCommandList* cmdList, glm::mat4& viewProjectionMatrix, glm::mat4& modelTransform, glm::vec3& cameraPosition);
+	void Draw(ID3D12GraphicsCommandList* cmdList, glm::mat4& modelTransform);
 
 	inline std::vector<Vertex>& GetVertices()
 	{
@@ -83,7 +87,6 @@ public:
 private:
 	std::vector<Vertex> m_vertices;
 	std::vector<uint32_t> m_indices;
-	std::vector<Mesh> m_submeshes;
 
 	Material* m_material;
 
@@ -91,10 +94,4 @@ private:
 
 	D3D12_VERTEX_BUFFER_VIEW m_vbv{};
 	D3D12_INDEX_BUFFER_VIEW m_ibv{};
-};
-
-struct Matrices
-{
-	glm::mat4 viewProj = glm::mat4(1.0f);
-	glm::mat4 model = glm::mat4(1.0f);
 };

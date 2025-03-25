@@ -27,6 +27,7 @@ void Camera::Matrix(float FOVdeg, float nearPlane, float farPlane)
 	m_viewProjMatrix = projection * view;
 }
 
+// Legacy for Pyramid and cube
 void Camera::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot, glm::mat4 modelMatrix)
 {
 	struct Matrices
@@ -38,6 +39,20 @@ void Camera::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot
 	matrices.viewProj = m_viewProjMatrix;
 	matrices.model = modelMatrix;
 	cmdList->SetGraphicsRoot32BitConstants(bufferSlot, 32, &matrices, 0);
+}
+
+//Used for PBR 
+void Camera::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
+{
+	struct CameraData
+	{
+		glm::mat4 viewProj = glm::mat4(1.0f);
+		glm::vec4 position = glm::vec4(0.0f);
+	};
+	CameraData cameraData;
+	cameraData.viewProj = m_viewProjMatrix;
+	cameraData.position = glm::vec4(m_position, 1.0f);
+	cmdList->SetGraphicsRoot32BitConstants(bufferSlot, 20, &cameraData, 0);
 }
 
 void Camera::Inputs()

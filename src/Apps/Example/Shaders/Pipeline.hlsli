@@ -5,6 +5,18 @@ struct Matrices
     float4x4 model;
 };
 
+struct CameraData
+{
+    float4x4 viewProj;
+    float3 position;
+};
+
+struct ModelData
+{
+    float4x4 model;
+    uint materialID;
+};
+
 struct MaterialData
 {
     float3 baseColor;
@@ -43,6 +55,7 @@ struct PBR_V_Out
     float3 tangent      : Tangent0;
     float3 bitangent    : Tangent1;
     float4 currentPos   : PositionT;
+    uint   materialID   : MaterialID;
     //nointerpolation uint materialID : TEXCOORD5;
     float4 pos          : SV_Position;    
 };
@@ -55,4 +68,5 @@ struct PBR_P_in
     float3 tangent      : Tangent0;
     float3 bitangent    : Tangent1;
     float4 currentPos   : PositionT;    
+    uint   materialID   : MaterialID;
 };

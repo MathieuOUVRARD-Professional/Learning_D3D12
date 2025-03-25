@@ -1,11 +1,20 @@
 #include "PBR_RootSignature.hlsl"
 #include "Pipeline.hlsli"
 
-cbuffer MatricesConstants : register(b0)
+cbuffer CameraData : register(b0)
 {
-	Matrices matrices;
+	CameraData cameraData;
 };
 
+cbuffer ModelID : register(b1)
+{
+	uint modelID;
+};
+
+cbuffer ModelData : register(b3)
+{
+    ModelData modelsData[405];
+}
 
 struct PBR_V_In
 {
@@ -19,19 +28,23 @@ struct PBR_V_In
 [RootSignature(PBR_SIG)]
 PBR_V_Out main(PBR_V_In vInput)
 {	
+	ModelData modelData = modelsData[modelID];
+
 	PBR_V_Out vOutput;
 
 	vOutput.uv = vInput.uv;
 
-    vOutput.normal = (float3) mul((float3x3) matrices.model, vInput.normal);
+    vOutput.normal = (float3) mul((float3x3) modelData.model, vInput.normal);
 
-    vOutput.tangent = (float3) mul((float3x3) matrices.model, vInput.tangent);
+    vOutput.tangent = (float3) mul((float3x3) modelData.model, vInput.tangent);
 
-    vOutput.bitangent = (float3) mul((float3x3) matrices.model, vInput.bitangent);
+    vOutput.bitangent = (float3) mul((float3x3) modelData.model, vInput.bitangent);
 
-	vOutput.currentPos = mul(matrices.model, float4(vInput.pos, 1.0f));
+	vOutput.currentPos = mul(modelData.model, float4(vInput.pos, 1.0f));
 
-	vOutput.pos = mul(matrices.viewProj, vOutput.currentPos);
+	vOutput.pos = mul(cameraData.viewProj, vOutput.currentPos);
+
+	vOutput.materialID = modelData.materialID;
 
 	return vOutput;
 }

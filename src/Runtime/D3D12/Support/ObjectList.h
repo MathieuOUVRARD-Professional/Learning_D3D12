@@ -16,6 +16,7 @@ class ObjectList
 		std::string m_name = "UnnamedList";
 
 		ComPointer<ID3D12Resource> m_materialDatas = nullptr;
+		ComPointer<ID3D12Resource> m_modelData = nullptr;
 
 		bool m_hasDefaultTexture = false;
 		bool m_hasDefaultNormalTexture = false;
@@ -24,6 +25,7 @@ class ObjectList
 		UINT64 TotalVerticesSize();
 		UINT64 TotalIndicesSize();
 		UINT64 TotalMatDataSize();
+		UINT64 TotalMeshes();
 		UINT64 TotalSize();
 		uint32_t TextureCount();
 		inline void SetHeapAllocator(DescriptorHeapAllocator& allocator)
@@ -34,7 +36,7 @@ class ObjectList
 		void CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource* indexBuffer);
 		void BindDescriptorHeaps(ID3D12GraphicsCommandList* cmdList, uint32_t rootParameterIndex);
 		void ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Light& light);
-		void Draw(ID3D12GraphicsCommandList* cmdList, Camera& camera);
+		void Draw(ID3D12GraphicsCommandList* cmdList);
 		
 
 		inline std::list<SceneObject>& GetList()
@@ -67,6 +69,15 @@ class ObjectList
 
 		void CopyTextures(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destBufferOffset = 0);
 		void CopyMeshes(ID3D12Resource* uploadBuffer, UINT64 destOffsetVertex = 0, UINT64 destOffsetIndex = 0);
-		void CopyMaterialData();
+		void CopyMaterialsData();
+		void CopyModelsData();
 
+		struct ModelData
+		{
+			glm::mat4 modelMatrix;
+			UINT materialID;
+			float padding0 = 0;
+			float padding1 = 0;
+			float padding2 = 0;
+		};
 };

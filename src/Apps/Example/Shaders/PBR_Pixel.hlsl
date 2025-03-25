@@ -4,9 +4,9 @@
 // PBR Lighting Constants
 static const float PI = 3.14159265359;
 
-cbuffer Camera : register(b1)
+cbuffer CameraData : register(b0)
 {
-	float3 cameraPosition;
+	CameraData cameraData;
 };
 
 cbuffer LightConstants : register(b2)
@@ -14,15 +14,10 @@ cbuffer LightConstants : register(b2)
 	Light light;
 };
 
-cbuffer MaterialData : register(b3)
+cbuffer MaterialData : register(b4)
 {
-    MaterialData materialsData[100];
+    MaterialData materialsData[29];
 }
-
-cbuffer Camera : register(b4)
-{
-	uint materialID;
-};
 
 Texture2D<float4> bindlessTextures[] : register(t0, space0);
 sampler textureSampler : register(s0);
@@ -137,7 +132,7 @@ void main(
 	out float4 pixel : SV_Target
 )
 {	
-    MaterialData materialData = materialsData[materialID];
+    MaterialData materialData = materialsData[pInput.materialID];
 	
 	// Texture sampling
 	float3 albedoTexel = materialData.baseColor * bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, pInput.uv).rgb;
@@ -159,7 +154,7 @@ void main(
 	float3 normalWorldSpace = ApplyNormalMap(normal, pInput.tangent, pInput.bitangent, normalTexel);
 		
 	// View Direction
-    float3 viewDirection = normalize(cameraPosition - pInput.currentPos.xyz);
+    float3 viewDirection = normalize(cameraData.position - pInput.currentPos.xyz);
 	
     float3 lighting = 0.0f;
     lighting = ComputeLighting(light, normalWorldSpace, viewDirection, pInput.currentPos.xyz, albedoTexel, roughness, metalness);

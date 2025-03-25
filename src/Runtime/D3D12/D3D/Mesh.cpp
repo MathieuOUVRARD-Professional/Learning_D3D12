@@ -71,6 +71,12 @@ void Mesh::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, glm::mat4& viewPro
 	}
 	else
 	{		
+		struct Matrices
+		{
+			glm::mat4 viewProj = glm::mat4(1.0f);
+			glm::mat4 model = glm::mat4(1.0f);
+		};
+
 		Matrices matrices;
 		matrices.viewProj = viewProjectionMatrix;
 		matrices.model = modelTransform;
@@ -85,28 +91,23 @@ void Mesh::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, glm::mat4& viewPro
 	}
 }
 
-void Mesh::Draw(ID3D12GraphicsCommandList* cmdList, glm::mat4& viewProjectionMatrix, glm::mat4& modelTransform, glm::vec3& cameraPosition)
+void Mesh::Draw(ID3D12GraphicsCommandList* cmdList, glm::mat4& modelTransform)
 {
 	if (m_nSubmeshes > 0)
 	{
 		for (unsigned int i = 0; i < m_nSubmeshes; i++)
 		{
-			m_submeshes[i].Draw(cmdList, viewProjectionMatrix, modelTransform, cameraPosition);
+			m_submeshes[i].Draw(cmdList, modelTransform);
 		}
 	}
 	else
 	{
-		Matrices matrices;
-		matrices.viewProj = viewProjectionMatrix;
-		matrices.model = modelTransform;
-
 		// === IA === //
 		cmdList->IASetVertexBuffers(0, 1, &m_vbv);
 		cmdList->IASetIndexBuffer(&m_ibv);
-		// === ROOT === //
-		cmdList->SetGraphicsRoot32BitConstants(0, 32, &matrices, 0);
-		cmdList->SetGraphicsRoot32BitConstants(4, 4, &m_material->m_ID, 0);
+		// === ROOT === //f
+		cmdList->SetGraphicsRoot32BitConstants(1, 4, &m_ID, 0);
 
-		cmdList->DrawIndexedInstanced(m_nIndex, 1, 0, 0, (UINT)m_material->m_ID);
+		cmdList->DrawIndexedInstanced(m_nIndex, 1, 0, 0, 0);
 	}
 }

@@ -602,11 +602,12 @@ int main()
 			// === PSO === //
 			cmdList->SetPipelineState(pbrPso.Get());
 			cmdList->SetGraphicsRootSignature(pbrRootSignature);
-			cmdList->SetGraphicsRoot32BitConstants(1, 4, &camera.m_position, 0);
+			camera.SendShaderParams(cmdList, 0);
 			cubeLight.SendShaderParams(cmdList, 2);
-			cmdList->SetGraphicsRootConstantBufferView(3, mainObjList.m_materialDatas->GetGPUVirtualAddress());
+			cmdList->SetGraphicsRootConstantBufferView(3, mainObjList.m_modelData->GetGPUVirtualAddress());
+			cmdList->SetGraphicsRootConstantBufferView(4, mainObjList.m_materialDatas->GetGPUVirtualAddress());
 			mainObjList.BindDescriptorHeaps(cmdList, 5);
-			mainObjList.Draw(cmdList, camera);
+			mainObjList.Draw(cmdList);
 
 			// Cube
 			// === PSO === //
