@@ -22,7 +22,7 @@ void main(
 	out float3 o_tangent : Tangent0,
 	out float3 o_bitangent : Tangent1,
 	out float4 o_currentPos : PositionT,
-	out uint   o_materialID : TEST,
+	out uint o_materialID : TEXCOORD5,
 	out float4 o_pos : SV_Position
 )
 {	

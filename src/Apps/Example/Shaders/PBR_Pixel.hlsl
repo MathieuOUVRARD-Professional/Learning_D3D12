@@ -16,7 +16,7 @@ cbuffer LightConstants : register(b2)
 
 cbuffer MaterialData : register(b3)
 {
-    MaterialData materialData;
+    MaterialData materialsData[100];
 }
 
 Texture2D<float4> bindlessTextures[] : register(t0, space0);
@@ -131,12 +131,14 @@ void main(
 	in float3 i_tangent : Tangent0,
 	in float3 i_bitangent : Tangent1,
 	in float4 i_currentPos : PositionT,
-	in uint	  i_materialID : TEST,
+	in uint i_materialID : TEXCOORD5,
 
 // === OUT === //
 	out float4 pixel : SV_Target
 )
 {	
+    MaterialData materialData = materialsData[i_materialID];
+	
 	// Texture sampling
 	float3 albedoTexel = materialData.baseColor * bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, i_uv).rgb;
 	float3 normalTexel = bindlessTextures[NonUniformResourceIndex(materialData.normalID)].Sample(textureSampler, i_uv).rgb;
