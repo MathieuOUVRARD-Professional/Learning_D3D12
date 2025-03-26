@@ -115,3 +115,8 @@ void DXPipelineState::SetWireframe()
 {
 	m_gfxPsod.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME; 
 }
+
+void DXPipelineState::SetFrontFaceCulling()
+{
+	m_gfxPsod.RasterizerState.CullMode = D3D12_CULL_MODE_FRONT;
+}

@@ -416,6 +416,7 @@ int main()
 		pbrPso.Create();
 
 		shadowPassPso.Init(L"ShadowPass_PSO", shadowPassSignature, vertexLayout, _countof(vertexLayout), &shadowPassVertexShader);
+		wireframePso.SetFrontFaceCulling();
 		shadowPassPso.Create();
 
 		// === Buffer Views === //
@@ -561,7 +562,7 @@ int main()
 			TransformUI(camera, lightModel, cubeLightTransform);
 			
 			cubeLight.m_position = cubeLightTransform.m_position = glm::vec3(lightModel[3]);			
-			cubeLight.ComputeViewProjMatrix(50.0f);
+			cubeLight.ComputeViewProjMatrix(30.0f);
 					
 			// === SHADOW PASS === //
 			shadowMap.BindDSV(cmdList);
@@ -592,7 +593,7 @@ int main()
 			cmdList->IASetIndexBuffer(&ibv);
 			// === ROOT === //
 			camera.SendShaderParams(cmdList, 0, pyramidModel);
-			cubeLight.SendShaderParams(cmdList, 1);
+			cubeLight.SendShaderParamsSmall(cmdList, 1);
 			cmdList->SetGraphicsRoot32BitConstants(3, 4, &camera.m_position, 0);
 			eyeTextures.AddCommands(cmdList, 4);
 			// === Draw === //

@@ -21,6 +21,7 @@ cbuffer MaterialData : register(b4)
 
 Texture2D<float4> bindlessTextures[] : register(t0, space0);
 sampler textureSampler : register(s0);
+sampler shadowSampler : register(s1);
 
 
 float3 ApplyNormalMap(float3 normal, float3 tangent, float3 bitangent, float3 sampledNormal)
@@ -33,6 +34,42 @@ float3 ApplyNormalMap(float3 normal, float3 tangent, float3 bitangent, float3 sa
 	
 	//Adapt sampled normal from tangent space to world space 
 	return normalize(mul(sampledNormal, TBN));
+}
+
+float ComputeShadow(float4 shadowPos, Light light, float3 normalWorldSpace)
+{
+	//Convert from homogeneous clip space to NDC
+    float3 projCoords = shadowPos.xyz / shadowPos.w;
+    projCoords.xy = shadowPos.xy * float2(0.5f, -0.5f) + 0.5f;;
+	
+	//Compare depth with shadow map
+    float closestDepth = bindlessTextures[NonUniformResourceIndex(light.shadowMapID)].Sample(textureSampler, projCoords.xy).r;
+    float currentDepth = projCoords.z;
+	
+    float bias = 0.005f; //max(0.05 * (1.0 - dot(normalWorldSpace, light.direction)), 0.005);
+	
+    float shadow = 0.0;
+	
+    float2 shadowMapSize = float2(0.0f, 0.0f);
+    bindlessTextures[NonUniformResourceIndex(light.shadowMapID)].GetDimensions(shadowMapSize.x, shadowMapSize.y);
+	
+    float2 texelSize = 1.0 / shadowMapSize;
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = bindlessTextures[NonUniformResourceIndex(light.shadowMapID)].Sample(textureSampler, projCoords.xy + float2(x, y) * texelSize).r;
+			
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
+	
+    if (currentDepth > 1.0)
+    {
+		shadow = 0.0;
+	}
+    return shadow;
 }
 
 float NormalDistributionGGX(float3 normalWorldSpace, float3 halfway, float roughness)
@@ -157,9 +194,13 @@ void main(
     float3 viewDirection = normalize(cameraData.position - pInput.currentPos.xyz);
 	
     float3 lighting = 0.0f;
+	
+    float4 shadowPos = mul(light.viewProjMatrix, float4(pInput.currentPos.xyz, 1.0f));
+    float shadowFactor = ComputeShadow(shadowPos, light, normalWorldSpace);
+	
     lighting = ComputeLighting(light, normalWorldSpace, viewDirection, pInput.currentPos.xyz, albedoTexel, roughness, metalness);
 	
-    float3 finalColor = lighting + emmisive + ambient;
+    float3 finalColor = (1.0 - shadowFactor) * lighting + emmisive + ambient;
 	
 	//Gamma correction
     float gamma = 2.2;

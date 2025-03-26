@@ -16,6 +16,7 @@ class Light
         void ComputeViewProjMatrix(float ortoSize);
 
         void SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot);
+        void SendShaderParamsSmall(ID3D12GraphicsCommandList* cmdList, int bufferSlot);
 
         std::string m_name = "";
 
@@ -52,5 +53,23 @@ class Light
             float innerAngle = 25.0f;
             float outerAngle = 30.0f;
             float shadowmapID = -1;
+            float padding;
+        };
+
+        struct LightDataSmall
+        {
+            glm::vec3 position = glm::vec3(0.0f);
+            float type;
+
+            glm::vec3 direction = glm::normalize(glm::vec3(-0.5f, -1.0f, -0.5f));
+            float intensity = 1.0f;
+
+            glm::vec3 color = glm::vec3(1.0f);
+            float radius = 100.0f;
+
+            float innerAngle = 25.0f;
+            float outerAngle = 30.0f;
+            float padding0;
+            float padding1;
         };
 };

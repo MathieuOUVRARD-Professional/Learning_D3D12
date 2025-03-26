@@ -48,6 +48,7 @@ struct Light
     
     float innerAngle;
     float outerAngle;
+    float shadowMapID;    
 };
 
 struct PBR_V_Out

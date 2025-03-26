@@ -89,3 +89,22 @@ void Light::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
 
 	cmdList->SetGraphicsRoot32BitConstants(bufferSlot, 32, &data, 0);
 }
+
+void Light::SendShaderParamsSmall(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
+{
+	LightDataSmall data;
+
+	data.type = (float)m_type;
+
+	data.position = m_position;
+	data.direction = m_direction;					//Reversing direction as it's based on position
+
+	data.intensity = m_intensity;
+	data.radius = m_radius;
+	data.innerAngle = glm::cos(glm::radians(m_innerAngle));
+	data.outerAngle = glm::cos(glm::radians(m_outerAngle));
+
+	data.color = m_color;
+
+	cmdList->SetGraphicsRoot32BitConstants(bufferSlot, 16, &data, 0);
+}

@@ -19,7 +19,7 @@ bool DXContext::Init()
 		return false;
 	}
 
-	if (FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_device))))
+	if (FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_device))))
 	{
 		return false;
 	}
