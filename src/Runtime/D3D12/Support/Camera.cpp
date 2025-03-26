@@ -115,7 +115,6 @@ void Camera::Inputs()
 			glm::vec3 newOrientation = glm::rotate(m_orientation, glm::radians(-rotX), glm::normalize(glm::cross(m_orientation, m_up)));
 			if (!((glm::angle(newOrientation, m_up) <= glm::radians(5.0f)) || glm::angle(newOrientation, -m_up) <= glm::radians(5.0f)))
 			{
-
 				m_orientation = newOrientation;
 			}
 			m_orientation = glm::rotate(m_orientation, glm::radians(-roty), m_up);

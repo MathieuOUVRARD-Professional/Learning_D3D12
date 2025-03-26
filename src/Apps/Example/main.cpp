@@ -416,7 +416,6 @@ int main()
 		pbrPso.Create();
 
 		shadowPassPso.Init(L"ShadowPass_PSO", shadowPassSignature, vertexLayout, _countof(vertexLayout), &shadowPassVertexShader);
-		wireframePso.SetFrontFaceCulling();
 		shadowPassPso.Create();
 
 		// === Buffer Views === //
@@ -569,6 +568,7 @@ int main()
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			cmdList->SetGraphicsRootSignature(shadowPassSignature);
 			cmdList->SetPipelineState(shadowPassPso.Get());	
+
 			mainObjList.ShadowPassDraw(cmdList, cubeLight);
 
 			shadowMap.CreateDepthBufferSRV(&bindlessHeapAllocator);
