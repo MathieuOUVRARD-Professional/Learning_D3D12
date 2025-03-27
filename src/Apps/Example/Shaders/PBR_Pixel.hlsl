@@ -40,18 +40,19 @@ float ComputeShadow(float4 shadowPos, Light light, float3 normalWorldSpace)
 {
 	//Convert from homogeneous clip space to NDC
     float3 projCoords = shadowPos.xyz / shadowPos.w;
-    projCoords.xy = shadowPos.xy * float2(0.5f, -0.5f) + 0.5f;;
+    projCoords.xy = projCoords.xy * float2(0.5f, -0.5f) + 0.5f;
 	
 	//Compare depth with shadow map
     float currentDepth = projCoords.z;
-	
-    float bias = 0.005f; //max(0.05 * (1.0 - dot(normalWorldSpace, light.direction)), 0.005);
+
+	float spotBias = max(0.0001f * (1.0f - dot(normalWorldSpace, light.direction)), 0.000005f);
+    float bias = lerp(0.005f, spotBias, light.type == 1 || light.type == 2); // max(0.05 * (1.0 - dot(normalWorldSpace, light.direction)), 0.005);
 	
     float shadow = 0.0;
 	
     float2 shadowMapSize = float2(0.0f, 0.0f);
     bindlessTextures[NonUniformResourceIndex(light.shadowMapID)].GetDimensions(shadowMapSize.x, shadowMapSize.y);
-    currentDepth = lerp(currentDepth, LinearizeDepth(currentDepth, 0.01f, light.radius) / light.radius, light.type == 1 || light.type == 2);
+    //currentDepth = lerp(currentDepth, LinearizeDepth(currentDepth, 0.01f, light.radius) / light.radius, light.type == 1 || light.type == 2);
 	
     float2 texelSize = 1.0 / shadowMapSize;
     for (int x = -1; x <= 1; ++x)
@@ -59,7 +60,7 @@ float ComputeShadow(float4 shadowPos, Light light, float3 normalWorldSpace)
         for (int y = -1; y <= 1; ++y)
         {
             float pcfDepth = bindlessTextures[NonUniformResourceIndex(light.shadowMapID)].Sample(textureSampler, projCoords.xy + float2(x, y) * texelSize).r;
-            pcfDepth = lerp(pcfDepth, LinearizeDepth(pcfDepth, 0.01f, light.radius) / light.radius, light.type == 1 || light.type == 2);
+            //pcfDepth = lerp(pcfDepth, LinearizeDepth(pcfDepth, 0.01f, light.radius) / light.radius, light.type == 1 || light.type == 2);
 			
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
         }
@@ -196,7 +197,7 @@ void main(
 	
     float3 lighting = 0.0f;
 	
-    float4 shadowPos = mul(light.viewProjMatrix, pInput.currentPos);
+    float4 shadowPos = mul(light.viewProjMatrix, float4(pInput.currentPos.xyz, 1.0f));
     float shadowFactor = ComputeShadow(shadowPos, light, normalWorldSpace);
 	
     lighting = ComputeLighting(light, normalWorldSpace, viewDirection, pInput.currentPos.xyz, albedoTexel, roughness, metalness);

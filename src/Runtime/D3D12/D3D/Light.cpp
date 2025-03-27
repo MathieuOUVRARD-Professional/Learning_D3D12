@@ -63,7 +63,7 @@ void Light::ComputeViewProjMatrix(float ortoSize)
 	else if (m_type == 2)
 	{
 		view = glm::lookAt(m_position, m_position + m_direction, glm::vec3(0.0f, 1.0f, 0.0f));
-		projection = glm::perspective(glm::radians(m_outerAngle), 1.0f, 0.01f, m_radius);
+		projection = glm::perspective(glm::radians(m_outerAngle * 2), 1.0f, 0.01f, m_radius);
 	}
 	m_viewProjMatrix = projection * view;
 }
