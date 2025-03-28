@@ -16,6 +16,7 @@
 - Fix view setting cursor at the midle of the main screen and not nearest
 - C++ side root signature
 - Add RTV to ShadowMap Framebuffer to linearize it for debuging view
+- Check utf16 for set name
 
 ## Done
 

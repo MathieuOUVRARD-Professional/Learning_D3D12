@@ -35,6 +35,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   find_package(assimp CONFIG REQUIRED)
   find_package(Freetype CONFIG REQUIRED)
   find_package(imguizmo CONFIG REQUIRED)
+  find_package(dstorage CONFIG REQUIRED)
 
   add_subdirectory(src/Runtime/D3D12)   #D3D12 Custom Lib
   add_subdirectory(src/Runtime/ImGui)   #ImGui Lib
@@ -46,6 +47,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   target_link_libraries(App PRIVATE fmt::fmt)
   target_link_libraries(App PRIVATE assimp::assimp)
   target_link_libraries(App PRIVATE imguizmo::imguizmo)
+  target_link_libraries(App PRIVATE Microsoft::DirectStorage)
 endif()
  
  

@@ -5,7 +5,8 @@
     "fmt",
     "freetype",
     "glm",
+    "imguizmo",
     "spdlog",
-    "imguizmo"
+    "dstorage"
   ]
 }
