@@ -237,7 +237,7 @@ int main()
 		std::vector<std::string> eyeTexturePaths= { "Textures/auge_512_512_BGRA_32BPP.png", "Textures/auge_spec_512_512_BGRA_32BPP.png" };
 		std::vector<std::string> eyeTextureNames = { "All_Seeing_Eye", "All_Seeing_Eye_SPECULAR" };
 		//=== Textures ===//
-		Texture eyeTextures = Texture(eyeTexturePaths, eyeTextureNames);		
+		Texture eyeTextures = Texture(eyeTexturePaths, eyeTextureNames, false);		
 
 		//UINT64 uploadBufferSize = eyeTextures.GetTotalTextureSize() + 2048 + mainObjList.TotalSize();
 		UINT64 uploadBufferSize = 512 * (1024 * 1024);	//512 MB buffer

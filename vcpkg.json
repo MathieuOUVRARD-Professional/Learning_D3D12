@@ -2,11 +2,12 @@
   "dependencies": [
     "assimp",
     "directx-headers",
+    "dstorage",
     "fmt",
     "freetype",
     "glm",
     "imguizmo",
     "spdlog",
-    "dstorage"
+    "directxtex"
   ]
 }

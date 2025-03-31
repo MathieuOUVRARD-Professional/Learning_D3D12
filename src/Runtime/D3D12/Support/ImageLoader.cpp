@@ -9,8 +9,75 @@
 	 {GUID_WICPixelFormat24bppRGB, DXGI_FORMAT_R8G8B8A8_UNORM}
  };
 
-bool ImageLoader::LoadImageFromDisk(const std::filesystem::path& imagePath, ImageData& imageData)
+bool ImageLoader::LoadImageFromDisk(const std::filesystem::path& imagePath, ImageData& imageData, bool useMips)
 {
+	if (useMips)
+	{
+		std::string path = imagePath.string();
+
+		// If imagePath extension != .dds use generated Mips
+		if (path.substr(path.size() - 4, path.size()) != ".dds")
+		{
+			// Changing image extension "PathToTexture.png" --> "PathToTexture.dds"
+			std::string ddsPath = path.substr(0, path.size() - (4));
+			ddsPath += ".dds";
+
+			// Adding .dds folder to image path "PathToTexture.dds" --> "PathTo/DSS/Texture.dds"
+			uint32_t offset = (uint32_t)(ddsPath.find_last_of('/', ddsPath.size()) + 1);
+			ddsPath.insert(offset, "DDS/");
+
+			DirectX::ScratchImage image;
+
+			// Check if .dds file exist
+			struct stat buffer;
+			if (stat(ddsPath.c_str(), &buffer) == 0)
+			{
+				spdlog::info("DDS already generated: " + path.substr(offset, path.size() - offset));
+
+				// Load previously generaterated Mips
+				//DirectX::LoadFromDDSFile(std::wstring(ddsPath.begin(), ddsPath.end()).c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);				
+
+				//imageData.bitPerPixel = DirectX::BitsPerPixel(image.GetMetadata().format);
+				//imageData.height = image.GetMetadata().height;
+				//imageData.width = image.GetMetadata().width;
+				//imageData.giPixelFormat = image.GetMetadata().format;
+			}
+			else
+			{
+				spdlog::info("Generating DDS: " + path.substr(offset, path.size() - offset));
+
+				// Load Image
+				HRESULT hr = DirectX::LoadFromWICFile(std::wstring(path.begin(), path.end()).c_str(), DirectX::WIC_FLAGS::WIC_FLAGS_NONE, nullptr, image);
+				if (FAILED(hr)) 
+				{
+					spdlog::error("Generate Mips: Failed to load texture: " + imagePath.string());
+					return false;
+				}
+
+				// Generate Mips
+				DirectX::ScratchImage mipChain;
+				hr = DirectX::GenerateMipMaps(*image.GetImages(), DirectX::TEX_FILTER_BOX, 0, mipChain);
+				if (FAILED(hr)) {
+					spdlog::error("Generate Mips: Failed to generate mipmaps!");
+					return false;
+				}
+
+				// Save .dds file
+				hr = DirectX::SaveToDDSFile(mipChain.GetImages(), mipChain.GetMetadata().mipLevels, mipChain.GetMetadata(), DirectX::DDS_FLAGS_NONE, std::wstring(ddsPath.begin(), ddsPath.end()).c_str());
+				if (FAILED(hr)) {
+					spdlog::error("Failed to save DDS!");
+					return false;
+				}
+
+				//imageData.bitPerPixel = DirectX::BitsPerPixel(mipChain.GetMetadata().format);
+				//imageData.height = mipChain.GetMetadata().height;
+				//imageData.width = mipChain.GetMetadata().width;
+				//imageData.giPixelFormat = mipChain.GetMetadata().format;
+			}
+		}		
+	}
+
+
 	// Factory
 	ComPointer<IWICImagingFactory> wicFactory;
 	__ImageLoader_CAR(

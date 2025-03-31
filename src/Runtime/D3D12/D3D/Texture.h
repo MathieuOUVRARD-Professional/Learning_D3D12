@@ -38,7 +38,7 @@ class Texture
 			return m_textureDatas[textureIndex].content.data();
 		};
 		
-		Texture(std::vector<std::string>& paths, std::vector<std::string>& names);
+		Texture(std::vector<std::string>& paths, std::vector<std::string>& names, bool useMips);
 		Texture();
 
 		uint32_t m_count = 0;

@@ -1,6 +1,6 @@
 #include "D3D/Texture.h"
 
-Texture::Texture(std::vector<std::string>& paths, std::vector<std::string>& names)
+Texture::Texture(std::vector<std::string>& paths, std::vector<std::string>& names, bool useMips)
 {
 	// === Texture Data === //
 	if (paths.size() < 1)
@@ -13,7 +13,7 @@ Texture::Texture(std::vector<std::string>& paths, std::vector<std::string>& name
 		for (uint32_t i = 0; i < m_count; i++)
 		{
 			ImageLoader::ImageData imageData;
-			ImageLoader::LoadImageFromDisk(paths[i], imageData);
+			ImageLoader::LoadImageFromDisk(paths[i], imageData, useMips);
 
 			m_textures.push_back(nullptr);
 			m_textureDatas.push_back(imageData);

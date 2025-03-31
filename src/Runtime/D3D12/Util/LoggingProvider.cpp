@@ -16,7 +16,7 @@ void D3EZ::LoggingProvider::Init()
 	logger->sinks().push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(logFile.string()));
 
 	// Pattern
-	logger->set_pattern("[%^%l%$] [%d.%m.%Y %H:%M:%S'%e] [%n] %v");
+	logger->set_pattern("[%^%l%$] [%d.%m.%Y %H:%M:%S] %v");
 
 	// Flushing
 	logger->flush_on(spdlog::level::warn);

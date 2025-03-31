@@ -7,6 +7,7 @@
 #include <D3D/Material.h>
 #include <Support/ObjectList.h>
 #include <Util/HRException.h>
+#include <Util/LoggingProvider.h>
 
 #include <vector>
 #include <iostream>

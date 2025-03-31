@@ -87,14 +87,24 @@ void C_AssImp::ProcessMeshesNodes(ObjectList& objectList, const aiScene& scene, 
 
 void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, ObjectList& objectList)
 {	
-	std::cout << "Node: " << node.mName.C_Str() << "\r\nParent node: " << node.mParent->mName.C_Str() << "\r\nCopying "; 
-	node.mNumMeshes > 1 ? std::cout << node.mNumMeshes << " submeshes\r\n" : std::cout << "a mesh\r\n";
+	// Node name
+	std::string nodeName = node.mName.C_Str();
+	spdlog::info("Node: " + nodeName);
 
+	// Parent node name
+	std::string parentNodeName = "";
 	if (objectList.GetList().back().m_parent != 0x0000000000000000)
 	{
-		std::cout << "Parent obj: " << objectList.GetList().back().m_parent->m_name.c_str();
+		parentNodeName = node.mParent->mName.C_Str();
+		spdlog::info("Parent node: " + parentNodeName);
 	}
-	std::cout << "\r\n--------------- \r\n";
+
+	// Num submeshes message
+	std::string message = "Copying ";
+	node.mNumMeshes > 1 ? message += fmt::format("{} submeshes", node.mNumMeshes) : message = message + "a mesh";
+	spdlog::info(message);
+	
+	std::cout << "------------------------------ \r\n";
 
 	for (unsigned int i = 0; i < node.mNumMeshes; i++)
 	{
@@ -102,9 +112,12 @@ void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, ObjectList& object
 		std::vector<uint32_t> indices;
 
 		aiMesh* meshNode = scene.mMeshes[node.mMeshes[i]];
-		node.mNumMeshes > 1 ? std::cout << "Submesh: " : std::cout << "Mesh: ";
-		std::cout << meshNode->mName.C_Str() << " | " << meshNode->mNumFaces << " faces\r\n";
+		nodeName = meshNode->mName.C_Str();
 
+		message = node.mNumMeshes > 1 ? "Submesh: " : "Mesh: ";
+		message += fmt::format("{0} | {1} faces", nodeName, meshNode->mNumFaces);
+		spdlog::info(message);
+		
 		for (unsigned int j = 0; j < meshNode->mNumVertices; j++)
 		{
 			Vertex vertex{};
@@ -158,7 +171,7 @@ void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, ObjectList& object
 			objectList.GetList().back().SetMesh(mesh);
 		}
 	}	
-	std::cout << "---------------\r\n\r\n";
+	std::cout << std::endl;
 }
 
 void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, std::string sceneDirectory)
@@ -209,21 +222,24 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 		}
 
 		material.m_name = materialNode->GetName().C_Str();
-		std::cout << "Material name: " << material.m_name << std::endl;
+		spdlog::info("Material name: " + material.m_name);
 		
 		if (materialNode->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS && (baseColor.r < 1 || baseColor.g < 1 || baseColor.b < 1))
 		{
-			std::cout << "BaseColor : " << baseColor.r << ", " << baseColor.g << ", " << baseColor.b << std::endl;
+			std::string message = fmt::format("BaseColor : {0:.2f}, {1:.2f}, {2:.2f}", baseColor.r, baseColor.g, baseColor.b);
+			spdlog::info(message);
 			material.m_baseColor = glm::vec3(baseColor.r, baseColor.g, baseColor.b);
 		}
 		if (materialNode->Get(AI_MATKEY_COLOR_EMISSIVE, emissive) == AI_SUCCESS && (emissive.r > 0 || emissive.g > 0 || emissive.b > 0))
 		{
-			std::cout << "Emissive color: " << emissive.r << ", " << emissive.g << ", " << emissive.b << std::endl;
+			std::string message = fmt::format("Emissive color: {0:.2f}, {1:.2f}, {2:.2f}", emissive.r, emissive.g, emissive.b);
+			spdlog::info(message);
 			material.m_emissiveColor = glm::vec3(emissive.r, emissive.g, emissive.b);
 		}
 		if (materialNode->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS && opacity < 1.0f)
 		{
-			std::cout << "Material opacity: " << opacity << std::endl;
+			std::string message = fmt::format("Material opacity: {0:.3f}", opacity);
+			spdlog::info(message);
 			material.m_opacity = opacity;
 		}		
 		
@@ -293,11 +309,12 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 			materialNode->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor);
 			material.m_metallicFactor = metallicFactor;
 			materialNode->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor);
-			material.m_roughnessFactor = roughnessFactor;
+			material.m_roughnessFactor = roughnessFactor;			
 
-			std::cout << "Metallic Factor: " << metallicFactor << " Roughness Factor: " << roughnessFactor << std::endl;
+			std::string message = fmt::format("Metallic Factor : {0} Roughness Factor: {1}", metallicFactor, roughnessFactor);
+			spdlog::info(message);
 		}
-		std::cout << std::endl;
+
 		if (materialNode->GetTexture(aiTextureType_EMISSIVE, 0, &texturePath) == AI_SUCCESS)
 		{
 			emissiveTexturePath = sceneDirectory + texturePath.C_Str();
@@ -325,10 +342,11 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 		}
 		else
 		{
-			Texture materialTextures(texturesPaths, texturesNames);
+			Texture materialTextures(texturesPaths, texturesNames, true);
 			material.SetTextures(materialTextures);
 		}	
 
+		std::cout << std::endl;
 		materials.emplace_back(material);
 	}
 	objectList.SetMaterials(materials);

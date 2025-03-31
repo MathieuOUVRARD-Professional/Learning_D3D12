@@ -3,9 +3,12 @@
 #include<Support/WinInclude.h>
 #include<Support/ComPointer.h>
 
+#include <Util/LoggingProvider.h>
+
 #include<vector>
 #include<filesystem>
 #include<algorithm>
+#include<DirectXTex.h>
 
 #define __ImageLoader_CAR(expr) do { if(FAILED(expr)) { return false; } } while(false)
 
@@ -24,7 +27,7 @@ class ImageLoader
 			DXGI_FORMAT giPixelFormat;
 		};
 
-		static bool LoadImageFromDisk(const std::filesystem::path& imagePath, ImageData& data);
+		static bool LoadImageFromDisk(const std::filesystem::path& imagePath, ImageData& data, bool useMips);
 	private:
 		struct GUID_to_DXGI
 		{
