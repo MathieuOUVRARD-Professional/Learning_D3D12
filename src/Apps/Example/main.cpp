@@ -547,10 +547,6 @@ int main()
 			angle += 0.005f;			
 			pyramidModel = glm::rotate(pyramidModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
 
-			std::string colorPickerName = "Light color";
-			lightColor = ImGuiColorPicker(&colorPickerName, true);
-			ImGuiPerfOverlay(true);
-
 			cubeLight.m_position = cubeLightTransform.m_position;
 			cubeLight.m_direction = glm::normalize(-cubeLightTransform.m_position);
 

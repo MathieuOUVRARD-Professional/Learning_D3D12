@@ -62,7 +62,7 @@ struct ExampleDescriptorHeapAllocator
 };
 
 void ImGuiPerfOverlay(bool open);
-glm::vec3 ImGuiColorPicker(std::string* colorName, bool open);
+glm::vec3 ImGuiColorPicker(std::string name);
 void InitGuizmo();
 void TranslateGuizmo(Camera& camera, glm::mat4& model);
 void RotateGuizmo(Camera& camera, glm::mat4& model);

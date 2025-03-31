@@ -51,21 +51,16 @@ void ImGuiPerfOverlay(bool open)
     ImGui::End();
 }
 
-glm::vec3 ImGuiColorPicker(std::string* colorName, bool open)
+glm::vec3 ImGuiColorPicker(std::string name)
 {
     static ImVec4 color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
     
     ImGuiColorEditFlags misc_flags =   ImGuiColorEditFlags_NoDragDrop | ImGuiColorEditFlags_NoOptions | ImGuiColorEditFlags_DisplayRGB;
 
-    if (ImGui::Begin(colorName->c_str(), &open))
-    {
-        ImGui::SeparatorText("Color picker");        
-        
-        ImGuiColorEditFlags flags = misc_flags;
-        flags |= ImGuiColorEditFlags_DisplayRGB;
-        ImGui::ColorPicker4("MyColor##8", (float*)&color, flags, NULL);
-    }
-    ImGui::End();
+	ImGui::SeparatorText(name.c_str());
+	ImGuiColorEditFlags flags = misc_flags;
+	flags |= ImGuiColorEditFlags_DisplayRGB;
+	ImGui::ColorPicker4("MyColor##8", (float*)&color, flags, NULL);    
     
     glm::vec3 toReturn = glm::vec3(color.x, color.y, color.z);
     return toReturn;
@@ -472,11 +467,14 @@ void ImageFromResource(ID3D12Resource* resource, ExampleDescriptorHeapAllocator&
         ImGui::EndTooltip();
     }
 }
+
+ImGuiID popupID = 0;
 static int item_selected_idx = 0;
+static bool colorPickerIsUsed = false;
 void LightInterface(std::vector<Light*>& lights)
 {
     ImGui::Begin("Lights", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-    ImGui::SetWindowSize(ImVec2(350.0f, ImGui::GetWindowSize().y));
+    ImGui::SetWindowSize(ImVec2(350.0f, 300.0f));
     ImGui::SetWindowPos(ImVec2(DXWindow::Get().GetWidth() - ImGui::GetWindowSize().x, 225.0f));
 
     const char* lightTypes[] = { "Directional", "Point", "Spot" };
@@ -485,11 +483,12 @@ void LightInterface(std::vector<Light*>& lights)
     {
         if(ImGui::CollapsingHeader(light->m_name.c_str()))
         {
-            ImGui::Indent(10.0f);
+            ImGui::Indent(10.0f);             
 
-
+			// Type
+			ImGui::Text("Type:");
             std::string type = lightTypes[light->m_type];
-            if (ImGui::BeginCombo("Type", type.c_str()))
+            if (ImGui::BeginCombo(("##" + light->m_name + "_TYPE").c_str(), type.c_str()))
             {
                 for (int i = 0; i < 3; i++)
                 {
@@ -514,6 +513,26 @@ void LightInterface(std::vector<Light*>& lights)
                 ImGui::EndCombo();
             }
 
+            //Color
+            ImGui::Text("Color:");
+            ImVec4 color = ImVec4(light->m_color.x, light->m_color.y, light->m_color.z, 1.0f);
+            if (ImGui::ColorButton(("##current" + light->m_name + "_COLOR").c_str(), color))
+            {
+				if (!colorPickerIsUsed) 
+                {
+                    colorPickerIsUsed = true;
+					ImGui::OpenPopup("LightColor");
+				}                
+            }
+			if (ImGui::BeginPopup("LightColor", 0))
+			{
+				light->m_color = ImGuiColorPicker(light->m_name + " color");
+
+				ImGui::EndPopup();
+                colorPickerIsUsed = false;
+			}
+
+            // Intensity
 			ImGui::Text("Intensity:");
 			float intensity = light->m_intensity;
 			if (ImGui::DragFloat(("##" + light->m_name + "_INTENSITY").c_str(), &intensity, 0.001f, 0, 2.0f, "%.3f"))
@@ -521,6 +540,7 @@ void LightInterface(std::vector<Light*>& lights)
 				light->m_intensity = intensity;
 			}
 
+            // Range
             bool isDirect = light->m_type == 0;
             ImGui::BeginDisabled(isDirect);
 			ImGui::Text("Range:");
@@ -531,6 +551,7 @@ void LightInterface(std::vector<Light*>& lights)
 			}
             ImGui::EndDisabled();
 
+            //Spot Angles
             bool isSpot = light->m_type == 2;
             ImGui::BeginDisabled(!isSpot);
 			ImGui::Text("Spot inner angle:");
