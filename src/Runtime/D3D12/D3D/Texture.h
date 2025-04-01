@@ -22,7 +22,23 @@ class Texture
 
 		inline UINT64 GetTextureSize(int textureIndex)
 		{
-			return m_textureSizes[textureIndex];
+			// Only Mip 0
+			if (m_textureDatas[textureIndex].mipsLevels == 1)
+			{
+				return m_textureSizes[textureIndex];
+			}
+			// Multiple Mip levels 
+			else
+			{
+				UINT result = 0;
+				UINT mipLevels = m_textureDatas[textureIndex].mipsLevels;
+
+				for (int i = 0; i < mipLevels; i++)
+				{
+					result += m_textureSizes[textureIndex] / pow(4, mipLevels);
+				}
+				return result;
+			}
 		};
 		inline UINT64 GetTotalTextureSize()
 		{
@@ -33,9 +49,25 @@ class Texture
 			}
 			return totalSize;
 		}
-		inline char* GetTextureData(int textureIndex, int mipLevel = 0)
+		inline char* GetTextureData(int textureIndex)
 		{
-			return m_textureDatas[textureIndex].content[mipLevel].data();
+			// Only Mip 0
+			if (m_textureDatas[textureIndex].mipsLevels == 1)
+			{
+				return m_textureDatas[textureIndex].content[0].data();
+			}
+			// Multiple Mip levels 
+			else
+			{
+				std::vector<char> result;
+				UINT mipCount = m_textureDatas[textureIndex].mipsLevels;
+
+				for (int i = 0; i < mipCount; i++)
+				{
+					result.emplace_back(m_textureDatas[textureIndex].content[i].data());
+				}
+				return result.data();
+			}
 		};
 		
 		Texture(std::vector<std::string>& paths, std::vector<std::string>& names, bool useMips);

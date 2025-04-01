@@ -85,6 +85,7 @@ bool ImageLoader::LoadImageFromDisk(const std::filesystem::path& imagePath, Imag
 					return false;
 				}
 
+				// Get Metadata
 				imageData.bitPerPixel = (uint32_t)DirectX::BitsPerPixel(mipChain.GetMetadata().format);
 				imageData.height = (uint32_t)mipChain.GetMetadata().height;
 				imageData.width = (uint32_t)mipChain.GetMetadata().width;
