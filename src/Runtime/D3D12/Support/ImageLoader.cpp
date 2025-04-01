@@ -35,12 +35,28 @@ bool ImageLoader::LoadImageFromDisk(const std::filesystem::path& imagePath, Imag
 				spdlog::info("DDS already generated: " + path.substr(offset, path.size() - offset));
 
 				// Load previously generaterated Mips
-				//DirectX::LoadFromDDSFile(std::wstring(ddsPath.begin(), ddsPath.end()).c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);				
+				DirectX::LoadFromDDSFile(std::wstring(ddsPath.begin(), ddsPath.end()).c_str(), DirectX::DDS_FLAGS_NONE, nullptr, image);				
+ 
+				// Copy metadata
+				imageData.bitPerPixel = (uint32_t) DirectX::BitsPerPixel(image.GetMetadata().format);
+				imageData.height = (uint32_t)image.GetMetadata().height;
+				imageData.width = (uint32_t)image.GetMetadata().width;
+				imageData.mipsLevels = (uint32_t)image.GetMetadata().mipLevels;
+				imageData.giPixelFormat = image.GetMetadata().format;
 
-				//imageData.bitPerPixel = DirectX::BitsPerPixel(image.GetMetadata().format);
-				//imageData.height = image.GetMetadata().height;
-				//imageData.width = image.GetMetadata().width;
-				//imageData.giPixelFormat = image.GetMetadata().format;
+				// Copy content for each Mip level
+				for (unsigned int i = 0; i < imageData.mipsLevels; i++)
+				{					
+					imageData.content.emplace_back();
+					imageData.content[i] = std::vector<char>(image.GetImage(i, 0, 0)->slicePitch);
+					memcpy
+					(
+						imageData.content[i].data(), 
+						image.GetImage(i, 0, 0)->pixels, 
+						image.GetImage(i, 0, 0)->slicePitch
+					);
+				}
+				return true;
 			}
 			else
 			{
@@ -69,130 +85,149 @@ bool ImageLoader::LoadImageFromDisk(const std::filesystem::path& imagePath, Imag
 					return false;
 				}
 
-				//imageData.bitPerPixel = DirectX::BitsPerPixel(mipChain.GetMetadata().format);
-				//imageData.height = mipChain.GetMetadata().height;
-				//imageData.width = mipChain.GetMetadata().width;
-				//imageData.giPixelFormat = mipChain.GetMetadata().format;
+				imageData.bitPerPixel = (uint32_t)DirectX::BitsPerPixel(mipChain.GetMetadata().format);
+				imageData.height = (uint32_t)mipChain.GetMetadata().height;
+				imageData.width = (uint32_t)mipChain.GetMetadata().width;
+				imageData.mipsLevels = (uint32_t)mipChain.GetMetadata().mipLevels;
+				imageData.giPixelFormat = mipChain.GetMetadata().format;
+
+				for (unsigned int i = 0; i < imageData.mipsLevels; i++)
+				{
+					imageData.content[i] = std::vector<char>(mipChain.GetImage(i, 0, 0)->slicePitch);
+					memcpy
+					(
+						imageData.content[i].data(),
+						mipChain.GetImage(i, 0, 0)->pixels,
+						mipChain.GetImage(i, 0, 0)->slicePitch
+					);
+				}
+
+				return true;
 			}
 		}		
 	}
-
-
-	// Factory
-	ComPointer<IWICImagingFactory> wicFactory;
-	__ImageLoader_CAR(
-		CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&wicFactory))
-		);
-
-	// Load the image
-	ComPointer<IWICStream> wicFileStream;
-	__ImageLoader_CAR(
-		wicFactory->CreateStream(&wicFileStream)
-	);
-	__ImageLoader_CAR(
-		wicFileStream->InitializeFromFilename(imagePath.wstring().c_str(), GENERIC_READ)
-	);
-
-	ComPointer<IWICBitmapDecoder> wicDecoder;
-	__ImageLoader_CAR(
-		wicFactory->CreateDecoderFromStream(wicFileStream, nullptr, WICDecodeMetadataCacheOnDemand, &wicDecoder)
-	);
-
-	ComPointer<IWICBitmapFrameDecode> wicFrameDecoder;
-	__ImageLoader_CAR(
-		wicDecoder->GetFrame(0, &wicFrameDecoder)
-	);
-
-	// Trivial metadata
-	__ImageLoader_CAR(
-		wicFrameDecoder->GetSize(&imageData.width, &imageData.height)
-	);
-	__ImageLoader_CAR(
-		wicFrameDecoder->GetPixelFormat(&imageData.wicPixelFormat)
-	);
-
-	ComPointer<IWICFormatConverter> wicConverter;
-	if (imageData.wicPixelFormat != GUID_WICPixelFormat32bppRGBA)
-	{
-		__ImageLoader_CAR(
-			wicFactory->CreateFormatConverter(&wicConverter)
-		);
-		__ImageLoader_CAR(
-			wicConverter->Initialize
-			(
-				wicFrameDecoder.Get(),	// Conversion to R8G8B8
-				GUID_WICPixelFormat32bppRGBA,
-				WICBitmapDitherTypeNone,
-				nullptr,
-				0.0,
-				WICBitmapPaletteTypeCustom
-			)
-		);
-		imageData.wicPixelFormat = GUID_WICPixelFormat32bppRGBA;
-	}
 	else
 	{
-		wicConverter = nullptr;
-		__ImageLoader_CAR(
-			wicFactory->CreateFormatConverter(&wicConverter)
-		);
-		__ImageLoader_CAR(
-			wicConverter->Initialize
-			(
-				wicFrameDecoder.Get(), // No conversion, just adapt it for uniformity
-				GUID_WICPixelFormat32bppRGBA,
-				WICBitmapDitherTypeNone,
-				nullptr,
-				0.0,
-				WICBitmapPaletteTypeCustom
-			)
-		);
-	}
 
-	// Metadata of pixel format
-	ComPointer<IWICComponentInfo> wicComponentInfo;
-	__ImageLoader_CAR(
-		wicFactory->CreateComponentInfo(imageData.wicPixelFormat, &wicComponentInfo)
-	);
-	ComPointer<IWICPixelFormatInfo> wicPixelFormatInfo;
-	__ImageLoader_CAR(
-		wicComponentInfo->QueryInterface(&wicPixelFormatInfo)
-	);
-	__ImageLoader_CAR(
-		wicPixelFormatInfo->GetBitsPerPixel(&imageData.bitPerPixel)
-	);
-	__ImageLoader_CAR(
-		wicPixelFormatInfo->GetChannelCount(&imageData.chanelCount)
-	);
-	
-	// DXGI Pixel format
-	auto findIt = std::find_if(s_lookupTable.begin(), s_lookupTable.end(),
-		[&](const GUID_to_DXGI& entry) 
+
+		// Factory
+		ComPointer<IWICImagingFactory> wicFactory;
+		__ImageLoader_CAR(
+			CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&wicFactory))
+		);
+
+		// Load the image
+		ComPointer<IWICStream> wicFileStream;
+		__ImageLoader_CAR(
+			wicFactory->CreateStream(&wicFileStream)
+		);
+		__ImageLoader_CAR(
+			wicFileStream->InitializeFromFilename(imagePath.wstring().c_str(), GENERIC_READ)
+		);
+
+		ComPointer<IWICBitmapDecoder> wicDecoder;
+		__ImageLoader_CAR(
+			wicFactory->CreateDecoderFromStream(wicFileStream, nullptr, WICDecodeMetadataCacheOnDemand, &wicDecoder)
+		);
+
+		ComPointer<IWICBitmapFrameDecode> wicFrameDecoder;
+		__ImageLoader_CAR(
+			wicDecoder->GetFrame(0, &wicFrameDecoder)
+		);
+
+		// Trivial metadata
+		__ImageLoader_CAR(
+			wicFrameDecoder->GetSize(&imageData.width, &imageData.height)
+		);
+		__ImageLoader_CAR(
+			wicFrameDecoder->GetPixelFormat(&imageData.wicPixelFormat)
+		);
+
+		ComPointer<IWICFormatConverter> wicConverter;
+		if (imageData.wicPixelFormat != GUID_WICPixelFormat32bppRGBA)
 		{
-			return memcmp(&entry.wic, &imageData.wicPixelFormat, sizeof(GUID)) == 0;
+			__ImageLoader_CAR(
+				wicFactory->CreateFormatConverter(&wicConverter)
+			);
+			__ImageLoader_CAR(
+				wicConverter->Initialize
+				(
+					wicFrameDecoder.Get(),	// Conversion to R8G8B8
+					GUID_WICPixelFormat32bppRGBA,
+					WICBitmapDitherTypeNone,
+					nullptr,
+					0.0,
+					WICBitmapPaletteTypeCustom
+				)
+			);
+			imageData.wicPixelFormat = GUID_WICPixelFormat32bppRGBA;
 		}
-	);
-	if (findIt == s_lookupTable.end())
-	{
-		return false;
+		else
+		{
+			wicConverter = nullptr;
+			__ImageLoader_CAR(
+				wicFactory->CreateFormatConverter(&wicConverter)
+			);
+			__ImageLoader_CAR(
+				wicConverter->Initialize
+				(
+					wicFrameDecoder.Get(), // No conversion, just adapt it for uniformity
+					GUID_WICPixelFormat32bppRGBA,
+					WICBitmapDitherTypeNone,
+					nullptr,
+					0.0,
+					WICBitmapPaletteTypeCustom
+				)
+			);
+		}
+
+		// Metadata of pixel format
+		ComPointer<IWICComponentInfo> wicComponentInfo;
+		__ImageLoader_CAR(
+			wicFactory->CreateComponentInfo(imageData.wicPixelFormat, &wicComponentInfo)
+		);
+		ComPointer<IWICPixelFormatInfo> wicPixelFormatInfo;
+		__ImageLoader_CAR(
+			wicComponentInfo->QueryInterface(&wicPixelFormatInfo)
+		);
+		__ImageLoader_CAR(
+			wicPixelFormatInfo->GetBitsPerPixel(&imageData.bitPerPixel)
+		);
+		__ImageLoader_CAR(
+			wicPixelFormatInfo->GetChannelCount(&imageData.chanelCount)
+		);
+
+		// DXGI Pixel format
+		auto findIt = std::find_if(s_lookupTable.begin(), s_lookupTable.end(),
+			[&](const GUID_to_DXGI& entry)
+			{
+				return memcmp(&entry.wic, &imageData.wicPixelFormat, sizeof(GUID)) == 0;
+			}
+		);
+		if (findIt == s_lookupTable.end())
+		{
+			return false;
+		}
+		imageData.giPixelFormat = findIt->gi;
+
+		// Image loading
+		// Hardcoded values reasons: we devide by 8 to have the number of bytes but in the case where bitPerPixel = 10 result would be 1 and we would loss data
+		// So we add 7 to be sure to have all the necessary data. (rounding up) 
+		uint32_t stride = ((imageData.bitPerPixel + 7) / 8) * imageData.width;
+		uint32_t size = stride * imageData.height;
+
+		imageData.content.emplace_back();
+		imageData.content[0].resize(size);
+
+		WICRect copyRect;
+		copyRect.X = copyRect.Y = 0;
+		copyRect.Width = imageData.width;
+		copyRect.Height = imageData.height;
+
+		__ImageLoader_CAR(
+			wicConverter->CopyPixels(&copyRect, stride, size, (BYTE*)imageData.content[0].data())
+		);
+
+		return true;
 	}
-	imageData.giPixelFormat = findIt->gi;
-
-	// Image loading
-	// Hardcoded values reasons: we devide by 8 to have the number of bytes but in the case where bitPerPixel = 10 result would be 1 and we would loss data
-	// So we add 7 to be sure to have all the necessary data. (rounding up) 
-	uint32_t stride = ((imageData.bitPerPixel + 7) / 8) * imageData.width;
-	uint32_t size = stride * imageData.height;
-	imageData.content.resize(size);
-
-	WICRect copyRect;
-	copyRect.X = copyRect.Y = 0;
-	copyRect.Width = imageData.width;
-	copyRect.Height = imageData.height;
-
-	__ImageLoader_CAR(
-		wicConverter->CopyPixels(&copyRect,stride, size, (BYTE*)imageData.content.data())
-	);
-
-	return true;
 }

@@ -33,9 +33,9 @@ class Texture
 			}
 			return totalSize;
 		}
-		inline char* GetTextureData(int textureIndex)
+		inline char* GetTextureData(int textureIndex, int mipLevel = 0)
 		{
-			return m_textureDatas[textureIndex].content.data();
+			return m_textureDatas[textureIndex].content[mipLevel].data();
 		};
 		
 		Texture(std::vector<std::string>& paths, std::vector<std::string>& names, bool useMips);

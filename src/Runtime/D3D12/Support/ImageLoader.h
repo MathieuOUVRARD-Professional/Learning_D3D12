@@ -17,11 +17,12 @@ class ImageLoader
 	public:
 		struct ImageData
 		{
-			std::vector<char> content;
+			std::vector<std::vector<char>> content;
 			uint32_t width;
 			uint32_t height;
 			uint32_t bitPerPixel;
 			uint32_t chanelCount;
+			uint32_t mipsLevels = 1;
 
 			GUID		wicPixelFormat;
 			DXGI_FORMAT giPixelFormat;
