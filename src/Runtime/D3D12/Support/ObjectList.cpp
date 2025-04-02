@@ -107,14 +107,14 @@ void ObjectList::CopyTextures(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PRO
 	{
 		material.GetTextures().Init(defaultHeapProperties, m_bindlessHeapAllocator);
 
-		if (destBufferOffset + material.TextureSize() > uploadBuffer->GetDesc().Width)
+		if (destBufferOffset + material.TextureSize() > (1024 * 1024 * 512))
 		{
 			//Not enough space for next material in the upload buffer
 			DXContext::Get().ExecuteCommandList();	// Fence synchronization
 			cmdList = DXContext::Get().InitCommandList();
 			destBufferOffset = 0;
 		}
-		material.GetTextures().CopyToUploadBuffer(uploadBuffer, destBufferOffset, cmdList);
+		material.GetTextures().CopyToGPU(uploadBuffer, destBufferOffset, cmdList);
 		destBufferOffset += material.TextureSize();
 	}
 

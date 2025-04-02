@@ -17,7 +17,7 @@ class Texture
 {
 	public:
 		void Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, DescriptorHeapAllocator* srvHeapAllocator = nullptr);
-		UINT64 CopyToUploadBuffer(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffset, ID3D12GraphicsCommandList* cmdList);
+		UINT64 CopyToGPU(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffset, ID3D12GraphicsCommandList* cmdList);
 		void AddCommands(ID3D12GraphicsCommandList*& cmdList, uint32_t rootParameterIndex);
 
 		inline UINT64 GetTextureSize(int textureIndex)
@@ -30,12 +30,12 @@ class Texture
 			// Multiple Mip levels 
 			else
 			{
-				UINT result = 0;
+				UINT64 result = 0;
 				UINT mipLevels = m_textureDatas[textureIndex].mipsLevels;
 
-				for (int i = 0; i < mipLevels; i++)
+				for (unsigned int i = 0; i < mipLevels; i++)
 				{
-					result += m_textureSizes[textureIndex] / pow(4, mipLevels);
+					result += (UINT64)((DOUBLE)m_textureSizes[textureIndex] / pow(4.0f, (double)i));
 				}
 				return result;
 			}
@@ -49,24 +49,17 @@ class Texture
 			}
 			return totalSize;
 		}
-		inline char* GetTextureData(int textureIndex)
+		inline char* GetTextureData(int textureIndex, int mipIndex = 0)
 		{
 			// Only Mip 0
 			if (m_textureDatas[textureIndex].mipsLevels == 1)
 			{
-				return m_textureDatas[textureIndex].content[0].data();
+				return m_textureDatas[textureIndex].content[mipIndex].data();
 			}
 			// Multiple Mip levels 
 			else
 			{
-				std::vector<char> result;
-				UINT mipCount = m_textureDatas[textureIndex].mipsLevels;
-
-				for (int i = 0; i < mipCount; i++)
-				{
-					result.emplace_back(m_textureDatas[textureIndex].content[i].data());
-				}
-				return result.data();
+				return m_textureDatas[textureIndex].content[mipIndex].data();
 			}
 		};
 		
@@ -83,4 +76,8 @@ class Texture
 		std::vector<ImageLoader::ImageData> m_textureDatas;
 		std::vector<UINT64> m_textureSizes;
 		std::vector<uint32_t> m_textureStrides;
+
+		UINT GetMipSize(int textureIndex, int mipIndex = 0);
+
+		UINT64 Align(UINT64 value, UINT64 allignment);
 };

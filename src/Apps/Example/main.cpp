@@ -300,7 +300,7 @@ int main()
 
 		// === Copy to Upload Buffer === //
 		UINT64 offset = 0;
-		eyeTextures.CopyToUploadBuffer(uploadBuffer, offset, cmdList);
+		eyeTextures.CopyToGPU(uploadBuffer, offset, cmdList);
 		offset = eyeTextures.GetTotalTextureSize();
 
 		DescriptorHeapAllocator bindlessHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024);

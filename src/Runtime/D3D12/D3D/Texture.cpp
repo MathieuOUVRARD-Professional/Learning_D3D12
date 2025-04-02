@@ -28,6 +28,16 @@ Texture::Texture()
 {
 }
 
+UINT Texture::GetMipSize(int textureIndex, int mipIndex)
+{
+	return (UINT)(m_textureSizes[textureIndex] / pow(4, mipIndex));
+}
+
+UINT64 Texture::Align(UINT64 value, UINT64 alignment)
+{
+	return (value + (alignment - 1)) & ~(alignment - 1);
+}
+
 void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, DescriptorHeapAllocator* srvHeapAllocator)
 {
 	// Create D3D12 resource for each texture
@@ -92,7 +102,7 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, DescriptorHeapA
 		srvDesc.Format = m_textureDatas[i].giPixelFormat;
 		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvDesc.Texture2D.MipLevels = 1;
+		srvDesc.Texture2D.MipLevels = m_textureDatas[i].mipsLevels;
 		srvDesc.Texture2D.MostDetailedMip = 0;
 		srvDesc.Texture2D.PlaneSlice = 0;
 		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
@@ -106,7 +116,7 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, DescriptorHeapA
 	// =========================== //
 }
 
-UINT64 Texture::CopyToUploadBuffer(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffset, ID3D12GraphicsCommandList* cmdList)
+UINT64 Texture::CopyToGPU(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffset, ID3D12GraphicsCommandList* cmdList)
 {
 	// === Copy void* --> CPU Resource === //
 	char* uploadBufferAdress;
@@ -117,43 +127,48 @@ UINT64 Texture::CopyToUploadBuffer(ID3D12Resource* uploadBuffer, UINT64 uploadBu
 
 	for (uint32_t i = 0; i < m_count; i++)
 	{
-		memcpy(&uploadBufferAdress
-			[uploadBufferOffset],
-			GetTextureData(i),
-			GetTextureSize(i));
-
-		for (int j = 0; j < m_textureDatas[i].mipsLevels; j++)
+		for (unsigned int j = 0; j < m_textureDatas[i].mipsLevels; j++)
 		{
-			// TO ADAPT FOR MIPS 
-			// 
-			// 
-			// 
+			D3D12_SUBRESOURCE_DATA subresource = {};
+			subresource.pData = GetTextureData(i, j);
+			subresource.RowPitch =(UINT)(m_textureStrides[i] / pow(2, j));
+			subresource.SlicePitch = (UINT)(subresource.RowPitch * (m_textureDatas[i].height / pow(2, j)));
+
+			memcpy(&uploadBufferAdress
+				[uploadBufferOffset],
+				subresource.pData,
+				GetMipSize(i, j));
+
+			//uploadBufferOffset += Align(subresource.SlicePitch, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+
 			// Source
 			D3D12_TEXTURE_COPY_LOCATION txtSrc;
 			txtSrc.pResource = uploadBuffer;
 			txtSrc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-			txtSrc.PlacedFootprint.Offset = uploadBufferOffset; //(uploadBufferOffset + 511) & ~511 ;
-			txtSrc.PlacedFootprint.Footprint.Width = m_textureDatas[i].width;
-			txtSrc.PlacedFootprint.Footprint.Height = m_textureDatas[i].height;
+			txtSrc.PlacedFootprint.Offset = uploadBufferOffset;
+			txtSrc.PlacedFootprint.Footprint.Width = (UINT)(m_textureDatas[i].width / pow(2, j));
+			txtSrc.PlacedFootprint.Footprint.Height = (UINT)(m_textureDatas[i].height / pow(2, j));
 			txtSrc.PlacedFootprint.Footprint.Depth = 1;
-			txtSrc.PlacedFootprint.Footprint.RowPitch = m_textureStrides[i]; //(m_textureStrides[i] + 255) & ~255 ;
+			txtSrc.PlacedFootprint.Footprint.RowPitch = (UINT)(m_textureStrides[i] / pow(2, j));
 			txtSrc.PlacedFootprint.Footprint.Format = m_textureDatas[i].giPixelFormat;
+
+			//// Source
+			//D3D12_TEXTURE_COPY_LOCATION txtSrc;
+			//txtSrc.pResource = uploadBuffer;
+			//txtSrc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+			//txtSrc.PlacedFootprint.Offset = uploadBufferOffset;
+			//txtSrc.PlacedFootprint.Footprint.Width = m_textureDatas[i].width;
+			//txtSrc.PlacedFootprint.Footprint.Height = m_textureDatas[i].height;
+			//txtSrc.PlacedFootprint.Footprint.Depth = 1;
+			//txtSrc.PlacedFootprint.Footprint.RowPitch = m_textureStrides[i];
+			//txtSrc.PlacedFootprint.Footprint.Format = m_textureDatas[i].giPixelFormat;
 
 			// Destination
 			D3D12_TEXTURE_COPY_LOCATION txtDst;
 			txtDst.pResource = m_textures[i];
 			txtDst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-			txtDst.SubresourceIndex = 0;
-
-			// Resource barrier
-			D3D12_RESOURCE_BARRIER transitionBarrier = {};
-			transitionBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-			transitionBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-			transitionBarrier.Transition.pResource = m_textures[i];
-			transitionBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-			transitionBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_GENERIC_READ;
-			transitionBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
-
+			txtDst.SubresourceIndex = j;
+			
 			////Box for when only copying part of the texture 
 			//D3D12_BOX textureSizeAsBox;
 			//textureSizeAsBox.left = textureSizeAsBox.top = textureSizeAsBox.front = 0;
@@ -162,17 +177,41 @@ UINT64 Texture::CopyToUploadBuffer(ID3D12Resource* uploadBuffer, UINT64 uploadBu
 			//textureSizeAsBox.back = 1;
 
 			// === COPY === //
-			cmdList->ResourceBarrier(1, &transitionBarrier);
+			// If Mip 0
+			if (j == 0)
+			{
+				D3D12_RESOURCE_BARRIER transitionBarrier = {};
+				transitionBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+				transitionBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+				transitionBarrier.Transition.pResource = m_textures[i];
+				transitionBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+				transitionBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_GENERIC_READ;
+				transitionBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+
+				cmdList->ResourceBarrier(1, &transitionBarrier);
+			}
+
 			cmdList->CopyTextureRegion(&txtDst, 0, 0, 0, &txtSrc, nullptr);
 
-			transitionBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-			transitionBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
+			//If last Mip 
+			if (j == m_textureDatas[i].mipsLevels - 1)
+			{
+				D3D12_RESOURCE_BARRIER transitionBarrier = {};
+				transitionBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+				transitionBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+				transitionBarrier.Transition.pResource = m_textures[i];
+				transitionBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+				transitionBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+				transitionBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
 
-			cmdList->ResourceBarrier(1, &transitionBarrier);
+				cmdList->ResourceBarrier(1, &transitionBarrier);
+			}
 
-			uploadBufferOffset += GetTextureSize(i);
+			uploadBufferOffset += GetMipSize(i, j);
 		}	
 	}
+	uploadBuffer->Unmap(0, &uploadRange);
+
 	return uploadBufferOffset;
 }
 
