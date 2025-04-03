@@ -67,10 +67,9 @@ float ComputeShadow(float4 shadowPos, Light light, float3 normalWorldSpace)
     }
     shadow /= 9.0;
 	
-    if (currentDepth > 1.0)
-    {
-        shadow = 0.0;
-    }
+	// If out of range set no shadow for directional lights
+    shadow = lerp(shadow, 0.0, currentDepth > 1.0 && light.type == 0);
+    
     return shadow;
 }
 
