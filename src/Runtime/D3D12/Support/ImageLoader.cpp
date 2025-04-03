@@ -46,7 +46,7 @@ bool ImageLoader::LoadImageFromDisk(const std::filesystem::path& imagePath, Imag
 
 				// Copy content for each Mip level
 				for (unsigned int i = 0; i < imageData.mipsLevels; i++)
-				{					
+				{
 					imageData.content.emplace_back();
 					imageData.content[i] = std::vector<char>(image.GetImage(i, 0, 0)->slicePitch);
 					memcpy
@@ -94,6 +94,7 @@ bool ImageLoader::LoadImageFromDisk(const std::filesystem::path& imagePath, Imag
 
 				for (unsigned int i = 0; i < imageData.mipsLevels; i++)
 				{
+					imageData.content.emplace_back();
 					imageData.content[i] = std::vector<char>(mipChain.GetImage(i, 0, 0)->slicePitch);
 					memcpy
 					(
@@ -228,7 +229,6 @@ bool ImageLoader::LoadImageFromDisk(const std::filesystem::path& imagePath, Imag
 		__ImageLoader_CAR(
 			wicConverter->CopyPixels(&copyRect, stride, size, (BYTE*)imageData.content[0].data())
 		);
-
-		return true;
 	}
+	return true;
 }

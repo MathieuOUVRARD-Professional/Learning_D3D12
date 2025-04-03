@@ -32,10 +32,23 @@ class Texture
 			{
 				UINT64 result = 0;
 				UINT mipLevels = m_textureDatas[textureIndex].mipsLevels;
+				UINT64 lastAlignedMipSize = 0;
 
-				for (unsigned int i = 0; i < mipLevels; i++)
+				for (unsigned int mip = 0; mip < mipLevels; mip++)
 				{
-					result += (UINT64)((DOUBLE)m_textureSizes[textureIndex] / pow(4.0f, (double)i));
+					if ((UINT)(m_textureDatas[textureIndex].height / pow(2, mip)) < 256 && lastAlignedMipSize == 0)
+					{
+						lastAlignedMipSize = (UINT64)((DOUBLE)m_textureSizes[textureIndex] / pow(4.0f, (double)(mip - 1)));
+					}
+
+					if ((UINT)(m_textureDatas[textureIndex].height / pow(2, mip)) < 256)
+					{
+						result += lastAlignedMipSize;
+					}
+					else
+					{
+						result += (UINT64)((DOUBLE)m_textureSizes[textureIndex] / pow(4.0f, (double)mip));
+					}
 				}
 				return result;
 			}

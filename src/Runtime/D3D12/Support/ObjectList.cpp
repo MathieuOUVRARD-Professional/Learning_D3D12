@@ -113,9 +113,8 @@ void ObjectList::CopyTextures(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PRO
 			DXContext::Get().ExecuteCommandList();	// Fence synchronization
 			cmdList = DXContext::Get().InitCommandList();
 			destBufferOffset = 0;
-		}
-		material.GetTextures().CopyToGPU(uploadBuffer, destBufferOffset, cmdList);
-		destBufferOffset += material.TextureSize();
+		}		
+		destBufferOffset += material.GetTextures().CopyToGPU(uploadBuffer, destBufferOffset, cmdList);;
 	}
 
 	// Waiting for the buffer to get back before writing meshes

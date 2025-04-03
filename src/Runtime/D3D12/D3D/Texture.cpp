@@ -131,15 +131,21 @@ UINT64 Texture::CopyToGPU(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffse
 		{
 			D3D12_SUBRESOURCE_DATA subresource = {};
 			subresource.pData = GetTextureData(i, j);
-			subresource.RowPitch =(UINT)(m_textureStrides[i] / pow(2, j));
+			subresource.RowPitch = m_textureStrides[i] / pow(2, j);
 			subresource.SlicePitch = (UINT)(subresource.RowPitch * (m_textureDatas[i].height / pow(2, j)));
 
-			memcpy(&uploadBufferAdress
-				[uploadBufferOffset],
-				subresource.pData,
-				GetMipSize(i, j));
+			UINT mipHeight = (UINT)(m_textureDatas[i].height / pow(2, j));
 
-			//uploadBufferOffset += Align(subresource.SlicePitch, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+			CHAR* srcPtr = GetTextureData(i, j);
+			CHAR* dstPtr = &uploadBufferAdress[uploadBufferOffset];
+
+			for (UINT row = 0; row < mipHeight; row++)
+			{
+				memcpy(dstPtr, srcPtr, subresource.RowPitch);
+
+				srcPtr += subresource.RowPitch;
+				dstPtr += Align(subresource.RowPitch, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
+			}
 
 			// Source
 			D3D12_TEXTURE_COPY_LOCATION txtSrc;
@@ -147,21 +153,10 @@ UINT64 Texture::CopyToGPU(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffse
 			txtSrc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 			txtSrc.PlacedFootprint.Offset = uploadBufferOffset;
 			txtSrc.PlacedFootprint.Footprint.Width = (UINT)(m_textureDatas[i].width / pow(2, j));
-			txtSrc.PlacedFootprint.Footprint.Height = (UINT)(m_textureDatas[i].height / pow(2, j));
+			txtSrc.PlacedFootprint.Footprint.Height = mipHeight;
 			txtSrc.PlacedFootprint.Footprint.Depth = 1;
-			txtSrc.PlacedFootprint.Footprint.RowPitch = (UINT)(m_textureStrides[i] / pow(2, j));
+			txtSrc.PlacedFootprint.Footprint.RowPitch = (UINT)max((m_textureStrides[i] / pow(2, j)), D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
 			txtSrc.PlacedFootprint.Footprint.Format = m_textureDatas[i].giPixelFormat;
-
-			//// Source
-			//D3D12_TEXTURE_COPY_LOCATION txtSrc;
-			//txtSrc.pResource = uploadBuffer;
-			//txtSrc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-			//txtSrc.PlacedFootprint.Offset = uploadBufferOffset;
-			//txtSrc.PlacedFootprint.Footprint.Width = m_textureDatas[i].width;
-			//txtSrc.PlacedFootprint.Footprint.Height = m_textureDatas[i].height;
-			//txtSrc.PlacedFootprint.Footprint.Depth = 1;
-			//txtSrc.PlacedFootprint.Footprint.RowPitch = m_textureStrides[i];
-			//txtSrc.PlacedFootprint.Footprint.Format = m_textureDatas[i].giPixelFormat;
 
 			// Destination
 			D3D12_TEXTURE_COPY_LOCATION txtDst;
@@ -207,7 +202,9 @@ UINT64 Texture::CopyToGPU(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffse
 				cmdList->ResourceBarrier(1, &transitionBarrier);
 			}
 
-			uploadBufferOffset += GetMipSize(i, j);
+			//Data offset
+			//uploadBufferOffset += GetMipSize(i, j);
+			uploadBufferOffset += Align(txtSrc.PlacedFootprint.Footprint.RowPitch * mipHeight, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
 		}	
 	}
 	uploadBuffer->Unmap(0, &uploadRange);
