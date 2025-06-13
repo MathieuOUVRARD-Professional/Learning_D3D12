@@ -57,7 +57,7 @@ struct PBR_V_Out
     float3 normal       : Normal;
     float3 tangent      : Tangent0;
     float3 bitangent    : Tangent1;
-    float4 currentPos   : PositionT;
+    float4 worldPos     : PositionT;
     uint   materialID   : MaterialID;
     //nointerpolation uint materialID : TEXCOORD5;
     float4 pos          : SV_Position;    
@@ -70,7 +70,7 @@ struct PBR_P_in
     float3 normal       : Normal;
     float3 tangent      : Tangent0;
     float3 bitangent    : Tangent1;
-    float4 currentPos   : PositionT;    
+    float4 worldPos     : PositionT;
     uint   materialID   : MaterialID;
 };
 

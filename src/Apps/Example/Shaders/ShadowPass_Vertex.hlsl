@@ -17,5 +17,5 @@ void main(
 {	
     o_pos = mul(matrices.viewProj, mul(matrices.model, float4(i_pos, 1.0f)));
     
-    //o_pos.z = ((LinearizeDepth(o_pos.z / o_pos.w, 0.01f, 20.0f) * o_pos.w) / 20.0f);
+    //o_pos.z = ((LinearizeDepth((o_pos.z / o_pos.w), 0.01f, 20.0f) / 20.0f)) * o_pos.w;
 }

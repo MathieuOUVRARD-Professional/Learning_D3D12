@@ -546,17 +546,15 @@ int main()
 			pyramidModel = glm::translate(glm::mat4(1.0f), pyramidPosition);
 			angle += 0.005f;			
 			pyramidModel = glm::rotate(pyramidModel, angle, glm::vec3(0.0f, 1.0f, 0.0f));
-
-			cubeLight.m_position = cubeLightTransform.m_position;
-			cubeLight.m_direction = glm::normalize(-cubeLightTransform.m_position);
-
+			
 			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
 			camera.Matrix(45.0f, 0.01f, 100.0f);
 			camera.Inputs();						
 
 			TransformUI(camera, lightModel, cubeLightTransform);
 			
-			cubeLight.m_position = cubeLightTransform.m_position = glm::vec3(lightModel[3]);			
+			cubeLight.m_position = cubeLightTransform.m_position = glm::vec3(lightModel[3]);		
+			cubeLight.m_direction = glm::normalize(-cubeLightTransform.m_position);
 			cubeLight.ComputeViewProjMatrix(30.0f);
 					
 			// === SHADOW PASS === //

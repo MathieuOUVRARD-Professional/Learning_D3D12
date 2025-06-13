@@ -44,15 +44,16 @@ float ComputeShadow(float4 shadowPos, Light light, float3 normalWorldSpace)
 	
 	//Compare depth with shadow map
     float currentDepth = projCoords.z;
-
-	float spotBias = max(0.0001f * (1.0f - dot(normalWorldSpace, light.direction)), 0.000005f);
+	//currentDepth = lerp(currentDepth, LinearizeDepth(currentDepth, 0.01f, light.radius) / light.radius, light.type == 1 || light.type == 2);
+	
+    //float spotBias = max(0.0001f * (1.0f - max(dot(normalWorldSpace, light.direction), 0.0)), 0.000005f);
+    float spotBias =0.000005f;
     float bias = lerp(0.005f, spotBias, light.type == 1 || light.type == 2); // max(0.05 * (1.0 - dot(normalWorldSpace, light.direction)), 0.005);
 	
     float shadow = 0.0;
 	
     float2 shadowMapSize = float2(0.0f, 0.0f);
-    bindlessTextures[NonUniformResourceIndex(light.shadowMapID)].GetDimensions(shadowMapSize.x, shadowMapSize.y);
-    //currentDepth = lerp(currentDepth, LinearizeDepth(currentDepth, 0.01f, light.radius) / light.radius, light.type == 1 || light.type == 2);
+    bindlessTextures[NonUniformResourceIndex(light.shadowMapID)].GetDimensions(shadowMapSize.x, shadowMapSize.y);    
 	
     float2 texelSize = 1.0 / shadowMapSize;
     for (int x = -1; x <= 1; ++x)
@@ -118,7 +119,7 @@ float3 ComputeLighting(Light light, float3 normalWorldSpace, float3 viewDirectio
 	
 	// Handle Point Light Attenuation
     float dist = length(light.position - worldPos);
-    float pointAttenuation = saturate(1.0f - (dist * dist) / (light.radius * light.radius));
+    float pointAttenuation = saturate(1.0f - ((dist * dist) / (light.radius * light.radius)));
     attenuation *= lerp(1.0f, pointAttenuation, light.type == 1);
 	
 	// Handle Spot light (Smooth attenuation)
@@ -192,14 +193,14 @@ void main(
 	float3 normalWorldSpace = ApplyNormalMap(normal, pInput.tangent, pInput.bitangent, normalTexel);
 		
 	// View Direction
-    float3 viewDirection = normalize(cameraData.position - pInput.currentPos.xyz);
+    float3 viewDirection = normalize(cameraData.position - pInput.worldPos.xyz);
 	
     float3 lighting = 0.0f;
 	
-    float4 shadowPos = mul(light.viewProjMatrix, float4(pInput.currentPos.xyz, 1.0f));
+    float4 shadowPos = mul(light.viewProjMatrix, float4(pInput.worldPos.xyz, 1.0f));
     float shadowFactor = ComputeShadow(shadowPos, light, normalWorldSpace);
 	
-    lighting = ComputeLighting(light, normalWorldSpace, viewDirection, pInput.currentPos.xyz, albedoTexel, roughness, metalness);
+    lighting = ComputeLighting(light, normalWorldSpace, viewDirection, pInput.worldPos.xyz, albedoTexel, roughness, metalness);
 	
     float3 finalColor = (1.0 - shadowFactor) * lighting + emmisive + ambient;
 	

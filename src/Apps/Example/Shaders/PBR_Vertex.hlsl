@@ -40,9 +40,9 @@ PBR_V_Out main(PBR_V_In vInput)
 
     vOutput.bitangent = (float3) mul((float3x3) modelData.model, vInput.bitangent);
 
-	vOutput.currentPos = mul(modelData.model, float4(vInput.pos, 1.0f));
+    vOutput.worldPos = mul(modelData.model, float4(vInput.pos, 1.0f));
 
-	vOutput.pos = mul(cameraData.viewProj, vOutput.currentPos);
+    vOutput.pos = mul(cameraData.viewProj, vOutput.worldPos);
 
 	vOutput.materialID = modelData.materialID;
 
