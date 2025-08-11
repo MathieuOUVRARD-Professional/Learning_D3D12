@@ -5,7 +5,7 @@ Texture::Texture(std::vector<std::string>& paths, std::vector<std::string>& name
 	// === Texture Data === //
 	if (paths.size() < 1)
 	{
-		D3EZ::EzException::EzException("Texture::Texture", 1, "Texture cannot be created", "Texture count parameter < 1");
+		D3EZ_EXCEPTION_WW("Texture cannot be created", "Texture count parameter < 1");
 	}
 	else
 	{

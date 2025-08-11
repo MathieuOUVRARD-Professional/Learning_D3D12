@@ -303,7 +303,7 @@ int main()
 		eyeTextures.CopyToGPU(uploadBuffer, offset, cmdList);
 		offset = eyeTextures.GetTotalTextureSize();
 
-		DescriptorHeapAllocator bindlessHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024);
+		DescriptorHeapAllocator bindlessHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, "Bindless allocator");
 		mainObjList.SetHeapAllocator(bindlessHeapAllocator);
 
 		// Object list
@@ -419,7 +419,7 @@ int main()
 		shadowPassPso.Create();
 
 		// === Buffer Views === //
-		// Pyramid
+		// PYRAMID
 		D3D12_VERTEX_BUFFER_VIEW vbv{};
 		vbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
 		vbv.SizeInBytes = sizeof(VertexWithUV) * _countof(vertices);
@@ -430,7 +430,7 @@ int main()
 		ibv.SizeInBytes = sizeof(DWORD) * _countof(indexes);
 		ibv.Format = DXGI_FORMAT_R32_UINT;
 
-		// Cube
+		// CUBE
 		D3D12_VERTEX_BUFFER_VIEW cubeVbv{};
 		cubeVbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress() + (sizeof(VertexWithUV) * _countof(vertices));
 		cubeVbv.SizeInBytes = sizeof(VertexWithoutUVs) * _countof(cubeVertices);
@@ -441,33 +441,36 @@ int main()
 		cubeIbv.SizeInBytes = sizeof(DWORD) * _countof(cubeIndexes);
 		cubeIbv.Format = DXGI_FORMAT_R32_UINT;
 		
-		// Shadow pass
+		// === SETUP === //
+		// SHADOW MAP
 		FrameBuffer shadowMap = FrameBuffer(2048, 2048, "ShadowMap");
 		shadowMap.DepthBuffer(&defaultHeapProperties);
+		shadowMap.CreateDepthBufferSRV(&bindlessHeapAllocator);
 
-		// Object list
+		// OBJECT LIST
 		mainObjList.CreateBufferViews(vertexBuffer, indexBuffer);
 
+		// CAMERA
 		Camera camera(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth(), glm::vec3(0.0f, 0.0f, 2.0f));
 		DXWindow::Get().SetMainCamera(camera);
 		camera.Matrix(45.0f, 0.01f, 100.0f);
 
+		// PYRAMID
 		glm::vec3 pyramidPosition = glm::vec3(0.0f, 1.0f, 0.0f);
 		glm::mat4 pyramidModel = glm::translate(glm::mat4(1.0f), pyramidPosition);
+		float angle = 0.0f;
 		
-		
-		MyTransform cubeLightTransform = MyTransform(glm::vec3(10.0f, 25.0f, 10.0f));				
+		// CUBE
+		MyTransform cubeLightTransform = MyTransform(glm::vec3(10.0f, 25.0f, 10.0f));
 		glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), cubeLightTransform.m_position);
-		glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
 
-		Light cubeLight = Light().Directional("Cube", cubeLightTransform.m_position, 1.0f, lightColor);
+		// LIGHTS
 		std::vector<Light*> lights;
-		lights.emplace_back(&cubeLight);
 
-		if (glm::determinant(lightModel) < 0.0001f)
-		{
-			lightModel = glm::scale(lightModel, glm::vec3(1.0f)); // Reset scale
-		}
+		glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+		Light cubeLight = Light().Directional("Cube", cubeLightTransform.m_position, 1.0f, lightColor);
+		cubeLight.m_shadowmapID = shadowMap.Get_D_SRVHeapIndex();
+		lights.emplace_back(&cubeLight);
 
 		// === ImGui SetUp === //
 #ifdef IMGUI
@@ -511,8 +514,6 @@ int main()
 		bool rotate = false;
 		bool scale = false;
 #endif // IMGUI
-
-		float angle = 0.0f;
 
 		// === MAIN LOOP=== //
 		DXWindow::Get().SetFullscreen(true);
@@ -564,9 +565,6 @@ int main()
 			cmdList->SetPipelineState(shadowPassPso.Get());	
 
 			mainObjList.ShadowPassDraw(cmdList, cubeLight);
-
-			shadowMap.CreateDepthBufferSRV(&bindlessHeapAllocator);
-			cubeLight.m_shadowmapID = shadowMap.m_SRVHeapIndex;
 
 			LightInterface(lights);
 

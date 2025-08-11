@@ -340,7 +340,7 @@ void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HE
 {
 	if (m_bindlessHeapAllocator == nullptr)
 	{
-		D3EZ::EzException("ObjectList::CopyToUploadBuffer", 231, "No SRV Heap allocator !");
+		D3EZ_EXCEPTION_W(std::format("No SRV Heap allocator for {} list!", m_name));
 	}
 
 	// Bindless MaterialData Descriptor Heap

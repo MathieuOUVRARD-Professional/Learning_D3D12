@@ -141,7 +141,7 @@ float3 ComputeLighting(Light light, float3 normalWorldSpace, float3 viewDirectio
     F0 = lerp(F0, albedo, metallic);			// Metals use albedo as F0
 	
 	// Compute Cook-Torrance BRDF Components
-    float k = (roughness + 1.0f) * (roughness + 1.0f) / 8.0f;
+    float k = ((roughness + 1.0f) * (roughness + 1.0f)) / 8.0f;
     float NDF = NormalDistributionGGX(normalWorldSpace, halfwayVec, roughness);
     float G = GeometrySmith(normalWorldSpace, viewDirection, halfwayVec, k);
     float3 F = FresnelSchlick(max(dot(halfwayVec, viewDirection), 0.0f), F0);

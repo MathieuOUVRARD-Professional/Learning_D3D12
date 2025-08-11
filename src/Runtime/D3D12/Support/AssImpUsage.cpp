@@ -18,7 +18,7 @@ void C_AssImp::Import(const std::string& filePath, ObjectList& objectList)
 	);
 	if (!scene)
 	{
-		D3EZ::EzException ezException = D3EZ::EzException("C_AssImp::Import", 15, "importer.ReadFile()", "scene is empty !");
+		D3EZ_EXCEPTION_WW("importer.ReadFile()", "scene is empty !");
 	}
 	else
 	{

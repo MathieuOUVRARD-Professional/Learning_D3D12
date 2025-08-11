@@ -61,8 +61,6 @@ ZBuffer::ZBuffer(D3D12_HEAP_PROPERTIES* defaultHeapProperties, std::string name,
 		dsvHandle = srvHeapAllocator->GetCPUHandle(m_heapIndex);
 	}
 
-	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
 	// === DSV === //
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
 	dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;

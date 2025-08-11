@@ -14,7 +14,9 @@
 class DescriptorHeapAllocator
 {
 	public:
-        DescriptorHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE type, UINT numDescriptors);
+        std::string m_name = "";
+
+        DescriptorHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE type, UINT numDescriptors, std::string name);
         
         // Allocates a descriptor, returns its heap index
         UINT Allocate();

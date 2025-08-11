@@ -1,6 +1,6 @@
 #include "DescriptorHeapAllocator.h"
 
-DescriptorHeapAllocator::DescriptorHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE type, UINT numDescriptors) : m_NumDescriptors(numDescriptors)
+DescriptorHeapAllocator::DescriptorHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE type, UINT numDescriptors, std::string name) : m_NumDescriptors(numDescriptors), m_name(name)
 {
     // Describe the descriptor heap
     D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
@@ -13,7 +13,7 @@ DescriptorHeapAllocator::DescriptorHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE type
     HRESULT hr = DXContext::Get().GetDevice()->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_DescriptorHeap));
     if (FAILED(hr))
     {
-        D3EZ::HRException("DescriptorHeapAllocator Constructor", 13, hr);
+        D3EZ_HR_EXCEPTION(hr)
     }
 
     m_DescriptorHeap.Get()->SetName(L"Bindless_SRV");
@@ -30,7 +30,7 @@ UINT DescriptorHeapAllocator::Allocate()
 {
     if (m_FreeDescriptors.empty())
     {
-        D3EZ::EzException("DescriptorHeapAllocator::Allocate", 28, "m_FreeDescriptors is empty !");
+        D3EZ_EXCEPTION_W(std::format("No more empty allocators available for {}!",m_name));
     }
     
     UINT index = m_FreeDescriptors.front();
@@ -43,7 +43,7 @@ void DescriptorHeapAllocator::Free(UINT descriptorIndex)
 {
     if (descriptorIndex >= m_NumDescriptors)
     {
-        D3EZ::EzException("DescriptorHeapAllocator::Free", 41, "Invalid descriptor index !");
+        D3EZ_EXCEPTION_W(std::format("Invalid descriptor index ! {}>{} for {}",descriptorIndex, m_NumDescriptors, m_name));
     }
 
     m_FreeDescriptors.push(descriptorIndex);
