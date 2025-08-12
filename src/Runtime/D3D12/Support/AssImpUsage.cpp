@@ -34,11 +34,13 @@ void C_AssImp::Import(const std::string& filePath, ObjectList& objectList)
 
 		std::string folderPath = filePath.substr(0, filePath.find('/')) + "/"; 
 		
-		spdlog::info("LOADING MATERIALS\n");
+		spdlog::info("===== LOADING MATERIALS ======\n");
 		ProcessMaterials(objectList, *scene, folderPath);
+		spdlog::info("=====  MATERIALS LOADED  =====\n");
 
-		spdlog::info("LOADING MESHES\n");
+		spdlog::info("=====   LOADING MESHES   =====\n");
 		ProcessMeshesNodes(objectList, *scene, *scene->mRootNode, objectList.GetList().back());
+		spdlog::info("=====   MESHES LOADED   ======\n");
 
 		objectList.GetList().remove(mainObject);
 	}
@@ -104,7 +106,7 @@ void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, ObjectList& object
 	node.mNumMeshes > 1 ? message += fmt::format("{} submeshes", node.mNumMeshes) : message = message + "a mesh";
 	spdlog::info(message);
 	
-	std::cout << "------------------------------ \r\n";
+	std::cout << "---------------------------------------------------------------------- \r\n";
 
 	for (unsigned int i = 0; i < node.mNumMeshes; i++)
 	{

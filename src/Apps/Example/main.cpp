@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 
 #include <Debug/DebugLayer.h>
 
@@ -109,6 +110,10 @@ void ColorPuke(float* color)
 
 int main()
 {
+	spdlog::info("===== LAUNCHING =====\n");
+	std::chrono::steady_clock::time_point launchBegin = std::chrono::steady_clock::now();
+
+
 	D3EZ::LoggingProvider::Init();
 
 	/*spdlog::info("Hello World !");
@@ -154,7 +159,7 @@ int main()
 
 		// === Vertex data === //
 		// PYRAMID DATA 
-		VertexWithUV vertices[] =
+		VertexWithUV pyramidVertices[] =
 		{
 			//  X	   Y	  Z	  ||  U	   V  ||  Nx	 Ny		Nz
 			{ -0.5f,  0.0f,  0.5f , 0.0f, 1.0f,  0.0f, -1.0f,  0.0f },	// Bottom side
@@ -178,7 +183,7 @@ int main()
 			{ -0.5f,  0.0f,  0.5f , 0.0f, 1.0f,  0.0f,  0.5f,  1.0f },	//
 			{  0.0f,  1.0f,  0.0f , 0.5f, 0.0f,  0.0f,  0.5f,  1.0f },	//
 		};
-		DWORD indexes[] = {
+		DWORD pyramidIndices[] = {
 			0,1,2,		//Bottom faces
 			0,2,3,		//
 
@@ -307,13 +312,15 @@ int main()
 		DescriptorHeapAllocator bindlessSRVHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, "Bindless allocator");
 		mainObjList.SetHeapAllocator(bindlessSRVHeapAllocator);
 
-		// Object list
+		// OBJECT LIST COPY
+		spdlog::info("===== OBJECT LIST COPY =====\n");
 		mainObjList.CopyToUploadBuffer
 		(
 			cmdList, &defaultHeapProperties,
 			uploadBuffer, offset,
 			1024, 1024
 		);
+		spdlog::info("=====    COPY ENDED    =====\n");
 
 		// === Copy void* --> CPU Resource === //
 		char* uploadBufferAdress;
@@ -327,9 +334,9 @@ int main()
 		// Vertices
 		memcpy(&uploadBufferAdress
 			[offset], 
-			vertices, 
-			sizeof(vertices));
-		offset += sizeof(vertices);
+			pyramidVertices, 
+			sizeof(pyramidVertices));
+		offset += sizeof(pyramidVertices);
 
 		memcpy(&uploadBufferAdress
 			[offset],
@@ -340,9 +347,9 @@ int main()
 		offset = 1024 + mainObjList.TotalVerticesSize();
 		memcpy(&uploadBufferAdress
 			[offset],
-			indexes,
-			sizeof(indexes));
-		offset += sizeof(indexes);
+			pyramidIndices,
+			sizeof(pyramidIndices));
+		offset += sizeof(pyramidIndices);
 
 		memcpy(&uploadBufferAdress
 			[offset],
@@ -423,22 +430,22 @@ int main()
 		// PYRAMID
 		D3D12_VERTEX_BUFFER_VIEW vbv{};
 		vbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
-		vbv.SizeInBytes = sizeof(VertexWithUV) * _countof(vertices);
+		vbv.SizeInBytes = sizeof(VertexWithUV) * _countof(pyramidVertices);
 		vbv.StrideInBytes = sizeof(VertexWithUV);
 
 		D3D12_INDEX_BUFFER_VIEW ibv{};
 		ibv.BufferLocation = indexBuffer->GetGPUVirtualAddress();
-		ibv.SizeInBytes = sizeof(DWORD) * _countof(indexes);
+		ibv.SizeInBytes = sizeof(DWORD) * _countof(pyramidIndices);
 		ibv.Format = DXGI_FORMAT_R32_UINT;
 
 		// CUBE
 		D3D12_VERTEX_BUFFER_VIEW cubeVbv{};
-		cubeVbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress() + (sizeof(VertexWithUV) * _countof(vertices));
+		cubeVbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress() + (sizeof(VertexWithUV) * _countof(pyramidVertices));
 		cubeVbv.SizeInBytes = sizeof(VertexWithoutUVs) * _countof(cubeVertices);
 		cubeVbv.StrideInBytes = sizeof(VertexWithoutUVs);
 
 		D3D12_INDEX_BUFFER_VIEW cubeIbv{};
-		cubeIbv.BufferLocation = indexBuffer->GetGPUVirtualAddress() + (sizeof(DWORD) * _countof(indexes));
+		cubeIbv.BufferLocation = indexBuffer->GetGPUVirtualAddress() + (sizeof(DWORD) * _countof(pyramidIndices));
 		cubeIbv.SizeInBytes = sizeof(DWORD) * _countof(cubeIndexes);
 		cubeIbv.Format = DXGI_FORMAT_R32_UINT;
 		
@@ -516,6 +523,12 @@ int main()
 		bool scale = false;
 #endif // IMGUI
 
+		spdlog::info("===== LAUNCH COMPLETED =====\n");
+		std::chrono::steady_clock::time_point launchEnd = std::chrono::steady_clock::now();
+		float launchDurationMs = std::chrono::duration_cast<std::chrono::milliseconds>(launchEnd - launchBegin).count();
+		std::string launchDurationMessage = fmt::format("Launched in {0:.3f}[s]\n", launchDurationMs/1000);
+		spdlog::info(launchDurationMessage);
+
 		// === MAIN LOOP=== //
 		DXWindow::Get().SetFullscreen(true);
 		while (!DXWindow::Get().ShouldClose())
@@ -590,7 +603,7 @@ int main()
 			cmdList->SetGraphicsRoot32BitConstants(3, 4, &camera.m_position, 0);
 			eyeTextures.AddCommands(cmdList, 4);
 			// === Draw === //
-			cmdList->DrawIndexedInstanced(_countof(indexes), 1, 0, 0, 0);
+			cmdList->DrawIndexedInstanced(_countof(pyramidIndices), 1, 0, 0, 0);
 
 			// Sponza
 			// === PSO === //

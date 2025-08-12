@@ -5,8 +5,11 @@
 /deploy
 /app/Sponza
 
-#Logs
+# App
 /app/log
+/app/Pre_Move
+/app/Post_Move
+/app/Sponza
 
 # Visual Studio
 /.vs

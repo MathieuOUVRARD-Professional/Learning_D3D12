@@ -354,14 +354,24 @@ void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HE
 	m_cbvHeap.Get()->SetName(std::wstring(cbvHeapName.begin(), cbvHeapName.end()).c_str());*/
 
 	// Textures copy
+	spdlog::info("=====     TEXTURES     ======\n");
 	CopyTextures(cmdList, defaultHeapProperties, uploadBuffer, destOffsetTexture);
+	spdlog::info("=====       DONE       ======\n");
 
 	// Meshes copy 
+	spdlog::info("=====      MESHES      ======\n");
 	CopyMeshes(uploadBuffer, destOffsetVertex, destOffsetIndex);
+	spdlog::info("=====       DONE       ======\n");
 
+	// Material datas copy
+	spdlog::info("=====     MATERIALS     =====\n");
 	CopyMaterialsData();
+	spdlog::info("=====       DONE       ======\n");
 
+	// Models datas copy
+	spdlog::info("=====   MODELS-DATAS   ======\n");
 	CopyModelsData();
+	spdlog::info("=====       DONE       ======\n");
 }
 
 void ObjectList::CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource* indexBuffer)
