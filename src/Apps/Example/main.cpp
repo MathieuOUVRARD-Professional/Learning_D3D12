@@ -8,7 +8,6 @@
 #include <D3D/Light.h>
 #include <D3D/PipelineState.h>
 #include <D3D/Texture.h>
-#include <D3D/ZBuffer.h>
 
 #include <ImGui/CustomImGui.h>
 
@@ -296,7 +295,8 @@ int main()
 
 		eyeTextures.Init(&defaultHeapProperties);
 
-		ZBuffer zBuffer = ZBuffer(&defaultHeapProperties, "Main_Depth", DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
+		DepthBuffer zBuffer = DepthBuffer( DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth(), "Main_Depth", &defaultHeapProperties);
+		zBuffer.CreateDSV();
 		DXWindow::Get().SetZBuffer(&zBuffer);
 
 		// === Copy to Upload Buffer === //

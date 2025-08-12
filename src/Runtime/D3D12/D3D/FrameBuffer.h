@@ -5,7 +5,6 @@
 
 #include <D3D/DescriptorHeapAllocator.h>
 #include <D3D/DXContext.h>
-#include <D3D/ZBuffer.h>
 
 #include "Util/EzException.h"
 #include <string>

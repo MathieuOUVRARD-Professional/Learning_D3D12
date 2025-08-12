@@ -5,7 +5,7 @@
 #include"backends/imgui_impl_win32.h"
 
 #include<D3D/DXContext.h>
-#include<D3D/ZBuffer.h>
+#include<D3D/DepthBuffer.h>
 
 #include <Support/WinInclude.h>
 #include <Support/ComPointer.h>
@@ -77,9 +77,9 @@ public:
 		m_camera = &mainCamera;
 	}
 
-	inline void SetZBuffer(ZBuffer* zBuffer)
+	inline void SetZBuffer(DepthBuffer* depthBuffer)
 	{
-		m_ZBuffer = zBuffer;
+		m_depthBuffer = depthBuffer;
 	}
 
 	static constexpr size_t FrameCount = 2;
@@ -120,7 +120,7 @@ private:
 	D3D12_CPU_DESCRIPTOR_HANDLE m_rtvHandles[FrameCount];
 	D3D12_VIEWPORT m_mainViewport;
 	RECT m_mainScissorRect;
-	ZBuffer* m_ZBuffer = nullptr;
+	DepthBuffer* m_depthBuffer = nullptr;
 
 	//Singleton 
 public:

@@ -9,13 +9,14 @@ public:
 	~DepthBuffer();
 
 	void CreateDSV( DescriptorHeapAllocator* dsvHeapAllocator = nullptr);
-	void CreateDSV( ID3D12DescriptorHeap* dsvHeap, uint32_t heapIndex);
 	void CreateDepthBufferSRV(DescriptorHeapAllocator* srvHeapAllocator = nullptr);
 
 	void Bind(ID3D12GraphicsCommandList*& cmdList) override;
 	void Resize(uint32_t width, uint32_t height) override;
 	void Clear(ID3D12GraphicsCommandList*& cmdList) override;
 	void Release() override;
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetDSVHandle();
 
 	inline ID3D12Resource* GetTexture()
 	{
@@ -28,6 +29,7 @@ public:
 
 private:
 	void CreateCommitedResource();
+	void RecreateDSV(ID3D12DescriptorHeap* dsvHeap, uint32_t heapIndex);
 
 	ComPointer<ID3D12Resource> m_DSV = nullptr;
 

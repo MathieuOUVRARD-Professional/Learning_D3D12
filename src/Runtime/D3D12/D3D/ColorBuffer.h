@@ -9,13 +9,14 @@ public:
 	~ColorBuffer();
 
 	void CreateRTV(DescriptorHeapAllocator* rtvHeapAllocator = nullptr);
-	void CreateRTV(ID3D12DescriptorHeap* dsvHeap, uint32_t heapIndex);
 	void CreateColorBufferSRV(DescriptorHeapAllocator* heapAllocator = nullptr);
 
 	void Bind(ID3D12GraphicsCommandList*& cmdList) override;
 	void Resize(uint32_t width, uint32_t height) override;
 	void Clear(ID3D12GraphicsCommandList*& cmdList) override;
 	void Release() override;
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetRTVHandle();
 
 	inline ID3D12Resource* GetTexture()
 	{
@@ -30,6 +31,7 @@ public:
 
 private:
 	void CreateCommitedResource();
+	void RecreateRTV(ID3D12DescriptorHeap* dsvHeap, uint32_t heapIndex);
 
 	ComPointer<ID3D12Resource> m_RTV = nullptr;
 

@@ -19,14 +19,14 @@
 	HRESULT __d3ez_check_hr = (expr); \
 	if(FAILED(__d3ez_check_hr)) \
 	{ \
-		throw D3EZ_HR_EXCEPTION(__d3ez_check_hr, desc); \
+		throw D3EZ_HR_EXCEPTION_W(__d3ez_check_hr, desc); \
 	} \
 )
 #define D3EZ_CHECK_HR_F(expr, fstr, ...) D3EZ_MACRO_CODE_BLOCK( \
 	HRESULT __d3ez_check_hr = (expr); \
 	if(FAILED(__d3ez_check_hr)) \
 	{ \
-		throw D3EZ_HR_EXCEPTION(__d3ez_check_hr, fmt::format(fstr, __VA_ARGS__)); \
+		throw D3EZ_HR_EXCEPTION_W(__d3ez_check_hr, fmt::format(fstr, __VA_ARGS__)); \
 	} \
 )
 

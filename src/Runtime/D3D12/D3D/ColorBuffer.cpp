@@ -51,26 +51,6 @@ void ColorBuffer::CreateRTV(DescriptorHeapAllocator* rtvHeapAllocator)
 	DXContext::Get().GetDevice()->CreateRenderTargetView(m_RTV, nullptr, rtvHandle);
 }
 
-void ColorBuffer::CreateRTV(ID3D12DescriptorHeap* rtvHeap, uint32_t heapIndex)
-{
-	// Create commited resource
-	CreateCommitedResource();
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
-	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	rtvHandle = rtvHeap->GetCPUDescriptorHandleForHeapStart();
-	rtvHandle.Offset(heapIndex, descriptorSize);
-
-	// === RTV === //
-	D3D12_RENDER_TARGET_VIEW_DESC rtv{};
-	rtv.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	rtv.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-	rtv.Texture2D.MipSlice = 0;
-	rtv.Texture2D.PlaneSlice = 0;
-
-	DXContext::Get().GetDevice()->CreateRenderTargetView(m_RTV, nullptr, rtvHandle);
-}
-
 void ColorBuffer::CreateColorBufferSRV(DescriptorHeapAllocator* heapAllocator)
 {
 	// RT SRV DESCRIPTOR HEAP
@@ -112,7 +92,7 @@ void ColorBuffer::CreateColorBufferSRV(DescriptorHeapAllocator* heapAllocator)
 	}
 	else
 	{
-		D3EZ_EXCEPTION_W(std::format("Trying to create a Render Target SRV for ColorBuffer: {}, but it already has one!", m_name))
+		D3EZ_EXCEPTION_W(fmt::format("Trying to create a Render Target SRV for ColorBuffer: %s, but it already has one!", m_name))
 	}
 }
 
@@ -120,7 +100,7 @@ void ColorBuffer::Bind(ID3D12GraphicsCommandList*& cmdList)
 {
 	if (m_RTV_Heap == nullptr)
 	{
-		D3EZ_EXCEPTION_W(std::format("Trying to bind {} Render Target but m_RTV_Heap is nullptr", m_name));
+		D3EZ_EXCEPTION_W(fmt::format("Trying to bind %s Render Target but m_RTV_Heap is nullptr", m_name));
 		return;
 	}
 
@@ -141,7 +121,7 @@ void ColorBuffer::Resize(uint32_t width, uint32_t height)
 
 	if (m_RTV != nullptr) // RTV already created --> Need to recreate it at the same place
 	{
-		this->CreateRTV(m_RTV_Heap, m_RTV_HeapIndex);
+		this->RecreateRTV(m_RTV_Heap, m_RTV_HeapIndex);
 
 		if (m_RT_SRVHeap != nullptr) // SRV Already created --> Needs to recreate it at the same place
 		{
@@ -159,6 +139,10 @@ void ColorBuffer::Resize(uint32_t width, uint32_t height)
 			DXContext::Get().GetDevice()->CreateShaderResourceView(m_RTV, &dsrvDesc, depth_SRVHandle);
 		}
 	}
+	else
+	{
+		D3EZ_EXCEPTION_W(fmt::format("Trying to resize ColorBuffer: %s but RTV = nullprt !", m_name));
+	}
 }
 
 void ColorBuffer::Clear(ID3D12GraphicsCommandList*& cmdList)
@@ -169,7 +153,6 @@ void ColorBuffer::Clear(ID3D12GraphicsCommandList*& cmdList)
 	rtvHandle.Offset(m_RTV_HeapIndex, descriptorSize);
 
 	cmdList->ClearRenderTargetView(rtvHandle, m_backgroundColor, 0, nullptr);
-
 }
 
 void ColorBuffer::Release()
@@ -177,6 +160,16 @@ void ColorBuffer::Release()
 	m_RT_SRVHeap.Release();
 	m_RTV_Heap.Release();
 	m_RTV.Release();
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE ColorBuffer::GetRTVHandle()
+{
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	rtvHandle = m_RTV_Heap->GetCPUDescriptorHandleForHeapStart();
+	rtvHandle.Offset(m_RTV_HeapIndex, descriptorSize);
+
+	return rtvHandle;
 }
 
 void ColorBuffer::CreateCommitedResource()
@@ -207,4 +200,27 @@ void ColorBuffer::CreateCommitedResource()
 	// Naming
 	std::string name = m_name + "_RTV";
 	m_RTV->SetName(std::wstring(name.begin(), name.end()).c_str());
+}
+
+void ColorBuffer::RecreateRTV(ID3D12DescriptorHeap* rtvHeap, uint32_t heapIndex)
+{
+	// Release old RTV
+	m_RTV.Release();
+
+	// Create commited resource
+	CreateCommitedResource();
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	rtvHandle = rtvHeap->GetCPUDescriptorHandleForHeapStart();
+	rtvHandle.Offset(heapIndex, descriptorSize);
+
+	// === RTV === //
+	D3D12_RENDER_TARGET_VIEW_DESC rtv{};
+	rtv.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	rtv.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+	rtv.Texture2D.MipSlice = 0;
+	rtv.Texture2D.PlaneSlice = 0;
+
+	DXContext::Get().GetDevice()->CreateRenderTargetView(m_RTV, nullptr, rtvHandle);
 }

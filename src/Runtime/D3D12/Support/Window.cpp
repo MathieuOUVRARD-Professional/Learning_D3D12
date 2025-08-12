@@ -118,9 +118,9 @@ bool DXWindow::Init()
 void DXWindow::BindMainRenderTarget(ID3D12GraphicsCommandList*& cmdList)
 {
 	// Bind the main backbuffer
-	if (m_ZBuffer != nullptr)
+	if (m_depthBuffer != nullptr)
 	{
-		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_ZBuffer->GetDescriptorHeap()->GetCPUDescriptorHandleForHeapStart();
+		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_depthBuffer->GetDSVHandle();
 		cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, &dsvHandle);
 	}
 	else
@@ -197,11 +197,11 @@ void DXWindow::Resize()
 		}
 	}	
 
-	D3EZ_CHECK_HR_D(m_swapChain->ResizeBuffers((UINT)GetFrameCount(), m_width, m_height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING), "m_swapChain->ResizeBuffers() FAILED");
+	m_swapChain->ResizeBuffers((UINT)GetFrameCount(), m_width, m_height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 
-	if (m_ZBuffer != nullptr)
+	if (m_depthBuffer != nullptr)
 	{
-		m_ZBuffer->Resize(m_width, m_height);
+		m_depthBuffer->Resize(m_width, m_height);
 	}
 	SetViewPort();
 
@@ -253,6 +253,12 @@ void DXWindow::Shutdown()
 {
 	ReleaseBuffers();
 
+	// Release ZBuffer
+	if (m_depthBuffer != nullptr)
+	{
+		m_depthBuffer->Release();
+	}
+
 	m_rtvHeap.Release();
 
 	m_swapChain.Release();
@@ -302,9 +308,9 @@ void DXWindow::BeginFrame(ID3D12GraphicsCommandList*& cmdList)
 
 	cmdList->ResourceBarrier(1, &barrier);
 
-	if (m_ZBuffer != nullptr)
+	if (m_depthBuffer != nullptr)
 	{
-		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_ZBuffer->GetDescriptorHeap()->GetCPUDescriptorHandleForHeapStart();
+		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_depthBuffer->GetDSVHandle();
 
 		cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, &dsvHandle);
 
@@ -363,11 +369,6 @@ void DXWindow::ReleaseBuffers()
 	for (size_t i = 0; i < FrameCount; ++i)
 	{
 		m_buffers[i].Release();	
-	}
-	// Release ZBuffer
-	if (m_ZBuffer != nullptr)
-	{
-		m_ZBuffer->Release();
 	}
 }
 

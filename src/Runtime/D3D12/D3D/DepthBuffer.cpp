@@ -53,26 +53,6 @@ void DepthBuffer::CreateDSV(DescriptorHeapAllocator* dsvHeapAllocator)
 	DXContext::Get().GetDevice()->CreateDepthStencilView(m_DSV, &dsvDesc, dsvHandle);
 }
 
-void DepthBuffer::CreateDSV(ID3D12DescriptorHeap* dsvHeap, uint32_t heapIndex)
-{
-	// Create commited resource
-	CreateCommitedResource();
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;	
-	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-	dsvHandle = dsvHeap->GetCPUDescriptorHandleForHeapStart();
-	dsvHandle.Offset(heapIndex, descriptorSize);
-
-	// === DSV === //
-	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
-	dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
-	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
-	dsvDesc.Texture2D.MipSlice = 0;
-
-	DXContext::Get().GetDevice()->CreateDepthStencilView(m_DSV, &dsvDesc, dsvHandle);
-}
-
 void DepthBuffer::CreateDepthBufferSRV(DescriptorHeapAllocator* srvHeapAllocator)
 {
 	// DEPTH SRV DESCRIPTOR HEAP
@@ -113,7 +93,7 @@ void DepthBuffer::CreateDepthBufferSRV(DescriptorHeapAllocator* srvHeapAllocator
 	}
 	else
 	{
-		D3EZ_EXCEPTION_W(std::format("Trying to create a Depth SRV for DepthBuffer: {}, but it already has one!", m_name));
+		D3EZ_EXCEPTION_W(fmt::format("Trying to create a Depth SRV for DepthBuffer: %s, but it already has one!", m_name));
 	}
 }
 
@@ -143,7 +123,7 @@ void DepthBuffer::Resize(uint32_t width, uint32_t height)
 
 	if (m_DSV != nullptr) // DSV already created --> Need to recreate it 
 	{
-		this->CreateDSV(m_DSV_Heap, m_DSV_HeapIndex);
+		this->RecreateDSV(m_DSV_Heap, m_DSV_HeapIndex);
 
 		if (m_D_SRVHeap != nullptr) // SRV Already created --> Needs to recreate it at the same place
 		{
@@ -160,6 +140,10 @@ void DepthBuffer::Resize(uint32_t width, uint32_t height)
 
 			DXContext::Get().GetDevice()->CreateShaderResourceView(m_DSV, &dsrvDesc, depth_SRVHandle);
 		}
+	}
+	else
+	{
+		D3EZ_EXCEPTION_W(fmt::format("Trying to resize DepthBuffer: %s but DSV = nullprt !", m_name));
 	}
 }
 
@@ -178,6 +162,16 @@ void DepthBuffer::Release()
 	m_D_SRVHeap.Release();
 	m_DSV_Heap.Release();
 	m_DSV.Release();
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE DepthBuffer::GetDSVHandle()
+{
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	dsvHandle = m_DSV_Heap->GetCPUDescriptorHandleForHeapStart();
+	dsvHandle.Offset(m_DSV_HeapIndex, descriptorSize);
+
+	return dsvHandle;
 }
 
 void DepthBuffer::CreateCommitedResource()
@@ -209,4 +203,27 @@ void DepthBuffer::CreateCommitedResource()
 	//Naming
 	std::string name = m_name + "_DSV";
 	m_DSV->SetName(std::wstring(name.begin(), name.end()).c_str());
+}
+
+void DepthBuffer::RecreateDSV(ID3D12DescriptorHeap* dsvHeap, uint32_t heapIndex)
+{
+	// Release old DSV
+	m_DSV.Release();
+
+	// Create commited resource
+	CreateCommitedResource();
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle;
+	uint32_t descriptorSize = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+	dsvHandle = dsvHeap->GetCPUDescriptorHandleForHeapStart();
+	dsvHandle.Offset(heapIndex, descriptorSize);
+
+	// === DSV === //
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+	dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	dsvDesc.Flags = D3D12_DSV_FLAG_NONE;
+	dsvDesc.Texture2D.MipSlice = 0;
+
+	DXContext::Get().GetDevice()->CreateDepthStencilView(m_DSV, &dsvDesc, dsvHandle);
 }
