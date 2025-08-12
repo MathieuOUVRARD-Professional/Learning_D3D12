@@ -4,7 +4,7 @@
 
 #include <D3D/DescriptorHeapAllocator.h>
 #include <D3D/DXContext.h>
-#include <D3D/FrameBuffer.h>
+#include <D3D/DepthBuffer.h>
 #include <D3D/Light.h>
 #include <D3D/PipelineState.h>
 #include <D3D/Texture.h>
@@ -295,6 +295,7 @@ int main()
 		indexBuffer.Get()->SetName(L"Index_Buffer");
 
 		eyeTextures.Init(&defaultHeapProperties);
+
 		ZBuffer zBuffer = ZBuffer(&defaultHeapProperties, "Main_Depth", DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
 		DXWindow::Get().SetZBuffer(&zBuffer);
 
@@ -303,8 +304,8 @@ int main()
 		eyeTextures.CopyToGPU(uploadBuffer, offset, cmdList);
 		offset = eyeTextures.GetTotalTextureSize();
 
-		DescriptorHeapAllocator bindlessHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, "Bindless allocator");
-		mainObjList.SetHeapAllocator(bindlessHeapAllocator);
+		DescriptorHeapAllocator bindlessSRVHeapAllocator(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, "Bindless allocator");
+		mainObjList.SetHeapAllocator(bindlessSRVHeapAllocator);
 
 		// Object list
 		mainObjList.CopyToUploadBuffer
@@ -443,9 +444,9 @@ int main()
 		
 		// === SETUP === //
 		// SHADOW MAP
-		FrameBuffer shadowMap = FrameBuffer(2048, 2048, "ShadowMap");
-		shadowMap.DepthBuffer(&defaultHeapProperties);
-		shadowMap.CreateDepthBufferSRV(&bindlessHeapAllocator);
+		DepthBuffer shadowMap = DepthBuffer(2048, 2048, "ShadowMap", &defaultHeapProperties);
+		shadowMap.CreateDSV();
+		shadowMap.CreateDepthBufferSRV(&bindlessSRVHeapAllocator);
 
 		// OBJECT LIST
 		mainObjList.CreateBufferViews(vertexBuffer, indexBuffer);
@@ -559,7 +560,7 @@ int main()
 			cubeLight.ComputeViewProjMatrix(30.0f);
 					
 			// === SHADOW PASS === //
-			shadowMap.BindDSV(cmdList);
+			shadowMap.Bind(cmdList);
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			cmdList->SetGraphicsRootSignature(shadowPassSignature);
 			cmdList->SetPipelineState(shadowPassPso.Get());	
@@ -570,7 +571,7 @@ int main()
 
 			ImGui::Begin("Shadow Map Debug");
 			ImGui::Text("Depth Buffer (Shadow Map):");
-			ImageFromResource(shadowMap.m_ZBuffer.GetTexture(), g_pd3dSrvDescHeapAlloc);
+			ImageFromResource(shadowMap.GetTexture(), g_pd3dSrvDescHeapAlloc);
 			ImGui::End();
 
 			DXWindow::Get().BindMainRenderTarget(cmdList);

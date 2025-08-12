@@ -116,7 +116,7 @@ private:
 
 	size_t m_currentBufferIndex = 0;
 
-	ComPointer<ID3D12DescriptorHeap> m_rtvDescHeap = nullptr;
+	ComPointer<ID3D12DescriptorHeap> m_rtvHeap = nullptr;
 	D3D12_CPU_DESCRIPTOR_HANDLE m_rtvHandles[FrameCount];
 	D3D12_VIEWPORT m_mainViewport;
 	RECT m_mainScissorRect;

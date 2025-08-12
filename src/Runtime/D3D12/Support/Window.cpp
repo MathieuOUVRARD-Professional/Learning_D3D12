@@ -92,14 +92,14 @@ bool DXWindow::Init()
 	descHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	descHeapDesc.NodeMask = 0;
 
-	if (FAILED(DXContext::Get().GetDevice()->CreateDescriptorHeap(&descHeapDesc, IID_PPV_ARGS(&m_rtvDescHeap))))
+	if (FAILED(DXContext::Get().GetDevice()->CreateDescriptorHeap(&descHeapDesc, IID_PPV_ARGS(&m_rtvHeap))))
 	{
 		return false;
 	}
-	m_rtvDescHeap.Get()->SetName(L"Main_Swapchain");
+	m_rtvHeap.Get()->SetName(L"Main_Swapchain");
 
 	//Create handles to view
-	auto firstHandle = m_rtvDescHeap->GetCPUDescriptorHandleForHeapStart();
+	auto firstHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
 	auto handleIncrement = DXContext::Get().GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	for (size_t i = 0; i < FrameCount; ++i)
 	{
@@ -117,18 +117,16 @@ bool DXWindow::Init()
 
 void DXWindow::BindMainRenderTarget(ID3D12GraphicsCommandList*& cmdList)
 {
-	//CD3DX12_RESOURCE_BARRIER barrierToRenderTarget = 
-	//	CD3DX12_RESOURCE_BARRIER::Transition
-	//	(
-	//		m_buffers[m_currentBufferIndex],
-	//		D3D12_RESOURCE_STATE_RENDER_TARGET, // Assumes it was in present state
-	//		D3D12_RESOURCE_STATE_RENDER_TARGET
-	//	);
-	//cmdList->ResourceBarrier(1, &barrierToRenderTarget);
-
 	// Bind the main backbuffer
-	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_ZBuffer->GetDescriptorHeap()->GetCPUDescriptorHandleForHeapStart();
-	cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, &dsvHandle);
+	if (m_ZBuffer != nullptr)
+	{
+		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_ZBuffer->GetDescriptorHeap()->GetCPUDescriptorHandleForHeapStart();
+		cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, &dsvHandle);
+	}
+	else
+	{
+		cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, nullptr);
+	}
 
 	// Restore main viewport & scissor rects
 	cmdList->RSSetViewports(1, &m_mainViewport);
@@ -169,7 +167,6 @@ void DXWindow::Present()
 void DXWindow::Resize()
 {
 	ReleaseBuffers();
-	m_ZBuffer->Release();
 
 	if (m_monitorHasChanged && m_isFullscreen)
 	{
@@ -201,7 +198,11 @@ void DXWindow::Resize()
 	}	
 
 	D3EZ_CHECK_HR_D(m_swapChain->ResizeBuffers((UINT)GetFrameCount(), m_width, m_height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING), "m_swapChain->ResizeBuffers() FAILED");
-	m_ZBuffer->Resize(m_width, m_height);
+
+	if (m_ZBuffer != nullptr)
+	{
+		m_ZBuffer->Resize(m_width, m_height);
+	}
 	SetViewPort();
 
 	m_shouldResize = false;	
@@ -252,7 +253,7 @@ void DXWindow::Shutdown()
 {
 	ReleaseBuffers();
 
-	m_rtvDescHeap.Release();
+	m_rtvHeap.Release();
 
 	m_swapChain.Release();
 
@@ -299,15 +300,22 @@ void DXWindow::BeginFrame(ID3D12GraphicsCommandList*& cmdList)
 	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
 	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_ZBuffer->GetDescriptorHeap()->GetCPUDescriptorHandleForHeapStart();
-
 	cmdList->ResourceBarrier(1, &barrier);
 
-	cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, &dsvHandle);
+	if (m_ZBuffer != nullptr)
+	{
+		D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = m_ZBuffer->GetDescriptorHeap()->GetCPUDescriptorHandleForHeapStart();
+
+		cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, &dsvHandle);
+
+		cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	}	
+	else
+	{
+		cmdList->OMSetRenderTargets(1, &m_rtvHandles[m_currentBufferIndex], false, nullptr);
+	}
 
 	cmdList->ClearRenderTargetView(m_rtvHandles[m_currentBufferIndex], m_backGroundColor, 0, nullptr);	
-
-	cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 	cmdList->RSSetViewports(1, &m_mainViewport);
 
@@ -355,6 +363,11 @@ void DXWindow::ReleaseBuffers()
 	for (size_t i = 0; i < FrameCount; ++i)
 	{
 		m_buffers[i].Release();	
+	}
+	// Release ZBuffer
+	if (m_ZBuffer != nullptr)
+	{
+		m_ZBuffer->Release();
 	}
 }
 
