@@ -3,7 +3,7 @@
 UINT64 ObjectList::TotalTexturesSize()
 {
 	UINT64 size = 0;
-	for (Material& material : m_materials)
+	for (Material& material : *m_materials)
 	{
 		size += material.TextureSize();
 	}
@@ -59,7 +59,7 @@ UINT64 ObjectList::TotalSize()
 	{
 		size += object.m_mesh.Size();
 	}
-	for (Material& material : m_materials)
+	for (Material& material : *m_materials)
 	{
 		size += material.TextureSize();
 	}
@@ -69,7 +69,7 @@ UINT64 ObjectList::TotalSize()
 uint32_t ObjectList::TextureCount()
 {
 	uint32_t count = 0;
-	for (Material& material : m_materials)
+	for (Material& material : *m_materials)
 	{
 		count += material.GetTextures().m_count;
 	}
@@ -103,18 +103,23 @@ void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList)
 
 void ObjectList::CopyTextures(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destBufferOffset)
 {
-	for (Material& material : m_materials)
+	for (Material& material : *m_materials)
 	{
-		material.GetTextures().Init(defaultHeapProperties, m_bindlessHeapAllocator);
-
-		if (destBufferOffset + material.TextureSize() > (1024 * 1024 * 512))
+		if (&material.GetTextures() != nullptr)
 		{
-			//Not enough space for next material in the upload buffer
-			DXContext::Get().ExecuteCommandList();	// Fence synchronization
-			cmdList = DXContext::Get().InitCommandList();
-			destBufferOffset = 0;
+			material.GetTextures().Init(defaultHeapProperties, m_bindlessHeapAllocator);
+
+			//Check if enough space for next material in the upload buffer
+			if (destBufferOffset + material.TextureSize() > (1024 * 1024 * 512))
+			{
+				//Not enought space, sending current upload buffer and syncing
+				DXContext::Get().ExecuteCommandList();	// Fence synchronization
+				cmdList = DXContext::Get().InitCommandList();
+				destBufferOffset = 0;
+			}
+
+			destBufferOffset += material.GetTextures().CopyToGPU(uploadBuffer, destBufferOffset, cmdList);;
 		}		
-		destBufferOffset += material.GetTextures().CopyToGPU(uploadBuffer, destBufferOffset, cmdList);;
 	}
 
 	// Waiting for the buffer to get back before writing meshes
@@ -224,11 +229,11 @@ void ObjectList::CopyMaterialsData()
 	std::vector<MaterialData> matDatas;
 	for (uint32_t i = 0; i < MaterialsCount(); i++)
 	{
-		MaterialData currentMaterialData  = m_materials[i].GetData();
+		MaterialData currentMaterialData  = (*m_materials)[i].GetData();
 
 		matDatas.emplace_back(currentMaterialData);
 
-		m_materials[i].m_ID = i;
+		(*m_materials)[i].m_ID = i;
 	}
 
 	// Copy

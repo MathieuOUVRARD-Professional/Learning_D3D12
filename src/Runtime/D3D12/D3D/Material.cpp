@@ -1,5 +1,9 @@
 #include "Material.h"
 
+Material::Material()
+{
+}
+
 void Material::SendShaderRootParams(ID3D12GraphicsCommandList* cmdList, UINT bufferSlot)
 {
 	MaterialData materialData
@@ -24,7 +28,7 @@ MaterialData& Material::GetData()
 {
 	if (!m_dataGenerated)
 	{
-		MaterialData materialData
+		m_data = 
 		{
 			m_baseColor,
 			m_diffuseTextureID,
@@ -40,7 +44,6 @@ MaterialData& Material::GetData()
 			m_metallicFactor,
 		};
 
-		m_data = materialData;
 		m_dataGenerated = true;
 	}	
 

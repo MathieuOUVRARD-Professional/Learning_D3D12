@@ -28,10 +28,12 @@ class ObjectList
 		UINT64 TotalMeshes();
 		UINT64 TotalSize();
 		uint32_t TextureCount();
+
 		inline void SetHeapAllocator(DescriptorHeapAllocator& allocator)
 		{
 			m_bindlessHeapAllocator = &allocator;
 		}
+
 		void CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HEAP_PROPERTIES* defaultHeapProperties, ID3D12Resource* uploadBuffer, UINT64 destBufferOffset = 0, UINT64 destOffsetVertex = 0, UINT64 destOffsetIndex = 0);
 		void CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource* indexBuffer);
 		void BindDescriptorHeaps(ID3D12GraphicsCommandList* cmdList, uint32_t rootParameterIndex);
@@ -50,20 +52,20 @@ class ObjectList
 
 		inline std::vector<Material>& GetMaterials()
 		{
-			return m_materials;
+			return *m_materials;
 		}
-		inline void SetMaterials(std::vector<Material>& materials)
+		inline void SetMaterials(std::unique_ptr<std::vector<Material>> & materials)
 		{
-			m_materials = materials;
+			m_materials = std::move(materials);
 		}
 		inline uint32_t MaterialsCount()
 		{
-			return (uint32_t)m_materials.size();
+			return (uint32_t)m_materials->size();
 		}
 
 	private:
 		std::list<SceneObject> m_list;
-		std::vector<Material> m_materials;
+		std::unique_ptr<std::vector<Material>> m_materials;
 
 		DescriptorHeapAllocator* m_bindlessHeapAllocator = nullptr;
 

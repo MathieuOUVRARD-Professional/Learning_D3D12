@@ -12,8 +12,8 @@ void D3EZ::LoggingProvider::Init()
 
 	// Sinks
 	logger->sinks().clear();
-	logger->sinks().push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-	logger->sinks().push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(logFile.string()));
+	logger->sinks().emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+	logger->sinks().emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(logFile.string()));
 
 	// Pattern
 	logger->set_pattern("[%^%l%$] [%d.%m.%Y %H:%M:%S] %v");

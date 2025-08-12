@@ -178,7 +178,7 @@ void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, ObjectList& object
 
 void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, std::string sceneDirectory)
 {
-	std::vector<Material> materials;
+	std::unique_ptr<std::vector<Material>> materials = std::make_unique< std::vector<Material>>();
 	uint32_t textureID = 0;
 	
 	for (unsigned int i = 0; i < scene.mNumMaterials; i++)
@@ -344,12 +344,12 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 		}
 		else
 		{
-			Texture materialTextures(texturesPaths, texturesNames, true);
+			std::unique_ptr<Texture> materialTextures = std::make_unique<Texture>(texturesPaths, texturesNames, true);
 			material.SetTextures(materialTextures);
 		}	
 
 		std::cout << std::endl;
-		materials.emplace_back(material);
+		materials->emplace_back(std::move(material));
 	}
 	objectList.SetMaterials(materials);
 }

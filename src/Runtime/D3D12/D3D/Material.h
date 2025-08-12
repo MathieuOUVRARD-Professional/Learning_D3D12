@@ -23,21 +23,41 @@ struct MaterialData
 	float padding2;
 };
 
+// Material posses a non copiable member with m_textures being a unique_ptr<Texture>.
+// As unique_ptr are uniques they're not copyable and though move semantics must be use.
+
+// SO MATERIALS CANNOT BE COPIED BUT ONLY MOVED AND PASS BY REFERENCE
+
+// Using unique_ptr through the whole life of the resource make so that it's never copied.
+// But it's ownership can be passed so it never gets deleted as long as it's referenced 
+
 class Material
 {
 	public:
+
+		// Delete copy constructor & assignment
+		Material(const Material&) = delete;
+		Material& operator=(const Material&) = delete;
+
+		// Move constructor & assignement
+		Material(Material&& other) noexcept = default;
+		Material& operator=(Material&& other) noexcept = default;
+
+		Material();
+
 		inline UINT64 TextureSize()
 		{
-			return m_Textures.GetTotalTextureSize();
+			return m_textures->GetTotalTextureSize();			
 		}
 		inline Texture& GetTextures()
 		{
-			return m_Textures;
+			return *m_textures;
 		}
-		inline void SetTextures(Texture& textures)
+		inline void SetTextures(std::unique_ptr<Texture> & textures)
 		{
-			m_Textures = textures;
+			m_textures = std::move(textures);
 		}
+
 		void SendShaderRootParams(ID3D12GraphicsCommandList* cmdList, UINT bufferSlot);
 		MaterialData& GetData();
 
@@ -57,7 +77,7 @@ class Material
 		float m_roughnessFactor			= 1.0f;
 
 	private:
-		Texture m_Textures;
+		std::unique_ptr<Texture> m_textures = nullptr;
 		bool m_dataGenerated = false;
 		MaterialData m_data;
 };

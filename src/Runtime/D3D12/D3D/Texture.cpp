@@ -15,11 +15,11 @@ Texture::Texture(std::vector<std::string>& paths, std::vector<std::string>& name
 			ImageLoader::ImageData imageData;
 			ImageLoader::LoadImageFromDisk(paths[i], imageData, useMips);
 
-			m_textures.push_back(nullptr);
-			m_textureDatas.push_back(imageData);
-			m_textureStrides.push_back(m_textureDatas[i].width * ((m_textureDatas[i].bitPerPixel + 7) / 8));
-			m_textureSizes.push_back(m_textureDatas[i].height * m_textureStrides[i]);
-			m_names.push_back(names[i]);
+			m_textures.emplace_back(nullptr);
+			m_textureDatas.emplace_back(imageData);
+			m_textureStrides.emplace_back(m_textureDatas[i].width * ((m_textureDatas[i].bitPerPixel + 7) / 8));
+			m_textureSizes.emplace_back(m_textureDatas[i].height * m_textureStrides[i]);
+			m_names.emplace_back(names[i]);
 		}
 	}	
 }
@@ -203,7 +203,6 @@ UINT64 Texture::CopyToGPU(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffse
 			}
 
 			//Data offset
-			//uploadBufferOffset += GetMipSize(i, j);
 			uploadBufferOffset += Align(txtSrc.PlacedFootprint.Footprint.RowPitch * mipHeight, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
 		}	
 	}

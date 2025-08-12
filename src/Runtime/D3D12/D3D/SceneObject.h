@@ -16,7 +16,7 @@ class SceneObject
 
 		inline void AddChild(SceneObject* newChild)
 		{
-			m_childrens.push_back(newChild);
+			m_childrens.emplace_back(newChild);
 		}
 
 		std::string m_name;
