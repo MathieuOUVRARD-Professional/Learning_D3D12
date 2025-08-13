@@ -56,9 +56,12 @@ float ComputeShadow(float4 shadowPos, Light light, float3 normalWorldSpace)
     bindlessTextures[NonUniformResourceIndex(light.shadowMapID)].GetDimensions(shadowMapSize.x, shadowMapSize.y);    
 	
     float2 texelSize = 1.0 / shadowMapSize;
-    for (int x = -1; x <= 1; ++x)
+	
+    int samlingRadius = 2;
+	
+    for (int x = -samlingRadius; x <= samlingRadius; ++x)
     {
-        for (int y = -1; y <= 1; ++y)
+        for (int y = -samlingRadius; y <= samlingRadius; ++y)
         {
             float pcfDepth = bindlessTextures[NonUniformResourceIndex(light.shadowMapID)].Sample(textureSampler, projCoords.xy + float2(x, y) * texelSize).r;
             //pcfDepth = lerp(pcfDepth, LinearizeDepth(pcfDepth, 0.01f, light.radius) / light.radius, light.type == 1 || light.type == 2);
@@ -66,7 +69,7 @@ float ComputeShadow(float4 shadowPos, Light light, float3 normalWorldSpace)
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
         }
     }
-    shadow /= 9.0;
+    shadow /= pow((1 + 2 * samlingRadius), 2);
 	
 	// If out of range set no shadow for directional lights
     shadow = lerp(shadow, 0.0, currentDepth > 1.0 && light.type == 0);
@@ -76,7 +79,7 @@ float ComputeShadow(float4 shadowPos, Light light, float3 normalWorldSpace)
 
 float NormalDistributionGGX(float3 normalWorldSpace, float3 halfway, float roughness)
 {
-	float alpha_Squared = roughness * roughness;
+    float alpha_Squared = roughness * roughness * roughness * roughness;
 	float NdotH_Squared = max(dot(normalWorldSpace, halfway),0) * max(dot(normalWorldSpace, halfway), 0);
 
 	float denominator = (NdotH_Squared * (alpha_Squared - 1.0) + 1.0);
@@ -149,11 +152,12 @@ float3 ComputeLighting(Light light, float3 normalWorldSpace, float3 viewDirectio
 	// Specular BRDF
     float3 numerator = (NDF * F * G);
     float denominator = 4.0f * NdotV * NdotL + 0.0001f;
-    float3 specular = numerator / max(denominator, 0.0001f);
+    //float3 specular = numerator / max(denominator, 0.0001f);
+    float3 specular = numerator / denominator;
 	
 	// Diffuse Reflection (Lambertian)
-    float3 kD = 1.0f - F; // Energy conservation
-    kD *= (1.0f - metallic); // Metals have no diffuse component
+    float3 kD = float3(1.0f, 1.0f, 1.0f) - F;	// Energy conservation
+    kD *= (1.0f - metallic);					// Metals have no diffuse component
     float3 Lambertian = albedo / PI;
 	
 	// Final color computation
@@ -181,6 +185,9 @@ void main(
 	float roughness = materialData.roughness *  ormTexel.g;
 	float metalness = materialData.metalness *  ormTexel.b;
 	
+	// Convert albedo texture from sRGB to linearSpace
+    albedoTexel.rgb = pow(albedoTexel.rgb, 2.2);
+	
 	// AlphaClipping
     float alpha = bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, pInput.uv).a;
     clip(alpha - 0.25f); // Discards the pixel if alpha <= 0
@@ -206,7 +213,7 @@ void main(
 	
 	//Gamma correction
     float gamma = 2.2;
-    finalColor.rgb = pow(finalColor.rgb, float3(1.0f / gamma, 1.0f / gamma, 1.0f / gamma));
+    finalColor.rgb = pow(finalColor.rgb / (finalColor.rgb + float3(1.0f, 1.0f, 1.0f)), float3(1.0f / gamma, 1.0f / gamma, 1.0f / gamma));
 	
     pixel = float4(finalColor, materialData.opacity);
 }

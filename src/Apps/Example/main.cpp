@@ -451,7 +451,7 @@ int main()
 		
 		// === SETUP === //
 		// SHADOW MAP
-		DepthBuffer shadowMap = DepthBuffer(2048, 2048, "ShadowMap", &defaultHeapProperties);
+		DepthBuffer shadowMap = DepthBuffer(4096, 4096, "ShadowMap", &defaultHeapProperties);
 		shadowMap.CreateDSV();
 		shadowMap.CreateDepthBufferSRV(&bindlessSRVHeapAllocator);
 
@@ -570,7 +570,7 @@ int main()
 			
 			cubeLight.m_position = cubeLightTransform.m_position = glm::vec3(lightModel[3]);		
 			cubeLight.m_direction = glm::normalize(-cubeLightTransform.m_position);
-			cubeLight.ComputeViewProjMatrix(30.0f);
+			cubeLight.ComputeViewProjMatrix(25.0f);
 					
 			// === SHADOW PASS === //
 			shadowMap.Bind(cmdList);
