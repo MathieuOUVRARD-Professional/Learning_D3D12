@@ -30,7 +30,7 @@ void C_AssImp::Import(const std::string& filePath, ObjectList& objectList)
 		SceneObject mainObject = SceneObject();
 		mainObject.m_name = "OriginObject";
 
-		objectList.GetList().emplace_back(mainObject);
+		objectList.GetList().emplace_back(std::move(mainObject));
 
 		std::string folderPath = filePath.substr(0, filePath.find('/')) + "/"; 
 		
@@ -63,7 +63,7 @@ void C_AssImp::ProcessMeshesNodes(ObjectList& objectList, const aiScene& scene, 
 
 		SceneObject* tmp = &targetParent;
 
-		objectList.GetList().emplace_back(newObject);
+		objectList.GetList().emplace_back(std::move(newObject));
 		targetParent.AddChild(&objectList.GetList().back());
 
 		// copy the meshes
@@ -110,8 +110,8 @@ void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, ObjectList& object
 
 	for (unsigned int i = 0; i < node.mNumMeshes; i++)
 	{
-		std::vector<Vertex> vertices;
-		std::vector<uint32_t> indices;
+		std::unique_ptr< std::vector<Vertex>> vertices = std::make_unique< std::vector<Vertex>>();
+		std::unique_ptr< std::vector<uint32_t>> indices = std::make_unique< std::vector<uint32_t>>();
 
 		aiMesh* meshNode = scene.mMeshes[node.mMeshes[i]];
 		nodeName = meshNode->mName.C_Str();
@@ -142,7 +142,7 @@ void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, ObjectList& object
 			vertex.btY = meshNode->mBitangents[j].y;
 			vertex.btZ = meshNode->mBitangents[j].z;			
 
-			vertices.emplace_back(vertex);
+			vertices->emplace_back(vertex);
 		}
 
 		for (unsigned int j = 0; j < meshNode->mNumFaces; j++)
@@ -151,25 +151,32 @@ void C_AssImp::LoadMeshes(const aiScene& scene, aiNode& node, ObjectList& object
 
 			for (unsigned int k = 0; k < face.mNumIndices; k++)
 			{
-				indices.emplace_back(face.mIndices[k]);
+				indices->emplace_back(face.mIndices[k]);
 			}
 		}
 
 		if (node.mNumMeshes > 1)
 		{
-			Mesh submesh;
-			submesh.SetVertices(vertices);
-			submesh.SetIndices(indices);
-			submesh.SetMaterial(objectList.GetMaterials()[meshNode->mMaterialIndex]);
+			// If SceneObject's Mesh isn't constucted cannot assign it submeshes 
+			if (objectList.GetList().back().m_mesh.get() == nullptr)
+			{
+				// Constuct Mesh to hold submesh
+				std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>();
+				objectList.GetList().back().SetMesh(mesh);
+			}
 
-			objectList.GetList().back().m_mesh.AddSubmesh(submesh);
+			std::unique_ptr<Mesh> submesh = std::make_unique<Mesh>();
+			submesh->SetVertices(vertices);
+			submesh->SetIndices(indices);
+			submesh->SetMaterial(objectList.GetMaterials()[meshNode->mMaterialIndex]);
+			objectList.GetList().back().m_mesh->AddSubmesh(std::move(submesh));
 		}
 		else
 		{
-			Mesh mesh;
-			mesh.SetVertices(vertices);
-			mesh.SetIndices(indices);
-			mesh.SetMaterial(objectList.GetMaterials()[meshNode->mMaterialIndex]);
+			std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>();
+			mesh->SetVertices(vertices);
+			mesh->SetIndices(indices);
+			mesh->SetMaterial(objectList.GetMaterials()[meshNode->mMaterialIndex]);
 			objectList.GetList().back().SetMesh(mesh);
 		}
 	}	
@@ -200,44 +207,46 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 		aiColor3D emissive;
 		float opacity = 1.0f;
 
+		// Create default texture for object list if none is created
 		if (i == 0 && !objectList.m_hasDefaultTexture)
 		{
-			objectList.m_hasDefaultTexture = true;
-
 			texturesPaths.emplace_back("Textures/White.png");
-
 			texturesNames.emplace_back("DefaultTexture");
 
 			textureID++;
+
+			objectList.m_hasDefaultTexture = true;
 		}
 
+		// Create default Normal texture for object list if none is created
 		if (i == 0 && !objectList.m_hasDefaultNormalTexture)
 		{
-
-			objectList.m_hasDefaultNormalTexture = true;
-
 			texturesPaths.emplace_back("Textures/Normal.png");
-
 			texturesNames.emplace_back("DefaultNormalTexture");
 
 			textureID++;
+
+			objectList.m_hasDefaultNormalTexture = true;
 		}
 
 		material.m_name = materialNode->GetName().C_Str();
 		spdlog::info("Material name: " + material.m_name);
 		
+		// BASE COLOR
 		if (materialNode->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS && (baseColor.r < 1 || baseColor.g < 1 || baseColor.b < 1))
 		{
 			std::string message = fmt::format("BaseColor : {0:.2f}, {1:.2f}, {2:.2f}", baseColor.r, baseColor.g, baseColor.b);
 			spdlog::info(message);
 			material.m_baseColor = glm::vec3(baseColor.r, baseColor.g, baseColor.b);
 		}
+		// EMISSIVE COLOR
 		if (materialNode->Get(AI_MATKEY_COLOR_EMISSIVE, emissive) == AI_SUCCESS && (emissive.r > 0 || emissive.g > 0 || emissive.b > 0))
 		{
 			std::string message = fmt::format("Emissive color: {0:.2f}, {1:.2f}, {2:.2f}", emissive.r, emissive.g, emissive.b);
 			spdlog::info(message);
 			material.m_emissiveColor = glm::vec3(emissive.r, emissive.g, emissive.b);
 		}
+		// OPACITY
 		if (materialNode->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS && opacity < 1.0f)
 		{
 			std::string message = fmt::format("Material opacity: {0:.3f}", opacity);
@@ -245,6 +254,7 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 			material.m_opacity = opacity;
 		}		
 		
+		// DIFFUSE/BASE_COLOR TEXTURE
 		if (materialNode->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS)
 		{
 			diffuseTexturePath = sceneDirectory + texturePath.C_Str();
@@ -272,6 +282,7 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 			textureID++;
 		}
 		
+		// NORMAL TEXTURE
 		if (materialNode->GetTexture(aiTextureType_NORMALS, 0, &texturePath) == AI_SUCCESS)
 		{
 			normalTexturePath = sceneDirectory + texturePath.C_Str();
@@ -290,6 +301,7 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 			material.m_normalTextureID = DEFAULT_NORMAL_TEXTURE;
 		}
 
+		// METALNESS/ROUGHNESS TEXTURE
 		if (materialNode->GetTexture(aiTextureType_METALNESS, 0, &texturePath) == AI_SUCCESS)
 		{
 			ormTexturePath = sceneDirectory + texturePath.C_Str();
@@ -305,6 +317,7 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 		}
 		else
 		{
+			// No texture so uniform metalness/roughness
 			float metallicFactor = 0.0f;
 			float roughnessFactor = 1.0f;
 
@@ -317,6 +330,7 @@ void C_AssImp::ProcessMaterials(ObjectList& objectList, const aiScene& scene, st
 			spdlog::info(message);
 		}
 
+		// EMMISSIVE TEXTURE
 		if (materialNode->GetTexture(aiTextureType_EMISSIVE, 0, &texturePath) == AI_SUCCESS)
 		{
 			emissiveTexturePath = sceneDirectory + texturePath.C_Str();

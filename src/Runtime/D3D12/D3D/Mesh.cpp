@@ -1,5 +1,9 @@
 #include <D3D/Mesh.h>
 
+Mesh::Mesh()
+{
+}
+
 uint32_t Mesh::Size()
 {
 	uint32_t size = 0;
@@ -8,7 +12,7 @@ uint32_t Mesh::Size()
 	{
 		for (unsigned int i = 0; i < m_nSubmeshes; i++)
 		{
-			size += m_submeshes[i].Size();
+			size += (*m_submeshes[i]).Size();
 		}		
 	}
 	else
@@ -27,12 +31,12 @@ uint32_t Mesh::VerticesSize()
 	{
 		for (unsigned int i = 0; i < m_nSubmeshes; i++)
 		{
-			size += m_submeshes[i].VerticesSize();
+			size += (*m_submeshes[i]).VerticesSize();
 		}
 	}
 	else
 	{
-		size = uint32_t(sizeof(Vertex) * m_vertices.size());
+		size = uint32_t(sizeof(Vertex) * (*m_vertices).size());
 	}
 	return size;
 }
@@ -45,19 +49,19 @@ uint32_t Mesh::IndicesSize()
 	{
 		for (unsigned int i = 0; i < m_nSubmeshes; i++)
 		{
-			size += m_submeshes[i].IndicesSize();
+			size += (*m_submeshes[i]).IndicesSize();
 		}
 	}
 	else
 	{
-		size = uint32_t(sizeof(uint32_t) * m_indices.size());
+		size = uint32_t(sizeof(uint32_t) * (*m_indices).size());
 	}
 	return size;
 }
 
 Mesh& Mesh::GetSubmesh(int index)
 {
-	return m_submeshes[index];
+	return *m_submeshes[index];
 }
 
 void Mesh::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, glm::mat4& viewProjectionMatrix, glm::mat4& modelTransform)
@@ -66,7 +70,7 @@ void Mesh::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, glm::mat4& viewPro
 	{
 		for (unsigned int i = 0; i < m_nSubmeshes; i++)
 		{
-			m_submeshes[i].ShadowPassDraw(cmdList, viewProjectionMatrix, modelTransform);
+			(*m_submeshes[i]).ShadowPassDraw(cmdList, viewProjectionMatrix, modelTransform);
 		}
 	}
 	else
@@ -97,7 +101,7 @@ void Mesh::Draw(ID3D12GraphicsCommandList* cmdList, glm::mat4& modelTransform)
 	{
 		for (unsigned int i = 0; i < m_nSubmeshes; i++)
 		{
-			m_submeshes[i].Draw(cmdList, modelTransform);
+			(*m_submeshes[i]).Draw(cmdList, modelTransform);
 		}
 	}
 	else

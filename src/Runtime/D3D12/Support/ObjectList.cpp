@@ -15,7 +15,10 @@ UINT64 ObjectList::TotalVerticesSize()
 	UINT64 size = 0;
 	for (SceneObject& object : m_list)
 	{
-		size += object.m_mesh.VerticesSize();
+		if (object.m_mesh)
+		{
+			size += object.m_mesh->VerticesSize();
+		}
 	}
 	return size;
 }
@@ -25,7 +28,10 @@ UINT64 ObjectList::TotalIndicesSize()
 	UINT64 size = 0;
 	for (SceneObject& object : m_list)
 	{
-		size += object.m_mesh.IndicesSize();
+		if (object.m_mesh)
+		{
+			size += object.m_mesh->IndicesSize();
+		}		
 	}
 	return size;
 }
@@ -40,13 +46,16 @@ UINT64 ObjectList::TotalMeshes()
 	UINT64 nMeshes = 0;
 	for (SceneObject& object : m_list)
 	{
-		if (object.m_mesh.m_nSubmeshes > 0)
+		if (object.m_mesh)
 		{
-			nMeshes += object.m_mesh.m_nSubmeshes;
-		}
-		else
-		{
-			nMeshes++;
+			if (object.m_mesh->m_nSubmeshes > 0)
+			{
+				nMeshes += object.m_mesh->m_nSubmeshes;
+			}
+			else
+			{
+				nMeshes++;
+			}
 		}
 	}
 	return nMeshes;
@@ -57,7 +66,10 @@ UINT64 ObjectList::TotalSize()
 	UINT64 size = 0;
 	for(SceneObject& object : m_list)
 	{
-		size += object.m_mesh.Size();
+		if (object.m_mesh)
+		{
+			size += object.m_mesh->Size();
+		}
 	}
 	for (Material& material : *m_materials)
 	{
@@ -89,7 +101,10 @@ void ObjectList::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, Light& light
 {
 	for (SceneObject& object : m_list)
 	{
-		object.m_mesh.ShadowPassDraw(cmdList, light.m_viewProjMatrix, object.m_transform.m_matrix);
+		if (object.m_mesh)
+		{
+			object.m_mesh->ShadowPassDraw(cmdList, light.m_viewProjMatrix, object.m_transform.m_matrix);
+		}
 	}
 }
 
@@ -97,7 +112,10 @@ void ObjectList::Draw(ID3D12GraphicsCommandList* cmdList)
 {
 	for (SceneObject& object : m_list)
 	{
-		object.m_mesh.Draw(cmdList, object.m_transform.m_matrix);
+		if (object.m_mesh)
+		{
+			object.m_mesh->Draw(cmdList, object.m_transform.m_matrix);
+		}
 	}
 }
 
@@ -141,47 +159,51 @@ void ObjectList::CopyMeshes(ID3D12Resource* uploadBuffer, UINT64 destOffsetVerte
 	UINT64 objectIndexOffset = 0;
 	for (SceneObject& object : m_list)
 	{
-		if (object.m_mesh.m_nSubmeshes > 0)
+		if (object.m_mesh)
 		{
-			UINT64 submeshVertexOffset = 0;
-			UINT64 submeshIndexOffset = 0;
-			for (unsigned int i = 0; i < object.m_mesh.m_nSubmeshes; i++)
+			if (object.m_mesh->m_nSubmeshes > 0)
+			{
+				UINT64 submeshVertexOffset = 0;
+				UINT64 submeshIndexOffset = 0;
+				for (unsigned int i = 0; i < object.m_mesh->m_nSubmeshes; i++)
+				{
+					memcpy(&uploadBufferAdress
+						[destOffsetVertex + objectVertexOffset + submeshVertexOffset],
+						object.m_mesh->GetSubmesh(i).GetVertices().data(),
+						object.m_mesh->GetSubmesh(i).VerticesSize());
+					object.m_mesh->GetSubmesh(i).m_vertexBufferOffset = destOffsetVertex + objectVertexOffset + submeshVertexOffset;
+
+					memcpy(&uploadBufferAdress
+						[destOffsetIndex + objectIndexOffset + submeshIndexOffset],
+						object.m_mesh->GetSubmesh(i).GetIndices().data(),
+						object.m_mesh->GetSubmesh(i).IndicesSize());
+					object.m_mesh->GetSubmesh(i).m_indexBufferOffset = (destOffsetIndex - destOffsetVertex - TotalVerticesSize()) + objectIndexOffset + submeshIndexOffset;
+
+					submeshVertexOffset += object.m_mesh->GetSubmesh(i).VerticesSize();
+					submeshIndexOffset += object.m_mesh->GetSubmesh(i).IndicesSize();
+				}
+				objectVertexOffset += submeshVertexOffset;
+				objectIndexOffset += submeshIndexOffset;
+			}
+			else
 			{
 				memcpy(&uploadBufferAdress
-					[destOffsetVertex + objectVertexOffset + submeshVertexOffset],
-					object.m_mesh.GetSubmesh(i).GetVertices().data(),
-					object.m_mesh.GetSubmesh(i).VerticesSize());
-				object.m_mesh.GetSubmesh(i).m_vertexBufferOffset = destOffsetVertex + objectVertexOffset + submeshVertexOffset;
+					[destOffsetVertex + objectVertexOffset],
+					object.m_mesh->GetVertices().data(),
+					object.m_mesh->VerticesSize());
+				object.m_mesh->m_vertexBufferOffset = destOffsetVertex + objectVertexOffset;
 
 				memcpy(&uploadBufferAdress
-					[destOffsetIndex + objectIndexOffset + submeshIndexOffset],
-					object.m_mesh.GetSubmesh(i).GetIndices().data(),
-					object.m_mesh.GetSubmesh(i).IndicesSize());
-				object.m_mesh.GetSubmesh(i).m_indexBufferOffset = (destOffsetIndex - destOffsetVertex - TotalVerticesSize()) + objectIndexOffset + submeshIndexOffset;
+					[destOffsetIndex + objectIndexOffset],
+					object.m_mesh->GetIndices().data(),
+					object.m_mesh->IndicesSize());
+				object.m_mesh->m_indexBufferOffset = (destOffsetIndex - destOffsetVertex - TotalVerticesSize()) + objectIndexOffset;
 
-				submeshVertexOffset += object.m_mesh.GetSubmesh(i).VerticesSize();
-				submeshIndexOffset += object.m_mesh.GetSubmesh(i).IndicesSize();
+				objectVertexOffset += object.m_mesh->VerticesSize();
+				objectIndexOffset += object.m_mesh->IndicesSize();
 			}
-			objectVertexOffset += submeshVertexOffset;
-			objectIndexOffset += submeshIndexOffset;
 		}
-		else
-		{
-			memcpy(&uploadBufferAdress
-				[destOffsetVertex + objectVertexOffset],
-				object.m_mesh.GetVertices().data(),
-				object.m_mesh.VerticesSize());
-			object.m_mesh.m_vertexBufferOffset = destOffsetVertex + objectVertexOffset;
-
-			memcpy(&uploadBufferAdress
-				[destOffsetIndex + objectIndexOffset],
-				object.m_mesh.GetIndices().data(),
-				object.m_mesh.IndicesSize());
-			object.m_mesh.m_indexBufferOffset = (destOffsetIndex - destOffsetVertex - TotalVerticesSize()) + objectIndexOffset;
-
-			objectVertexOffset += object.m_mesh.VerticesSize();
-			objectIndexOffset += object.m_mesh.IndicesSize();
-		}
+		
 	}
 	uploadBuffer->Unmap(0, &uploadRange);
 }
@@ -299,26 +321,29 @@ void ObjectList::CopyModelsData()
 
 	for (SceneObject& object : m_list)
 	{
-		ModelData meshData;
-		meshData.modelMatrix = object.m_transform.m_matrix;
-		if (object.m_mesh.m_nSubmeshes > 0)
+		if (object.m_mesh)
 		{
-			for (unsigned int i = 0; i < object.m_mesh.m_nSubmeshes; i++)
+			ModelData meshData;
+			meshData.modelMatrix = object.m_transform.m_matrix;
+			if (object.m_mesh->m_nSubmeshes > 0)
 			{
-				meshData.materialID = object.m_mesh.GetSubmesh(i).GetMaterial().m_ID;
+				for (unsigned int i = 0; i < object.m_mesh->m_nSubmeshes; i++)
+				{
+					meshData.materialID = object.m_mesh->GetSubmesh(i).GetMaterial().m_ID;
+					meshesTransforms.emplace_back(meshData);
+
+					object.m_mesh->GetSubmesh(i).m_ID = modelID;
+					modelID++;
+				}
+			}
+			else
+			{
+				meshData.materialID = object.m_mesh->GetMaterial().m_ID;
 				meshesTransforms.emplace_back(meshData);
 
-				object.m_mesh.GetSubmesh(i).m_ID = modelID;
+				object.m_mesh->m_ID = modelID;
 				modelID++;
 			}
-		}
-		else
-		{
-			meshData.materialID = object.m_mesh.GetMaterial().m_ID;
-			meshesTransforms.emplace_back(meshData);
-
-			object.m_mesh.m_ID = modelID;
-			modelID++;
 		}
 	}
 
@@ -383,50 +408,53 @@ void ObjectList::CreateBufferViews(ID3D12Resource* vertexBuffer, ID3D12Resource*
 {
 	for (SceneObject& object : m_list)
 	{
-		if (object.m_mesh.m_nSubmeshes > 0)
+		if (object.m_mesh)
 		{
-			for (unsigned int i = 0; i < object.m_mesh.m_nSubmeshes; i++)
+			if (object.m_mesh->m_nSubmeshes > 0)
+			{
+				for (unsigned int i = 0; i < object.m_mesh->m_nSubmeshes; i++)
+				{
+					// === Vertex buffer view === //
+					D3D12_VERTEX_BUFFER_VIEW vbv{};
+					vbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress() + object.m_mesh->GetSubmesh(i).m_vertexBufferOffset;
+					vbv.SizeInBytes = object.m_mesh->GetSubmesh(i).VerticesSize();
+					vbv.StrideInBytes = sizeof(Vertex);
+
+					object.m_mesh->GetSubmesh(i).SetVBV(vbv);
+
+					// === Index buffer view === //	
+					D3D12_INDEX_BUFFER_VIEW ibv{};
+					ibv.BufferLocation = indexBuffer->GetGPUVirtualAddress() + object.m_mesh->GetSubmesh(i).m_indexBufferOffset;
+					ibv.SizeInBytes = object.m_mesh->GetSubmesh(i).IndicesSize();
+					ibv.Format = DXGI_FORMAT_R32_UINT;
+
+					object.m_mesh->GetSubmesh(i).SetIBV(ibv);
+
+					// Cleaning
+					object.m_mesh->GetSubmesh(i).ClearVectors();
+				}
+			}
+			else
 			{
 				// === Vertex buffer view === //
 				D3D12_VERTEX_BUFFER_VIEW vbv{};
-				vbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress() + object.m_mesh.GetSubmesh(i).m_vertexBufferOffset;
-				vbv.SizeInBytes = object.m_mesh.GetSubmesh(i).VerticesSize();
+				vbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress() + object.m_mesh->m_vertexBufferOffset;
+				vbv.SizeInBytes = object.m_mesh->VerticesSize();
 				vbv.StrideInBytes = sizeof(Vertex);
 
-				object.m_mesh.GetSubmesh(i).SetVBV(vbv);
+				object.m_mesh->SetVBV(vbv);
 
-				// === Index buffer view === //	
+				// === Index buffer view === //
 				D3D12_INDEX_BUFFER_VIEW ibv{};
-				ibv.BufferLocation = indexBuffer->GetGPUVirtualAddress() + object.m_mesh.GetSubmesh(i).m_indexBufferOffset;
-				ibv.SizeInBytes = object.m_mesh.GetSubmesh(i).IndicesSize();
+				ibv.BufferLocation = indexBuffer->GetGPUVirtualAddress() + object.m_mesh->m_indexBufferOffset;
+				ibv.SizeInBytes = object.m_mesh->IndicesSize();
 				ibv.Format = DXGI_FORMAT_R32_UINT;
 
-				object.m_mesh.GetSubmesh(i).SetIBV(ibv);
+				object.m_mesh->SetIBV(ibv);
 
 				// Cleaning
-				object.m_mesh.GetSubmesh(i).ClearVectors();
+				object.m_mesh->ClearVectors();
 			}
 		}
-		else
-		{
-			// === Vertex buffer view === //
-			D3D12_VERTEX_BUFFER_VIEW vbv{};
-			vbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress() + object.m_mesh.m_vertexBufferOffset;
-			vbv.SizeInBytes = object.m_mesh.VerticesSize();
-			vbv.StrideInBytes = sizeof(Vertex);
-
-			object.m_mesh.SetVBV(vbv);
-
-			// === Index buffer view === //
-			D3D12_INDEX_BUFFER_VIEW ibv{};
-			ibv.BufferLocation = indexBuffer->GetGPUVirtualAddress() + object.m_mesh.m_indexBufferOffset;
-			ibv.SizeInBytes = object.m_mesh.IndicesSize();
-			ibv.Format = DXGI_FORMAT_R32_UINT;
-
-			object.m_mesh.SetIBV(ibv);
-
-			// Cleaning
-			object.m_mesh.ClearVectors();
-		}	
 	}
 }
