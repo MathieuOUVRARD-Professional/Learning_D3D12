@@ -7,7 +7,6 @@
 #include <D3D/DXContext.h>
 
 #include "Util/EzException.h"
-#include <string>
 
 class FrameBuffer
 {

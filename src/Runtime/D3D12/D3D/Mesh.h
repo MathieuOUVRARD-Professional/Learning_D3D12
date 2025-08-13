@@ -43,7 +43,7 @@ public:
 	uint32_t VerticesSize();
 	uint32_t IndicesSize();
 	Mesh& GetSubmesh(int index);
-	void ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, glm::mat4& viewProjectionMatrix, glm::mat4& modelTransform);
+	void ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, glm::mat4& lightViewProjectionMatrix, glm::mat4& modelTransform);
 	void Draw(ID3D12GraphicsCommandList* cmdList, glm::mat4& modelTransform);
 
 	inline std::vector<Vertex>& GetVertices()

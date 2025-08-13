@@ -611,7 +611,7 @@ int main()
 			cmdList->SetGraphicsRootSignature(pbrRootSignature);
 			camera.SendShaderParams(cmdList, 0);
 			cubeLight.SendShaderParams(cmdList, 2);
-			cmdList->SetGraphicsRootConstantBufferView(3, mainObjList.m_modelData->GetGPUVirtualAddress());
+			cmdList->SetGraphicsRootConstantBufferView(3, mainObjList.m_modelsData->GetGPUVirtualAddress());
 			cmdList->SetGraphicsRootConstantBufferView(4, mainObjList.m_materialDatas->GetGPUVirtualAddress());
 			mainObjList.BindDescriptorHeaps(cmdList, 5);
 			mainObjList.Draw(cmdList);

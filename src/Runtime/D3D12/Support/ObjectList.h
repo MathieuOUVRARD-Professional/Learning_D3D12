@@ -1,5 +1,6 @@
 #pragma once
 
+#include <D3D/ConstantBuffer.h>
 #include <D3D/DescriptorHeapAllocator.h>
 #include <D3D/Light.h>
 #include <D3D/Material.h>
@@ -13,10 +14,13 @@
 class ObjectList
 {
 	public:
+
+		ObjectList();
+
 		std::string m_name = "UnnamedList";
 
 		ComPointer<ID3D12Resource> m_materialDatas = nullptr;
-		ComPointer<ID3D12Resource> m_modelData = nullptr;
+		ComPointer<ID3D12Resource> m_modelsData = nullptr;
 
 		bool m_hasDefaultTexture = false;
 		bool m_hasDefaultNormalTexture = false;
@@ -73,6 +77,9 @@ class ObjectList
 		void CopyMeshes(ID3D12Resource* uploadBuffer, UINT64 destOffsetVertex = 0, UINT64 destOffsetIndex = 0);
 		void CopyMaterialsData();
 		void CopyModelsData();
+
+		ConstantBuffer m_materialDataBuffer;
+		ConstantBuffer m_modelsDataBuffer;
 
 		struct ModelData
 		{

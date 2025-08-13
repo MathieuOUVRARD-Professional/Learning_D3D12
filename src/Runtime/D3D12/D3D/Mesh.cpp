@@ -64,13 +64,13 @@ Mesh& Mesh::GetSubmesh(int index)
 	return *m_submeshes[index];
 }
 
-void Mesh::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, glm::mat4& viewProjectionMatrix, glm::mat4& modelTransform)
+void Mesh::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, glm::mat4& lightViewProjectionMatrix, glm::mat4& modelTransform)
 {
 	if (m_nSubmeshes > 0)
 	{
 		for (unsigned int i = 0; i < m_nSubmeshes; i++)
 		{
-			(*m_submeshes[i]).ShadowPassDraw(cmdList, viewProjectionMatrix, modelTransform);
+			(*m_submeshes[i]).ShadowPassDraw(cmdList, lightViewProjectionMatrix, modelTransform);
 		}
 	}
 	else
@@ -82,7 +82,7 @@ void Mesh::ShadowPassDraw(ID3D12GraphicsCommandList* cmdList, glm::mat4& viewPro
 		};
 
 		Matrices matrices;
-		matrices.viewProj = viewProjectionMatrix;
+		matrices.viewProj = lightViewProjectionMatrix;
 		matrices.model = modelTransform;
 
 		// === IA === //
