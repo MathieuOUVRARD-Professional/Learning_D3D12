@@ -2,17 +2,16 @@
 
 ## TODO
 
-- Copy texutre by rows and properly handle padding for textures rowPitch < 256
+- Shadow Mapping for point light
 - Multiple lights handling
-- Shadow Mapping for spot and point
-- Frustum culling
-- Multithreading for loading scene and copying to upload buffer
-- Loading screen
-- Mip maps
-- DirectStorage
-- Packing
 - Sort transparency and use multiple pipeline for blending:  
 <https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/AlphaBlendModeTest>
+- Use HDRI sky texture
+- Frustum culling
+- Multithreading to display loading screen while launching scene
+- Loading screen
+- DirectStorage
+- Packing
 - Fix view setting cursor at the midle of the main screen and not nearest
 - C++ side root signature
 - Add RTV to ShadowMap Framebuffer to linearize it for debuging view
@@ -22,6 +21,7 @@
 
 - Create window
 - Resize window
+- Add debug layers
 - Draw triangle
 - Adding ImGui
 - F key to switch fullscreen mode
@@ -62,3 +62,10 @@
 - Shadow Mapping for direct light
 - Properly display image with Imgui
 - Heap Allocator for bindless
+- Mip mapping
+- Copy texutre rows by rows and properly handle padding for textures rowPitch < 256
+- Shadow Mapping for spot
+- Refined Framebuffer with inheritance --> DepthBuffer & ColorBuffer
+- Use unique_ptr for textures resource to avoid useless copies
+- Use unique_ptr for meshes vertex and indices resources to avoid useless copies
+- Created class to handle constant buffers

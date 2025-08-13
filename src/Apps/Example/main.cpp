@@ -581,6 +581,7 @@ int main()
 			mainObjList.ShadowPassDraw(cmdList, cubeLight);
 
 			LightInterface(lights);
+			ImGuiPerfOverlay(true);
 
 			ImGui::Begin("Shadow Map Debug");
 			ImGui::Text("Depth Buffer (Shadow Map):");

@@ -16,6 +16,10 @@
 class Texture
 {
 	public:
+
+		Texture();
+		Texture(std::vector<std::string>& paths, std::vector<std::string>& names, bool useMips);
+
 		void Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, DescriptorHeapAllocator* srvHeapAllocator = nullptr);
 		UINT64 CopyToGPU(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffset, ID3D12GraphicsCommandList* cmdList);
 		void AddCommands(ID3D12GraphicsCommandList*& cmdList, uint32_t rootParameterIndex);
@@ -74,10 +78,7 @@ class Texture
 			{
 				return m_textureDatas[textureIndex].content[mipIndex].data();
 			}
-		};
-		
-		Texture(std::vector<std::string>& paths, std::vector<std::string>& names, bool useMips);
-		Texture();
+		};		
 
 		uint32_t m_count = 0;
 
