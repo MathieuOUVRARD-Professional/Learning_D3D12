@@ -16,9 +16,9 @@ Texture::Texture(std::vector<std::string>& paths, std::vector<std::string>& name
 			ImageLoader::LoadImageFromDisk(paths[i], imageData, useMips);
 
 			m_textures.emplace_back(nullptr);
-			m_textureDatas.emplace_back(imageData);
-			m_textureStrides.emplace_back(m_textureDatas[i].width * ((m_textureDatas[i].bitPerPixel + 7) / 8));
-			m_textureSizes.emplace_back(m_textureDatas[i].height * m_textureStrides[i]);
+			m_textureData.emplace_back(imageData);
+			m_textureStrides.emplace_back(m_textureData[i].width * ((m_textureData[i].bitPerPixel + 7) / 8));
+			m_textureSizes.emplace_back(m_textureData[i].height * m_textureStrides[i]);
 			m_names.emplace_back(names[i]);
 		}
 	}	
@@ -46,11 +46,11 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, DescriptorHeapA
 		D3D12_RESOURCE_DESC rdt{};
 		rdt.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 		rdt.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-		rdt.Width = m_textureDatas[i].width;
-		rdt.Height = m_textureDatas[i].height;
+		rdt.Width = m_textureData[i].width;
+		rdt.Height = m_textureData[i].height;
 		rdt.DepthOrArraySize = 1;
-		rdt.MipLevels = m_textureDatas[i].mipsLevels;
-		rdt.Format = m_textureDatas[i].giPixelFormat;
+		rdt.MipLevels = m_textureData[i].mipsLevels;
+		rdt.Format = m_textureData[i].giPixelFormat;
 		rdt.SampleDesc.Count = 1;
 		rdt.SampleDesc.Quality = 0;
 		rdt.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
@@ -99,10 +99,10 @@ void Texture::Init(D3D12_HEAP_PROPERTIES* defaultHeapProperties, DescriptorHeapA
 		}
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-		srvDesc.Format = m_textureDatas[i].giPixelFormat;
+		srvDesc.Format = m_textureData[i].giPixelFormat;
 		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvDesc.Texture2D.MipLevels = m_textureDatas[i].mipsLevels;
+		srvDesc.Texture2D.MipLevels = m_textureData[i].mipsLevels;
 		srvDesc.Texture2D.MostDetailedMip = 0;
 		srvDesc.Texture2D.PlaneSlice = 0;
 		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
@@ -127,14 +127,14 @@ UINT64 Texture::CopyToGPU(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffse
 
 	for (uint32_t i = 0; i < m_count; i++)
 	{
-		for (unsigned int j = 0; j < m_textureDatas[i].mipsLevels; j++)
+		for (unsigned int j = 0; j < m_textureData[i].mipsLevels; j++)
 		{
 			D3D12_SUBRESOURCE_DATA subresource = {};
 			subresource.pData = GetTextureData(i, j);
 			subresource.RowPitch = m_textureStrides[i] / pow(2, j);
-			subresource.SlicePitch = (UINT)(subresource.RowPitch * (m_textureDatas[i].height / pow(2, j)));
+			subresource.SlicePitch = (UINT)(subresource.RowPitch * (m_textureData[i].height / pow(2, j)));
 
-			UINT mipHeight = (UINT)(m_textureDatas[i].height / pow(2, j));
+			UINT mipHeight = (UINT)(m_textureData[i].height / pow(2, j));
 
 			CHAR* srcPtr = GetTextureData(i, j);
 			CHAR* dstPtr = &uploadBufferAdress[uploadBufferOffset];
@@ -152,11 +152,11 @@ UINT64 Texture::CopyToGPU(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffse
 			txtSrc.pResource = uploadBuffer;
 			txtSrc.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
 			txtSrc.PlacedFootprint.Offset = uploadBufferOffset;
-			txtSrc.PlacedFootprint.Footprint.Width = (UINT)(m_textureDatas[i].width / pow(2, j));
+			txtSrc.PlacedFootprint.Footprint.Width = (UINT)(m_textureData[i].width / pow(2, j));
 			txtSrc.PlacedFootprint.Footprint.Height = mipHeight;
 			txtSrc.PlacedFootprint.Footprint.Depth = 1;
 			txtSrc.PlacedFootprint.Footprint.RowPitch = (UINT)max((m_textureStrides[i] / pow(2, j)), D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
-			txtSrc.PlacedFootprint.Footprint.Format = m_textureDatas[i].giPixelFormat;
+			txtSrc.PlacedFootprint.Footprint.Format = m_textureData[i].giPixelFormat;
 
 			// Destination
 			D3D12_TEXTURE_COPY_LOCATION txtDst;
@@ -167,8 +167,8 @@ UINT64 Texture::CopyToGPU(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffse
 			////Box for when only copying part of the texture 
 			//D3D12_BOX textureSizeAsBox;
 			//textureSizeAsBox.left = textureSizeAsBox.top = textureSizeAsBox.front = 0;
-			//textureSizeAsBox.right = m_textureDatas[i].width;
-			//textureSizeAsBox.bottom = m_textureDatas[i].height;
+			//textureSizeAsBox.right = m_textureData[i].width;
+			//textureSizeAsBox.bottom = m_textureData[i].height;
 			//textureSizeAsBox.back = 1;
 
 			// === COPY === //
@@ -189,7 +189,7 @@ UINT64 Texture::CopyToGPU(ID3D12Resource* uploadBuffer, UINT64 uploadBufferOffse
 			cmdList->CopyTextureRegion(&txtDst, 0, 0, 0, &txtSrc, nullptr);
 
 			//If last Mip 
-			if (j == m_textureDatas[i].mipsLevels - 1)
+			if (j == m_textureData[i].mipsLevels - 1)
 			{
 				D3D12_RESOURCE_BARRIER transitionBarrier = {};
 				transitionBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;

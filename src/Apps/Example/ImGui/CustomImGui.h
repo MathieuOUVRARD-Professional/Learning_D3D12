@@ -62,12 +62,12 @@ struct ExampleDescriptorHeapAllocator
 };
 
 void ImGuiPerfOverlay(bool open);
-glm::vec3 ImGuiColorPicker(std::string name);
+glm::vec3 ImGuiColorPicker(std::string name, glm::vec3 previousColor);
 void InitGuizmo();
 void TranslateGuizmo(Camera& camera, glm::mat4& model);
 void RotateGuizmo(Camera& camera, glm::mat4& model);
 void ScaleGuizmo(Camera& camera, glm::mat4& model);
-void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform);
+bool TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform);
 void ImageFromResource(ID3D12Resource* resource, ExampleDescriptorHeapAllocator& heapAllocator, ImVec2 size = ImVec2(0.0f, 0.0f));
 void LightInterface(std::vector<Light*>& lights);
 

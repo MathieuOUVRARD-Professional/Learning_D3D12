@@ -51,6 +51,11 @@ struct Light
     float shadowMapID;    
 };
 
+struct SceneData
+{
+    float N_LIGHTS;
+};
+
 struct PBR_V_Out
 {
     float2 uv           : Texcoord;

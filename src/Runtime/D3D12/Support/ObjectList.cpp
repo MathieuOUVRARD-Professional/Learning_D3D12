@@ -225,13 +225,13 @@ void ObjectList::CopyMaterialsData()
 		(*m_materials)[i].m_ID = i;
 	}
 
-	m_materialDataBuffer = ConstantBuffer(static_cast<UINT>(sizeof(MaterialData) * MaterialsCount()), "MaterialsDatas");
+	m_materialDataBuffer = ConstantBuffer(static_cast<UINT>(sizeof(MaterialData) * MaterialsCount()), "MaterialsData");
 
 	m_materialDataBuffer.CreateResource();
 	m_materialDataBuffer.CopyData(materials.data());
 	m_materialDataBuffer.CreateCBV(m_bindlessHeapAllocator);
 
-	m_materialDatas = m_materialDataBuffer.GetData();
+	m_materialData = m_materialDataBuffer.GetData();
 }
 
 void ObjectList::CopyModelsData()
@@ -267,7 +267,7 @@ void ObjectList::CopyModelsData()
 		}
 	}
 
-	m_modelsDataBuffer = ConstantBuffer(sizeof(ModelData) * TotalMeshes(), "ModelsDatas");
+	m_modelsDataBuffer = ConstantBuffer(sizeof(ModelData) * TotalMeshes(), "ModelsData");
 
 	m_modelsDataBuffer.CreateResource();
 	m_modelsDataBuffer.CopyData(models.data());
@@ -309,7 +309,7 @@ void ObjectList::CopyToUploadBuffer(ID3D12GraphicsCommandList* cmdList, D3D12_HE
 	spdlog::info("=====       DONE       ======\n");
 
 	// Models datas copy
-	spdlog::info("=====   MODELS-DATAS   ======\n");
+	spdlog::info("=====    MODELS-DATA    ======\n");
 	CopyModelsData();
 	spdlog::info("=====       DONE       ======\n");
 }

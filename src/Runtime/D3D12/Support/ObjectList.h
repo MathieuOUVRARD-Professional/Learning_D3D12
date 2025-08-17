@@ -19,7 +19,7 @@ class ObjectList
 
 		std::string m_name = "UnnamedList";
 
-		ComPointer<ID3D12Resource> m_materialDatas = nullptr;
+		ComPointer<ID3D12Resource> m_materialData = nullptr;
 		ComPointer<ID3D12Resource> m_modelsData = nullptr;
 
 		bool m_hasDefaultTexture = false;

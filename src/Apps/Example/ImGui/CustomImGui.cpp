@@ -51,9 +51,9 @@ void ImGuiPerfOverlay(bool open)
     ImGui::End();
 }
 
-glm::vec3 ImGuiColorPicker(std::string name)
+glm::vec3 ImGuiColorPicker(std::string name, glm::vec3 previousColor)
 {
-    static ImVec4 color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    ImVec4 color = ImVec4(previousColor.x, previousColor.y, previousColor.z, 1.0f);
     
     ImGuiColorEditFlags misc_flags =   ImGuiColorEditFlags_NoDragDrop | ImGuiColorEditFlags_NoOptions | ImGuiColorEditFlags_DisplayRGB;
 
@@ -109,8 +109,10 @@ static float lastScale[3] = { 0.0f, 0.0f, 0.0f };
 static float activeAxis = -1;
 static float warpOffsetX = 0;;
 
-void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
+bool TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
 {
+    bool hasBeenUsed = false;
+
     InitGuizmo();
     ImGui::Begin("Transform", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);    
     ImGui::SetWindowSize(ImVec2(350.0f, ImGui::GetWindowSize().y));
@@ -124,16 +126,22 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         {
             scale = false;
         }
+        if (ImGuizmo::IsUsing())
+        {
+            hasBeenUsed = true;
+        }
         TranslateGuizmo(camera, model);
         transform.m_position = glm::vec3(model[3].x, model[3].y, model[3].z);
+
     }
     ImGui::SameLine();
     ImGui::Checkbox("Rotate", &rotate);
     if (rotate)
     {
         if (ImGuizmo::IsUsing())
-        {           
+        {
             rotating = true;
+            hasBeenUsed = true;
         }
         RotateGuizmo(camera, model);
     }
@@ -145,10 +153,20 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         {
             translate = false;
         }
+        if (ImGuizmo::IsUsing())
+        {
+            hasBeenUsed = true;
+        }
         ScaleGuizmo(camera, model);
     }
 
     ImGui::Separator();
+
+    if (rotating)
+    {
+        transform.m_rotationEuler = glm::degrees(glm::eulerAngles(glm::quat_cast(glm::mat3(model))));
+        rotating = false;
+    }
 
     // Translation sliders
     float modelPosition[] = { model[3].x, model[3].y, model[3].z };
@@ -216,12 +234,8 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         model = glm::translate(glm::mat4(1.0f), transform.m_position);
         model *= transform.m_rotationMat;
         model = glm::scale(model, transform.m_scale);
-    }
 
-    if (rotating)
-    {
-        transform.m_rotationEuler = glm::degrees(glm::eulerAngles(glm::quat_cast(glm::mat3(model))));
-        rotating = false;
+        hasBeenUsed = true;
     }
 
     // Rotation sliders
@@ -306,6 +320,8 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         model = glm::translate(glm::mat4(1.0f), transform.m_position);
         model *= transform.m_rotationMat;
         model = glm::scale(model, transform.m_scale);
+
+        hasBeenUsed = true;
     }
 
     // Scale sliders
@@ -374,6 +390,9 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         model = glm::translate(glm::mat4(1.0f), transform.m_position);
         model *= transform.m_rotationMat;
         model = glm::scale(model, transform.m_scale);
+
+        // TODO Useless for now as this interface is only for lights and that scale is ireveleant for now. To change when used for other objects
+        //hasBeenUsed = true;
     }
 
     ImGui::Separator();
@@ -385,6 +404,8 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         model = glm::translate(glm::mat4(1.0f), transform.m_position);
         model *= transform.m_rotationMat;
         model = glm::scale(model, transform.m_scale);
+
+        hasBeenUsed = true;
     }
     ImGui::SameLine();
     if (ImGui::Button("Reset Rotation", ImVec2((ImGui::GetWindowWidth() - 30.0f) / 3.0f, 0.0f)))
@@ -395,6 +416,8 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
         model = glm::translate(glm::mat4(1.0f), transform.m_position);
         model *= transform.m_rotationMat;
         model = glm::scale(model, transform.m_scale);
+
+        hasBeenUsed = true;
     }
     ImGui::SameLine();
     if (ImGui::Button("Reset Scale", ImVec2((ImGui::GetWindowWidth() - 30.0f)/3.0f, 0.0f)))
@@ -407,6 +430,7 @@ void TransformUI(Camera& camera, glm::mat4& model, MyTransform& transform)
     }
 
     ImGui::End();
+    return hasBeenUsed;
 }
 
 void ImageFromResource(ID3D12Resource* resource, ExampleDescriptorHeapAllocator& heapAllocator, ImVec2 size)
@@ -503,6 +527,8 @@ void LightInterface(std::vector<Light*>& lights)
                         light->m_intensity = 1.0f;
                         light->m_innerAngle = 25.0f;
                         light->m_outerAngle = 30.0f;
+
+                        light->m_dataUpToDate = false;
                     }
 
                     if (is_selected)
@@ -516,17 +542,18 @@ void LightInterface(std::vector<Light*>& lights)
             //Color
             ImGui::Text("Color:");
             ImVec4 color = ImVec4(light->m_color.x, light->m_color.y, light->m_color.z, 1.0f);
-            if (ImGui::ColorButton(("##current" + light->m_name + "_COLOR").c_str(), color))
+            if (ImGui::ColorButton(("##" + light->m_name + "_COLOR").c_str(), color))
             {
 				if (!colorPickerIsUsed) 
                 {
                     colorPickerIsUsed = true;
-					ImGui::OpenPopup("LightColor");
+					ImGui::OpenPopup(("##" + light->m_name + "_COLOR_PICKER LightColor").c_str());
 				}                
             }
-			if (ImGui::BeginPopup("LightColor", 0))
+			if (ImGui::BeginPopup(("##" + light->m_name + "_COLOR_PICKER LightColor").c_str(), 0))
 			{
-				light->m_color = ImGuiColorPicker(light->m_name + " color");
+				light->m_color = ImGuiColorPicker(light->m_name + " color", light->m_color);
+                light->m_dataUpToDate = false;
 
 				ImGui::EndPopup();
                 colorPickerIsUsed = false;
@@ -538,6 +565,7 @@ void LightInterface(std::vector<Light*>& lights)
 			if (ImGui::DragFloat(("##" + light->m_name + "_INTENSITY").c_str(), &intensity, 0.001f, 0, 2.0f, "%.3f"))
 			{
 				light->m_intensity = intensity;
+                light->m_dataUpToDate = false;
 			}
 
             // Range
@@ -548,6 +576,7 @@ void LightInterface(std::vector<Light*>& lights)
 			if (ImGui::DragFloat(("##" + light->m_name + "_RADIUS").c_str(), &radius, 0.1f, 0, 1000.0f, "%.2f"))
 			{
 				light->m_radius = radius;
+                light->m_dataUpToDate = false;
 			}
             ImGui::EndDisabled();
 
@@ -559,6 +588,7 @@ void LightInterface(std::vector<Light*>& lights)
 			if (ImGui::DragFloat(("##" + light->m_name + "_INNER_ANGLE").c_str(), &innerAngle, 0.1f, 0, 180.0f, "%.2f"))
 			{
 				light->m_innerAngle = innerAngle;
+                light->m_dataUpToDate = false;
 			}
 
 			ImGui::Text("Spot outer angle:");
@@ -566,6 +596,7 @@ void LightInterface(std::vector<Light*>& lights)
 			if (ImGui::DragFloat(("##" + light->m_name + "_OUTER_ANGLE").c_str(), &m_outerAngle, 0.1f, 0, 180.0f, "%.2f"))
 			{
 				light->m_outerAngle = m_outerAngle;
+                light->m_dataUpToDate = false;
 			}
 			ImGui::EndDisabled();            
         }

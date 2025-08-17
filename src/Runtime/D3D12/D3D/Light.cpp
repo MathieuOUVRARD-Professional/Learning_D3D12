@@ -27,7 +27,7 @@ Light Light::Point(std::string name, glm::vec3 position, float intensity, float 
 	return point;
 }
 
-Light Light::Spot(std::string name, glm::vec3 position, glm::vec3 direction, float intensity, float radius, float innerAngle, float outerAngle, glm::vec3 color)
+Light Light::Spot(std::string name, glm::vec3 color, glm::vec3 position, glm::vec3 direction, float intensity, float radius, float innerAngle, float outerAngle)
 {
 	Light spot = Light();
 
@@ -52,7 +52,15 @@ void Light::ComputeViewProjMatrix(float ortoSize)
 
 	if (m_type == 0)
 	{
-		view = glm::lookAt(m_position, m_position + m_direction, glm::vec3(0.0f, 1.0f, 0.0f));
+		// Look direction colinear to up vector --> using -forward as up vector
+		if ((m_position + m_direction).x == 0.0f && (m_position + m_direction).z == 0.0f)
+		{
+			view = glm::lookAt(m_position, m_position + m_direction, glm::vec3(0.0f, 0.0f, -1.0f));
+		}
+		else
+		{
+			view = glm::lookAt(m_position, m_position + m_direction, glm::vec3(0.0f, 1.0f, 0.0f));
+		}
 		projection = glm::ortho
 		(
 			-ortoSize, ortoSize, 
@@ -62,10 +70,47 @@ void Light::ComputeViewProjMatrix(float ortoSize)
 	}
 	else if (m_type == 2)
 	{
-		view = glm::lookAt(m_position, m_position + m_direction, glm::vec3(0.0f, 1.0f, 0.0f));
+		// Look direction colinear to up vector --> using -forward as up vector
+		if ((m_position + m_direction).x == 0.0f && (m_position + m_direction).z == 0.0f)
+		{
+			view = glm::lookAt(m_position, m_position + m_direction, glm::vec3(0.0f, 0.0f, -1.0f));
+		}
+		else
+		{
+			view = glm::lookAt(m_position, m_position + m_direction, glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+
 		projection = glm::perspective(glm::radians(m_outerAngle * 2), 1.0f, 0.01f, m_radius);
 	}
 	m_viewProjMatrix = projection * view;
+}
+
+LightData* Light::GetData()
+{
+	if (!m_dataUpToDate)
+	{
+		m_data = LightData();
+
+		ComputeViewProjMatrix(25.0f);
+		m_data.viewProjMatrix = m_viewProjMatrix;
+
+		m_data.type = (float)m_type;
+
+		m_data.position = m_position;
+		m_data.direction = m_direction;
+
+		m_data.intensity = m_intensity;
+		m_data.radius = m_radius;
+		m_data.innerAngle = glm::cos(glm::radians(m_innerAngle));
+		m_data.outerAngle = glm::cos(glm::radians(m_outerAngle));
+
+		m_data.color = m_color;
+		m_data.shadowmapID = (float)m_shadowmapID;
+
+		m_dataUpToDate = true;
+	}
+
+	return &m_data;
 }
 
 void Light::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
@@ -77,7 +122,7 @@ void Light::SendShaderParams(ID3D12GraphicsCommandList* cmdList, int bufferSlot)
 	data.type = (float)m_type;
 
 	data.position = m_position;
-	data.direction = m_direction;					//Reversing direction as it's based on position
+	data.direction = m_direction;
 
 	data.intensity = m_intensity;
 	data.radius = m_radius;
@@ -97,7 +142,7 @@ void Light::SendShaderParamsSmall(ID3D12GraphicsCommandList* cmdList, int buffer
 	data.type = (float)m_type;
 
 	data.position = m_position;
-	data.direction = m_direction;					//Reversing direction as it's based on position
+	data.direction = m_direction;
 
 	data.intensity = m_intensity;
 	data.radius = m_radius;

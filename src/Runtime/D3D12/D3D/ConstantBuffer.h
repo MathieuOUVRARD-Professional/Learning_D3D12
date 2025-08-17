@@ -16,8 +16,9 @@ public:
 	ConstantBuffer(UINT size, std::string name);
 
 	void CreateResource();
-	void CopyData(const void* dataPointer);
+	void CopyData(const void* dataPointer, UINT manualSize = 0);
 	void CreateCBV(DescriptorHeapAllocator* heapAllocator = nullptr);
+	void Update(const void* dataPointer, UINT dataSize);
 
 	inline UINT GetSize()
 	{

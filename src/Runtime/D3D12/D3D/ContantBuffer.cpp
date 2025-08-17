@@ -41,17 +41,25 @@ void ConstantBuffer::CreateResource()
 
 }
 
-void ConstantBuffer::CopyData(const void * dataPointer)
+void ConstantBuffer::CopyData(const void * dataPointer, UINT manualSize)
 {
 	// Map the constant buffer
 	char* mappedData;
 	D3D12_RANGE uploadRange;
 	uploadRange.Begin = 0;
-	uploadRange.End = m_size;
+	if (manualSize != 0)
+	{
+		manualSize = (manualSize + 255) & ~255;
+		uploadRange.End = manualSize;
+	}
+	else
+	{
+		uploadRange.End = m_size;
+	}
 	m_data->Map(0, &uploadRange, (void**)&mappedData);
 
 	// Copy
-	memcpy(&mappedData[0], dataPointer, m_size);
+	memcpy(&mappedData[0], dataPointer, uploadRange.End - uploadRange.Begin);
 
 	//Unmap
 	m_data->Unmap(0, &uploadRange);
@@ -92,4 +100,17 @@ void ConstantBuffer::CreateCBV(DescriptorHeapAllocator * heapAllocator)
 
 	// Create the CBV in the descriptor heap
 	DXContext::Get().GetDevice()->CreateConstantBufferView(&cbvDesc, m_CBV_handle);
+}
+
+void ConstantBuffer::Update(const void * dataPointer, UINT dataSize)
+{
+	if (m_data != nullptr)
+	{
+		CopyData(dataPointer, dataSize);
+	}
+	else
+	{
+		std::string errorMessage = "Trying to update ConstantBuffer: " + m_name + "'s data but the pointer is nullptr.\n";
+		D3EZ_EXCEPTION_W(errorMessage)
+	}
 }

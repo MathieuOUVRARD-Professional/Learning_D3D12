@@ -11,7 +11,7 @@ cbuffer ModelID : register(b1)
 	uint modelID;
 };
 
-cbuffer ModelData : register(b3)
+cbuffer ModelData : register(b4)
 {
     ModelData modelsData[405];
 }

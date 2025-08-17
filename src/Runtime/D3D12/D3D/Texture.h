@@ -27,7 +27,7 @@ class Texture
 		inline UINT64 GetTextureSize(int textureIndex)
 		{
 			// Only Mip 0
-			if (m_textureDatas[textureIndex].mipsLevels == 1)
+			if (m_textureData[textureIndex].mipsLevels == 1)
 			{
 				return m_textureSizes[textureIndex];
 			}
@@ -35,17 +35,17 @@ class Texture
 			else
 			{
 				UINT64 result = 0;
-				UINT mipLevels = m_textureDatas[textureIndex].mipsLevels;
+				UINT mipLevels = m_textureData[textureIndex].mipsLevels;
 				UINT64 lastAlignedMipSize = 0;
 
 				for (unsigned int mip = 0; mip < mipLevels; mip++)
 				{
-					if ((UINT)(m_textureDatas[textureIndex].height / pow(2, mip)) < 256 && lastAlignedMipSize == 0)
+					if ((UINT)(m_textureData[textureIndex].height / pow(2, mip)) < 256 && lastAlignedMipSize == 0)
 					{
 						lastAlignedMipSize = (UINT64)((DOUBLE)m_textureSizes[textureIndex] / pow(4.0f, (double)(mip - 1)));
 					}
 
-					if ((UINT)(m_textureDatas[textureIndex].height / pow(2, mip)) < 256)
+					if ((UINT)(m_textureData[textureIndex].height / pow(2, mip)) < 256)
 					{
 						result += lastAlignedMipSize;
 					}
@@ -69,14 +69,14 @@ class Texture
 		inline char* GetTextureData(int textureIndex, int mipIndex = 0)
 		{
 			// Only Mip 0
-			if (m_textureDatas[textureIndex].mipsLevels == 1)
+			if (m_textureData[textureIndex].mipsLevels == 1)
 			{
-				return m_textureDatas[textureIndex].content[mipIndex].data();
+				return m_textureData[textureIndex].content[mipIndex].data();
 			}
 			// Multiple Mip levels 
 			else
 			{
-				return m_textureDatas[textureIndex].content[mipIndex].data();
+				return m_textureData[textureIndex].content[mipIndex].data();
 			}
 		};		
 
@@ -87,7 +87,7 @@ class Texture
 		std::vector<ComPointer<ID3D12Resource>> m_textures;
 		ComPointer<ID3D12DescriptorHeap> m_srvHeap = nullptr;
 
-		std::vector<ImageLoader::ImageData> m_textureDatas;
+		std::vector<ImageLoader::ImageData> m_textureData;
 		std::vector<UINT64> m_textureSizes;
 		std::vector<uint32_t> m_textureStrides;
 

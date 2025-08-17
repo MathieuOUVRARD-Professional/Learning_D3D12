@@ -35,6 +35,24 @@
 
 #include "ImGuizmo.h"
 
+// Also used in pbr_pixel.hlsl
+#define MAX_LIGHTS 100
+
+struct SceneData
+{
+	float nLights = 0;
+	float padding1;
+	float padding2;
+	float padding3;
+};
+
+void SendSceneData(ID3D12GraphicsCommandList* cmdList, int bufferSlot, float nLights)
+{
+	SceneData sceneData;
+	sceneData.nLights = nLights;
+
+	cmdList->SetGraphicsRoot32BitConstants(bufferSlot, 4, &sceneData, 0);
+}
 
 #define IMGUI
 
@@ -428,15 +446,15 @@ int main()
 
 		// === Buffer Views === //
 		// PYRAMID
-		D3D12_VERTEX_BUFFER_VIEW vbv{};
-		vbv.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
-		vbv.SizeInBytes = sizeof(VertexWithUV) * _countof(pyramidVertices);
-		vbv.StrideInBytes = sizeof(VertexWithUV);
+		D3D12_VERTEX_BUFFER_VIEW pyramidVBV{};
+		pyramidVBV.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
+		pyramidVBV.SizeInBytes = sizeof(VertexWithUV) * _countof(pyramidVertices);
+		pyramidVBV.StrideInBytes = sizeof(VertexWithUV);
 
-		D3D12_INDEX_BUFFER_VIEW ibv{};
-		ibv.BufferLocation = indexBuffer->GetGPUVirtualAddress();
-		ibv.SizeInBytes = sizeof(DWORD) * _countof(pyramidIndices);
-		ibv.Format = DXGI_FORMAT_R32_UINT;
+		D3D12_INDEX_BUFFER_VIEW pyramidIBV{};
+		pyramidIBV.BufferLocation = indexBuffer->GetGPUVirtualAddress();
+		pyramidIBV.SizeInBytes = sizeof(DWORD) * _countof(pyramidIndices);
+		pyramidIBV.Format = DXGI_FORMAT_R32_UINT;
 
 		// CUBE
 		D3D12_VERTEX_BUFFER_VIEW cubeVbv{};
@@ -450,11 +468,6 @@ int main()
 		cubeIbv.Format = DXGI_FORMAT_R32_UINT;
 		
 		// === SETUP === //
-		// SHADOW MAP
-		DepthBuffer shadowMap = DepthBuffer(4096, 4096, "ShadowMap", &defaultHeapProperties);
-		shadowMap.CreateDSV();
-		shadowMap.CreateDepthBufferSRV(&bindlessSRVHeapAllocator);
-
 		// OBJECT LIST
 		mainObjList.CreateBufferViews(vertexBuffer, indexBuffer);
 
@@ -470,15 +483,33 @@ int main()
 		
 		// CUBE
 		MyTransform cubeLightTransform = MyTransform(glm::vec3(10.0f, 25.0f, 10.0f));
-		glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), cubeLightTransform.m_position);
+		glm::mat4 cubeModel = glm::translate(glm::mat4(1.0f), cubeLightTransform.m_position);
 
 		// LIGHTS
 		std::vector<Light*> lights;
+		ConstantBuffer lightsDataBuffer = ConstantBuffer(static_cast<UINT>(sizeof(LightData) * MAX_LIGHTS), "LightsData");
 
 		glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
 		Light cubeLight = Light().Directional("Cube", cubeLightTransform.m_position, 1.0f, lightColor);
+		Light spotLight = Light().Spot("Spot", glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 3.5f, 0.0f), glm::normalize(-glm::vec3(0.0f, 3.5f, 0.0)),1.0f, 5.0f);
+
+		// SHADOW MAP
+		DepthBuffer shadowMap = DepthBuffer(4096, 4096, "Cub_ShadowMap", &defaultHeapProperties);
+		shadowMap.CreateDSV();
+		shadowMap.CreateDepthBufferSRV(&bindlessSRVHeapAllocator);
 		cubeLight.m_shadowmapID = shadowMap.Get_D_SRVHeapIndex();
+
+		DepthBuffer spotShadowMap = DepthBuffer(1024, 1024, "Spot_ShadowMap", &defaultHeapProperties);
+		spotShadowMap.CreateDSV();
+		spotShadowMap.CreateDepthBufferSRV(&bindlessSRVHeapAllocator);
+		spotLight.m_shadowmapID = spotShadowMap.Get_D_SRVHeapIndex();
+
 		lights.emplace_back(&cubeLight);
+		lights.emplace_back(&spotLight);
+		
+		// LIGHT CBV
+		lightsDataBuffer.CreateResource();
+		lightsDataBuffer.CreateCBV(&bindlessSRVHeapAllocator);
 
 		// === ImGui SetUp === //
 #ifdef IMGUI
@@ -564,15 +595,22 @@ int main()
 			
 			camera.UpdateWindowSize(DXWindow::Get().GetWidth(), DXWindow::Get().GetHeigth());
 			camera.Matrix(45.0f, 0.01f, 100.0f);
-			camera.Inputs();						
+			camera.Inputs();
 
-			TransformUI(camera, lightModel, cubeLightTransform);
-			
-			cubeLight.m_position = cubeLightTransform.m_position = glm::vec3(lightModel[3]);		
-			cubeLight.m_direction = glm::normalize(-cubeLightTransform.m_position);
-			cubeLight.ComputeViewProjMatrix(25.0f);
+			ImGuiPerfOverlay(true);
 					
 			// === SHADOW PASS === //
+			struct Matrices
+			{
+				glm::mat4 viewProj = glm::mat4(1.0f);
+				glm::mat4 model = glm::mat4(1.0f);
+			};
+
+			Matrices pyramidMatrices;
+			pyramidMatrices.viewProj = cubeLight.m_viewProjMatrix;
+			pyramidMatrices.model = pyramidModel;
+
+			// Cube
 			shadowMap.Bind(cmdList);
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			cmdList->SetGraphicsRootSignature(shadowPassSignature);
@@ -580,15 +618,54 @@ int main()
 
 			mainObjList.ShadowPassDraw(cmdList, cubeLight);
 
+			cmdList->IASetVertexBuffers(0, 1, &pyramidVBV);
+			cmdList->IASetIndexBuffer(&pyramidIBV);
+			cmdList->SetGraphicsRoot32BitConstants(0, 32, &pyramidMatrices, 0);
+			cmdList->DrawIndexedInstanced(_countof(pyramidIndices), 1, 0, 0, 0);
+
+			// Spot
+			spotShadowMap.Bind(cmdList);
+			pyramidMatrices.viewProj = spotLight.m_viewProjMatrix;
+			cmdList->SetGraphicsRoot32BitConstants(0, 32, &pyramidMatrices, 0);
+			cmdList->DrawIndexedInstanced(_countof(pyramidIndices), 1, 0, 0, 0);
+
+			//mainObjList.ShadowPassDraw(cmdList, spotLight);
+
+			DXWindow::Get().BindMainRenderTarget(cmdList);
+
+			// === LIGHTS === //
+			if (TransformUI(camera, cubeModel, cubeLightTransform))
+			{
+				cubeLight.m_position = cubeLightTransform.m_position;
+				cubeLight.m_direction = glm::normalize(-cubeLightTransform.m_position);
+				cubeLight.m_dataUpToDate = false;
+			}
+
 			LightInterface(lights);
-			ImGuiPerfOverlay(true);
 
 			ImGui::Begin("Shadow Map Debug");
 			ImGui::Text("Depth Buffer (Shadow Map):");
 			ImageFromResource(shadowMap.GetTexture(), g_pd3dSrvDescHeapAlloc);
 			ImGui::End();
 
-			DXWindow::Get().BindMainRenderTarget(cmdList);
+			bool lightsDataHasChanged = false;
+			for (int i = 0; i < lights.size(); i++)
+			{
+				if (lights[i]->m_dataUpToDate == false)
+				{
+					lightsDataHasChanged = true;
+					break;
+				}
+			}
+			if (lightsDataHasChanged)
+			{
+				std::vector<LightData> lightsData;
+				for (int i = 0; i < lights.size(); i++)
+				{
+					lightsData.emplace_back(*lights[i]->GetData());
+				}
+				lightsDataBuffer.Update(lightsData.data(), lightsData.size() * static_cast<UINT>(sizeof(LightData)));
+			}
 
 			// Pyramid
 			// === PSO === //
@@ -596,8 +673,8 @@ int main()
 			cmdList->SetPipelineState(pso.Get());
 			// === IA === //
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			cmdList->IASetVertexBuffers(0, 1, &vbv);
-			cmdList->IASetIndexBuffer(&ibv);
+			cmdList->IASetVertexBuffers(0, 1, &pyramidVBV);
+			cmdList->IASetIndexBuffer(&pyramidIBV);
 			// === ROOT === //
 			camera.SendShaderParams(cmdList, 0, pyramidModel);
 			cubeLight.SendShaderParamsSmall(cmdList, 1);
@@ -611,10 +688,12 @@ int main()
 			cmdList->SetPipelineState(pbrPso.Get());
 			cmdList->SetGraphicsRootSignature(pbrRootSignature);
 			camera.SendShaderParams(cmdList, 0);
-			cubeLight.SendShaderParams(cmdList, 2);
-			cmdList->SetGraphicsRootConstantBufferView(3, mainObjList.m_modelsData->GetGPUVirtualAddress());
-			cmdList->SetGraphicsRootConstantBufferView(4, mainObjList.m_materialDatas->GetGPUVirtualAddress());
-			mainObjList.BindDescriptorHeaps(cmdList, 5);
+			//cubeLight.SendShaderParams(cmdList, 2);
+			SendSceneData(cmdList, 2, lights.size());
+			cmdList->SetGraphicsRootConstantBufferView(3, lightsDataBuffer.GetData()->GetGPUVirtualAddress());
+			cmdList->SetGraphicsRootConstantBufferView(4, mainObjList.m_modelsData->GetGPUVirtualAddress());
+			cmdList->SetGraphicsRootConstantBufferView(5, mainObjList.m_materialData->GetGPUVirtualAddress());
+			mainObjList.BindDescriptorHeaps(cmdList, 6);
 			mainObjList.Draw(cmdList);
 
 			// Cube
@@ -626,7 +705,7 @@ int main()
 			cmdList->IASetVertexBuffers(0, 1, &cubeVbv);
 			cmdList->IASetIndexBuffer(&cubeIbv);
 			// === ROOT === //
-			camera.SendShaderParams(cmdList, 0, lightModel);
+			camera.SendShaderParams(cmdList, 0, cubeModel);
 			cmdList->SetGraphicsRoot32BitConstants(1, 4, &cubeLight.m_color, 0);
 			// === Draw === //
 			cmdList->DrawIndexedInstanced(_countof(cubeIndexes), 1, 0, 0, 0);

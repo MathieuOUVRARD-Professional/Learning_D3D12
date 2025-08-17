@@ -4,17 +4,23 @@
 // PBR Lighting Constants
 static const float PI = 3.14159265359;
 
+
 cbuffer CameraData : register(b0)
 {
 	CameraData cameraData;
 };
 
-cbuffer LightConstants : register(b2)
+cbuffer SceneData : register(b2)
 {
-	Light light;
+    SceneData sceneData;
+}
+
+cbuffer LightData : register(b3)
+{
+    Light lights[100];
 };
 
-cbuffer MaterialData : register(b4)
+cbuffer MaterialData : register(b5)
 {
     MaterialData materialsData[29];
 }
@@ -56,8 +62,7 @@ float ComputeShadow(float4 shadowPos, Light light, float3 normalWorldSpace)
     bindlessTextures[NonUniformResourceIndex(light.shadowMapID)].GetDimensions(shadowMapSize.x, shadowMapSize.y);    
 	
     float2 texelSize = 1.0 / shadowMapSize;
-	
-    int samlingRadius = 2;
+    int samlingRadius = 3;
 	
     for (int x = -samlingRadius; x <= samlingRadius; ++x)
     {
@@ -69,7 +74,7 @@ float ComputeShadow(float4 shadowPos, Light light, float3 normalWorldSpace)
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
         }
     }
-    shadow /= pow((1 + 2 * samlingRadius), 2);
+    shadow /= pow((1 + 2 * samlingRadius), 2);    
 	
 	// If out of range set no shadow for directional lights
     shadow = lerp(shadow, 0.0, currentDepth > 1.0 && light.type == 0);
@@ -185,8 +190,9 @@ void main(
 	float roughness = materialData.roughness *  ormTexel.g;
 	float metalness = materialData.metalness *  ormTexel.b;
 	
+    float gamma = 2.2;
 	// Convert albedo texture from sRGB to linearSpace
-    albedoTexel.rgb = pow(albedoTexel.rgb, 2.2);
+    albedoTexel.rgb = pow(albedoTexel.rgb, gamma);
 	
 	// AlphaClipping
     float alpha = bindlessTextures[NonUniformResourceIndex(materialData.diffuseID)].Sample(textureSampler, pInput.uv).a;
@@ -203,16 +209,21 @@ void main(
     float3 viewDirection = normalize(cameraData.position - pInput.worldPos.xyz);
 	
     float3 lighting = 0.0f;
+    float shadowFactor = 0.0f;
+    float3 finalColor = 0.0f;
+    
+    for (int i = 0; i < sceneData.N_LIGHTS; i++)
+    {
+        float4 shadowPos = mul(lights[i].viewProjMatrix, float4(pInput.worldPos.xyz, 1.0f));
+        shadowFactor = ComputeShadow(shadowPos, lights[i], normalWorldSpace);
+		
+        lighting = ComputeLighting(lights[i], normalWorldSpace, viewDirection, pInput.worldPos.xyz, albedoTexel, roughness, metalness);
+        finalColor += (1.0 - shadowFactor) * lighting;
+    }
 	
-    float4 shadowPos = mul(light.viewProjMatrix, float4(pInput.worldPos.xyz, 1.0f));
-    float shadowFactor = ComputeShadow(shadowPos, light, normalWorldSpace);
+    finalColor += emmisive + ambient;
 	
-    lighting = ComputeLighting(light, normalWorldSpace, viewDirection, pInput.worldPos.xyz, albedoTexel, roughness, metalness);
-	
-    float3 finalColor = (1.0 - shadowFactor) * lighting + emmisive + ambient;
-	
-	//Gamma correction
-    float gamma = 2.2;
+	//Gamma correction (back from  linear space to sRGB space)
     finalColor.rgb = pow(finalColor.rgb / (finalColor.rgb + float3(1.0f, 1.0f, 1.0f)), float3(1.0f / gamma, 1.0f / gamma, 1.0f / gamma));
 	
     pixel = float4(finalColor, materialData.opacity);
